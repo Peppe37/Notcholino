@@ -1,0 +1,16 @@
+name: Notcholino
+options:
+  bundleIdPrefix: com.giuseppe
+targets:
+  Notcholino:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - Notcholino
+    settings:
+      base:
+        INFOPLIST_KEY_LSUIElement: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
