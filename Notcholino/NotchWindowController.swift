@@ -192,10 +192,20 @@ struct NotchContentView: View {
 // MARK: - Now Playing View (Replica)
 
 struct NowPlayingNotchView: View {
+    @StateObject private var musicManager = MusicManager()
+    
     @AppStorage("npPlayer") private var npPlayer = 0 // 0: Auto, 1: Apple Music, 2: Spotify, 3: YT Music
     @AppStorage("npShowShuffle") private var npShowShuffle = false
     @AppStorage("npShowRepeat") private var npShowRepeat = false
     @AppStorage("npShowFavorites") private var npShowFavorites = false
+    
+    func formatTime(_ seconds: Double) -> String {
+        guard !seconds.isNaN && !seconds.isInfinite else { return "0:00" }
+        let totalSeconds = Int(seconds)
+        let min = totalSeconds / 60
+        let sec = totalSeconds % 60
+        return String(format: "%d:%02d", min, sec)
+    }
     
     var body: some View {
         VStack(spacing: 16) {
@@ -205,37 +215,32 @@ struct NowPlayingNotchView: View {
                     .fill(LinearGradient(colors: [Color.purple, Color.blue], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .frame(width: 48, height: 48)
                     .overlay(
-                        Text("EXTASI")
-                            .font(.system(size: 10, weight: .black, design: .rounded))
+                        Text(musicManager.isPlaying ? (musicManager.trackName.prefix(2).uppercased()) : "...")
+                            .font(.system(size: 14, weight: .black, design: .rounded))
                             .foregroundStyle(.white.opacity(0.8))
-                            .rotationEffect(.degrees(-15))
                     )
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Extasi")
+                    Text(musicManager.trackName.isEmpty ? "Not Playing" : musicManager.trackName)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
-                    Text("Fred De Palma")
+                        .lineLimit(1)
+                    Text(musicManager.artistName.isEmpty ? "No Artist" : musicManager.artistName)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.gray)
+                        .lineLimit(1)
                 }
                 
                 Spacer()
                 
-                // Show player specific icon if not Auto
-                if npPlayer == 1 {
-                    Image(systemName: "applelogo")
-                        .foregroundColor(.pink)
-                        .font(.system(size: 16))
-                } else if npPlayer == 2 {
-                    // Spotify uses a generic wave icon here since SF Symbols has no Spotify logo
+                if musicManager.activePlayer == "Spotify" || npPlayer == 2 {
                     Image(systemName: "waveform.circle.fill")
                         .foregroundColor(.green)
                         .font(.system(size: 18))
-                } else if npPlayer == 3 {
-                    Image(systemName: "play.rectangle.fill")
-                        .foregroundColor(.red)
-                        .font(.system(size: 18))
+                } else if musicManager.activePlayer == "Music" || npPlayer == 1 {
+                    Image(systemName: "applelogo")
+                        .foregroundColor(.pink)
+                        .font(.system(size: 16))
                 }
                 
                 Image(systemName: "ellipsis")
@@ -248,7 +253,7 @@ struct NowPlayingNotchView: View {
             
             // Progress Bar
             HStack(spacing: 8) {
-                Text("2:12")
+                Text(formatTime(musicManager.trackPosition))
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundColor(.gray)
                 
@@ -256,13 +261,16 @@ struct NowPlayingNotchView: View {
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.white.opacity(0.15))
                             .frame(height: 6)
+                        
+                        let progress = musicManager.trackDuration > 0 ? (musicManager.trackPosition / musicManager.trackDuration) : 0
                         Capsule().fill(Color.purple)
-                            .frame(width: geo.size.width * 0.8, height: 6)
+                            .frame(width: max(0, geo.size.width * CGFloat(progress)), height: 6)
                     }
                 }
                 .frame(height: 6)
                 
-                Text("-0:25")
+                let remaining = musicManager.trackDuration - musicManager.trackPosition
+                Text(remaining > 0 ? "-\(formatTime(remaining))" : "0:00")
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundColor(.gray)
             }
@@ -276,17 +284,23 @@ struct NowPlayingNotchView: View {
                         .foregroundColor(.gray)
                 }
                 
-                Image(systemName: "backward.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.white)
+                Button(action: { musicManager.previousTrack() }) {
+                    Image(systemName: "backward.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                }.buttonStyle(.plain)
                 
-                Image(systemName: "play.fill")
-                    .font(.system(size: 28))
-                    .foregroundColor(.white)
+                Button(action: { musicManager.playPause() }) {
+                    Image(systemName: musicManager.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.white)
+                }.buttonStyle(.plain)
                 
-                Image(systemName: "forward.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.white)
+                Button(action: { musicManager.nextTrack() }) {
+                    Image(systemName: "forward.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                }.buttonStyle(.plain)
                 
                 if npShowRepeat {
                     Image(systemName: "repeat")

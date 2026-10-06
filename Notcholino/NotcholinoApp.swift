@@ -35,6 +35,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         notchWindowController = NotchWindowController()
-        notchWindowController?.showWindow(nil)
+        notchWindowController?.window?.orderFront(nil)
     }
 }
