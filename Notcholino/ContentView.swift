@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selection: SidebarItem? = .general
-    
+
     enum SidebarItem: Hashable {
         case general
         case battery
@@ -16,7 +16,7 @@ struct ContentView: View {
         case license
         case about
     }
-    
+
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
@@ -25,7 +25,7 @@ struct ContentView: View {
                         Label("General", systemImage: "gearshape.fill")
                     }
                 }
-                
+
                 Section("Notifications") {
                     NavigationLink(value: SidebarItem.battery) {
                         Label("Battery", systemImage: "bolt.fill")
@@ -48,7 +48,7 @@ struct ContentView: View {
                             .foregroundStyle(.pink)
                     }
                 }
-                
+
                 Section("Live Activities") {
                     NavigationLink(value: SidebarItem.nowPlaying) {
                         Label("Now Playing", systemImage: "play.circle.fill")
@@ -63,7 +63,7 @@ struct ContentView: View {
                             .foregroundStyle(.primary)
                     }
                 }
-                
+
                 Section("Notcholino") {
                     NavigationLink(value: SidebarItem.license) {
                         Label("License", systemImage: "checkmark.seal.fill")
@@ -87,6 +87,8 @@ struct ContentView: View {
                     ConnectivitySettingsView()
                 case .nowPlaying:
                     NowPlayingSettingsView()
+                case .calendar:
+                    CalendarSettingsView()
                 default:
                     Text("Select an option")
                         .font(.largeTitle)
@@ -108,14 +110,14 @@ struct GeneralSettingsView: View {
     @AppStorage("hideInMissionControl") private var hideInMissionControl = true
     @AppStorage("hideWhileGaming") private var hideWhileGaming = false
     @AppStorage("forceSimulatedNotch") private var forceSimulatedNotch = false
-    
+
     @AppStorage("notchWidth") private var notchWidth: Double = 0
     @AppStorage("notchHeight") private var notchHeight: Double = 0
-    
+
     var body: some View {
         VStack(spacing: 0) {
             HeaderView(title: "General", icon: "gearshape.fill", color: .gray)
-            
+
             Form {
                 Section {
                     Toggle("Launch at login", isOn: $launchAtLogin)
@@ -124,7 +126,7 @@ struct GeneralSettingsView: View {
                     Toggle("Hide while gaming", isOn: $hideWhileGaming)
                     Toggle("Force simulated notch", isOn: $forceSimulatedNotch)
                 }
-                
+
                 Section("Tuning") {
                     VStack(alignment: .leading) {
                         HStack {
@@ -135,7 +137,7 @@ struct GeneralSettingsView: View {
                         Slider(value: $notchWidth, in: -50...50)
                             .tint(.teal)
                     }
-                    
+
                     VStack(alignment: .leading) {
                         HStack {
                             Text("Notch height")
@@ -158,18 +160,18 @@ struct BatterySettingsView: View {
     @AppStorage("batteryDuration") private var batteryDuration: Double = 5.0
     @AppStorage("lowBatteryWarning") private var lowBatteryWarning = true
     @AppStorage("lowBatteryThreshold") private var lowBatteryThreshold: Double = 10.0
-    
+
     var body: some View {
         VStack(spacing: 0) {
             HeaderView(title: "Battery", icon: "bolt.fill", color: .orange)
-            
+
             Form {
                 Section {
                     Toggle(isOn: $batteryEnabled) {
                         Label("Battery", systemImage: "bolt.fill")
                             .foregroundStyle(.orange)
                     }
-                    
+
                     VStack(alignment: .leading) {
                         HStack {
                             Text("Duration")
@@ -180,10 +182,10 @@ struct BatterySettingsView: View {
                             .tint(.teal)
                     }
                 }
-                
+
                 Section {
                     Toggle("Warn on low battery", isOn: $lowBatteryWarning)
-                    
+
                     VStack(alignment: .leading) {
                         HStack {
                             Text("Low battery threshold")
@@ -205,18 +207,18 @@ struct ConnectivitySettingsView: View {
     @AppStorage("connectivityEnabled") private var connectivityEnabled = true
     @AppStorage("connDuration") private var connDuration: Double = 5.0
     @AppStorage("connStyle") private var connStyle = 1 // 0: 3D, 1: Symbols
-    
+
     var body: some View {
         VStack(spacing: 0) {
             HeaderView(title: "Connectivity", icon: "headphones", color: .green)
-            
+
             Form {
                 Section {
                     Toggle(isOn: $connectivityEnabled) {
                         Label("Connectivity", systemImage: "headphones")
                             .foregroundStyle(.green)
                     }
-                    
+
                     VStack(alignment: .leading) {
                         HStack {
                             Text("Duration")
@@ -227,7 +229,7 @@ struct ConnectivitySettingsView: View {
                             .tint(.teal)
                     }
                 }
-                
+
                 Section {
                     Picker("Style", selection: $connStyle) {
                         Text("3D models").tag(0)
@@ -248,18 +250,22 @@ struct NowPlayingSettingsView: View {
     @AppStorage("npIdleDuration") private var npIdleDuration: Double = 3.0
     @AppStorage("npColorStyle") private var npColorStyle = 2 // 0: Mono, 1: Colored, 2: Gradient
     @AppStorage("npLiveWaveform") private var npLiveWaveform = true
-    
+    @AppStorage("npPlayer") private var npPlayer = 0 // 0: Auto, 1: Spotify, 2: Apple Music, 3: YouTube Music
+    @AppStorage("npShowShuffle") private var npShowShuffle = false
+    @AppStorage("npShowRepeat") private var npShowRepeat = false
+    @AppStorage("npShowFavorites") private var npShowFavorites = false
+
     var body: some View {
         VStack(spacing: 0) {
             HeaderView(title: "Now Playing", icon: "play.circle.fill", color: .red)
-            
+
             Form {
                 Section {
                     Toggle(isOn: $nowPlayingEnabled) {
                         Label("Now Playing", systemImage: "play.fill")
                             .foregroundStyle(.teal)
                     }
-                    
+
                     VStack(alignment: .leading) {
                         HStack {
                             Text("Idle duration")
@@ -270,8 +276,24 @@ struct NowPlayingSettingsView: View {
                             .tint(.teal)
                     }
                 }
-                
-                Section {
+
+                Section("Music Player") {
+                    Picker("Default Player", selection: $npPlayer) {
+                        Text("Auto").tag(0)
+                        Text("Apple Music").tag(1)
+                        Text("Spotify").tag(2)
+                        Text("YouTube Music").tag(3)
+                    }
+                    .pickerStyle(.menu)
+                }
+
+                Section("Controls") {
+                    Toggle("Show Shuffle Button", isOn: $npShowShuffle)
+                    Toggle("Show Repeat Button", isOn: $npShowRepeat)
+                    Toggle("Show Favorites Button", isOn: $npShowFavorites)
+                }
+
+                Section("Appearance") {
                     Picker("Color Style", selection: $npColorStyle) {
                         Text("Monochrome").tag(0)
                         Text("Colored").tag(1)
@@ -279,8 +301,38 @@ struct NowPlayingSettingsView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.vertical, 8)
-                    
+
                     Toggle("Use live waveform", isOn: $npLiveWaveform)
+                }
+            }
+            .formStyle(.grouped)
+        }
+    }
+}
+
+// MARK: - Calendar Settings
+struct CalendarSettingsView: View {
+    @AppStorage("calendarEnabled") private var calendarEnabled = true
+    @AppStorage("calDisplayMode") private var calDisplayMode = 0 // 0: Full Month, 1: Today Only
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HeaderView(title: "Calendar", icon: "calendar", color: .red)
+
+            Form {
+                Section {
+                    Toggle(isOn: $calendarEnabled) {
+                        Label("Calendar", systemImage: "calendar")
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                Section("Display Options") {
+                    Picker("Display Mode", selection: $calDisplayMode) {
+                        Text("Full Month Grid").tag(0)
+                        Text("Today's Events Only").tag(1)
+                    }
+                    .pickerStyle(.menu)
                 }
             }
             .formStyle(.grouped)
@@ -294,7 +346,7 @@ struct HeaderView: View {
     let title: String
     let icon: String
     let color: Color
-    
+
     var body: some View {
         HStack {
             Image(systemName: icon)
