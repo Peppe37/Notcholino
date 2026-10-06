@@ -19,7 +19,7 @@ class NotchWindowController: NSWindowController {
             height: windowHeight
         )
         
-        let window = NSWindow(
+        let window = NSPanel(
             contentRect: windowRect,
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
