@@ -4,9 +4,13 @@ import SwiftUI
 class NotchWindowController: NSWindowController {
     
     init() {
-        // Create a borderless, transparent window that sits above the status bar
+        let screenWidth = NSScreen.main?.frame.width ?? 1440
+        // Standard notch size for 14"/16" MacBook Pros
+        let notchWidth: CGFloat = 200
+        let notchHeight: CGFloat = 32
+        
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 200, height: 40),
+            contentRect: NSRect(x: (screenWidth - notchWidth) / 2, y: (NSScreen.main?.frame.height ?? 900) - notchHeight, width: notchWidth, height: notchHeight),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -15,25 +19,14 @@ class NotchWindowController: NSWindowController {
         window.backgroundColor = .clear
         window.isOpaque = false
         window.hasShadow = false
-        window.level = .statusBar // or .screenSaver to be above everything
+        window.level = .statusBar // Float above the menu bar
         window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
-        window.ignoresMouseEvents = true // Only the notch area will receive mouse events later via tracking areas
+        window.ignoresMouseEvents = false // We will handle mouse hover to expand the notch
         
         super.init(window: window)
         
-        // Position window at the top center of the screen
-        if let screen = NSScreen.main {
-            let screenRect = screen.frame
-            let windowRect = window.frame
-            let newOrigin = NSPoint(
-                x: (screenRect.width - windowRect.width) / 2,
-                y: screenRect.height - windowRect.height
-            )
-            window.setFrameOrigin(newOrigin)
-        }
-        
-        // Add a SwiftUI view to the window
-        let hostingView = NSHostingView(rootView: NotchView())
+        // Add a SwiftUI view to the window to render the dynamic notch capsule
+        let hostingView = NSHostingView(rootView: NotchContentView())
         window.contentView = hostingView
     }
     
@@ -42,13 +35,61 @@ class NotchWindowController: NSWindowController {
     }
 }
 
-struct NotchView: View {
+// MARK: - Notch UI
+
+struct NotchContentView: View {
+    @State private var isHovering = false
+    @State private var isExpanded = false
+    
+    // Read user settings dynamically
+    @AppStorage("notchWidth") private var tuningWidth: Double = 0
+    @AppStorage("notchHeight") private var tuningHeight: Double = 0
+    
+    // Base notch dimensions
+    let baseWidth: CGFloat = 190
+    let baseHeight: CGFloat = 32
+    
     var body: some View {
-        // Placeholder for the actual notch UI
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(Color.black)
-            .frame(width: 200, height: 40)
-            // Ensure this aligns with the physical notch on MacBooks
-            .edgesIgnoringSafeArea(.all)
+        ZStack {
+            // The black squircle capsule
+            RoundedRectangle(cornerRadius: isExpanded ? 24 : 12, style: .continuous)
+                .fill(Color.black)
+                .frame(
+                    width: isExpanded ? 350 : baseWidth + CGFloat(tuningWidth),
+                    height: isExpanded ? 100 : baseHeight + CGFloat(tuningHeight)
+                )
+                .animation(.spring(response: 0.4, dampingFraction: 0.6), value: isExpanded)
+            
+            // Content inside the notch
+            if isExpanded {
+                HStack(spacing: 20) {
+                    Image(systemName: "play.circle.fill")
+                        .resizable()
+                        .frame(width: 40, height: 40)
+                        .foregroundStyle(.teal)
+                    
+                    VStack(alignment: .leading) {
+                        Text("Notcholino")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        Text("Live Activities & More")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 30)
+                .frame(width: 350, height: 100)
+                .transition(.opacity.combined(with: .scale))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .edgesIgnoringSafeArea(.all)
+        .onHover { hovering in
+            isHovering = hovering
+            withAnimation {
+                isExpanded = hovering
+            }
+        }
     }
 }
