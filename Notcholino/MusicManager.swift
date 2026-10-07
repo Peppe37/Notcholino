@@ -187,6 +187,19 @@ final class MusicManager: NSObject, ObservableObject {
         }
     }
 
+    func seek(to position: Double) {
+        let pos = max(0, position)
+        DispatchQueue.main.async { self.trackPosition = pos }
+        runOsascript("""
+        if application "Spotify" is running then
+            tell application "Spotify" to set player position to \(pos)
+        else if application "Music" is running then
+            tell application "Music" to set player position to \(pos)
+        end if
+        """) { _ in }
+    }
+
+
     // MARK: - Helpers
 
     func formatTime(_ s: Double) -> String {
