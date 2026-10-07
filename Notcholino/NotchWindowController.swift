@@ -528,7 +528,7 @@ struct NowPlayingNotchView: View {
         case 1:
             return AnyShapeStyle(music.primaryColor)
         case 2:
-            return AnyShapeStyle(LinearGradient(colors: [music.primaryColor, music.secondaryColor], startPoint: .leading, endPoint: .trailing))
+            return music.primaryColor.spectrogramGradient()
         default:
             return AnyShapeStyle(Color.white.opacity(0.85))
         }
@@ -539,8 +539,7 @@ struct NowPlayingNotchView: View {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(LinearGradient(colors: [.purple.opacity(0.7), .blue.opacity(0.7)],
-                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .fill(music.primaryColor.spectrogramGradient())
                     if let img = music.albumArt {
                         Image(nsImage: img)
                             .resizable().scaledToFill()
@@ -826,13 +825,30 @@ struct CalendarNotchView: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     if let event = calMgr.upcomingEvent {
-                        Text(event.title)
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white.opacity(0.8))
-                            .lineLimit(1)
-                        Text("\(calMgr.formatTime(event.startDate)) - \(calMgr.formatTime(event.endDate))")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.white.opacity(0.5))
+                        HStack(alignment: .top, spacing: 6) {
+                            Rectangle()
+                                .fill(Color(nsColor: NSColor(cgColor: event.calendar.cgColor) ?? .red))
+                                .frame(width: 3)
+                                .cornerRadius(1.5)
+                                
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(event.title)
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                    
+                                if let location = event.location, !location.isEmpty {
+                                    Text(location)
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.white.opacity(0.6))
+                                        .lineLimit(1)
+                                }
+                                
+                                Text("\(calMgr.formatTime(event.startDate)) - \(calMgr.formatTime(event.endDate))")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.white.opacity(0.5))
+                            }
+                        }
                     } else if calMgr.hasAccess {
                         Text("No events today")
                             .font(.system(size: 13, weight: .bold))
