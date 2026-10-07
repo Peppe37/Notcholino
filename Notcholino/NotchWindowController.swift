@@ -60,6 +60,9 @@ class NotchWindowController: NSWindowController {
         let root = AnyView(NotchContentView())
         let hosting = NotchHostingView(rootView: root)
         hosting.layer?.backgroundColor = NSColor.clear.cgColor
+        // Don't let SwiftUI resize the window to its content (it did: 406x210, and
+        // the constraint update loop crashed with NSGenericException)
+        hosting.sizingOptions = []
         panel.contentView = hosting
 
         NotificationCenter.default.addObserver(
