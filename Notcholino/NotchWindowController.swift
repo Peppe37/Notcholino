@@ -215,7 +215,8 @@ struct NotchContentView: View {
                             
                             if isSystemHudActive {
                                 activeContent
-                                    .frame(height: isHovering ? 46 : 60)
+                                    .frame(height: isHovering ? 46 : 60, alignment: .bottom)
+                                    .padding(.bottom, isHovering ? 0 : 12)
                                     .scaleEffect(isHovering ? 0.7 : 1.0)
                             }
                         }
@@ -317,6 +318,7 @@ struct NotchContentView: View {
                 }
             }
             .padding(.leading, flare + 12)
+            .padding(.top, 4)
 
             Spacer()
 
@@ -324,6 +326,7 @@ struct NotchContentView: View {
             WaveformView(isPlaying: true, fill: AnyShapeStyle(music.primaryColor))
                 .frame(width: 24, height: 14)
                 .padding(.trailing, flare + 12)
+                .padding(.top, 4)
         }
     }
 
