@@ -63,7 +63,14 @@ class NotchWindowController: NSWindowController {
         // Don't let SwiftUI resize the window to its content (it did: 406x210, and
         // the constraint update loop crashed with NSGenericException)
         hosting.sizingOptions = []
-        panel.contentView = hosting
+
+        // Host inside a plain container so the hosting view can never drive the
+        // window's size or size limits
+        let container = NSView(frame: NSRect(origin: .zero, size: NSSize(width: W, height: H)))
+        hosting.frame = container.bounds
+        hosting.autoresizingMask = [.width, .height]
+        container.addSubview(hosting)
+        panel.contentView = container
 
         NotificationCenter.default.addObserver(
             forName: .notchLayoutChanged, object: nil, queue: .main
