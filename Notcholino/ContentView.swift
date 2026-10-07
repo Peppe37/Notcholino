@@ -260,9 +260,8 @@ struct NowPlayingSettingsView: View {
     @AppStorage("nowPlayingEnabled")   private var enabled = true
     @AppStorage("npIdleDuration")      private var idleDuration: Double = 3.0
     @AppStorage("npPlayer")            private var player = 0
-    @AppStorage("npShowShuffle")       private var showShuffle = false
-    @AppStorage("npShowRepeat")        private var showRepeat = false
-    @AppStorage("npShowFavorites")     private var showFavorites = false
+    @AppStorage("npLeftAccessory")     private var leftAccessory = "shuffle"
+    @AppStorage("npRightAccessory")    private var rightAccessory = "repeat"
     @AppStorage("npColorStyle")        private var colorStyle = 2
     @AppStorage("npLiveWaveform")      private var liveWaveform = true
 
@@ -283,9 +282,20 @@ struct NowPlayingSettingsView: View {
             }
 
             Section("Playback Controls") {
-                Toggle("Show Shuffle button",   isOn: $showShuffle)
-                Toggle("Show Repeat button",    isOn: $showRepeat)
-                Toggle("Show Favorites button", isOn: $showFavorites)
+                Picker("Left accessory", selection: $leftAccessory) {
+                    Text("None").tag("none")
+                    Text("Shuffle").tag("shuffle")
+                    Text("Repeat").tag("repeat")
+                    Text("Like").tag("like")
+                    Text("Devices").tag("devices")
+                }
+                Picker("Right accessory", selection: $rightAccessory) {
+                    Text("None").tag("none")
+                    Text("Shuffle").tag("shuffle")
+                    Text("Repeat").tag("repeat")
+                    Text("Like").tag("like")
+                    Text("Devices").tag("devices")
+                }
             }
 
             Section("Appearance") {

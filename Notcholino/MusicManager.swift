@@ -231,6 +231,30 @@ final class MusicManager: NSObject, ObservableObject {
         """) { _ in }
     }
 
+    func toggleLike() {
+        runOsascript("""
+        if application "Music" is running then
+            tell application "Music"
+                if loved of current track is true then
+                    set loved of current track to false
+                else
+                    set loved of current track to true
+                end if
+            end tell
+        end if
+        """) { _ in }
+    }
+
+    func toggleAirPlay() {
+        // Open Sound Settings in macOS Control Center/Settings
+        runOsascript("""
+        tell application "System Settings"
+            activate
+            reveal pane id "com.apple.Sound-Settings.extension"
+        end tell
+        """) { _ in }
+    }
+
 
     // MARK: - Helpers
 

@@ -402,10 +402,9 @@ struct MicHUDView: View {
 struct NowPlayingNotchView: View {
     @ObservedObject var music: MusicManager
 
-    @AppStorage("npShowShuffle")   private var showShuffle   = false
-    @AppStorage("npShowRepeat")    private var showRepeat    = false
-    @AppStorage("npShowFavorites") private var showFavorites = false
-    @AppStorage("npLiveWaveform")  private var liveWaveform  = true
+    @AppStorage("npLeftAccessory")  private var leftAccessory  = "shuffle"
+    @AppStorage("npRightAccessory") private var rightAccessory = "repeat"
+    @AppStorage("npLiveWaveform")   private var liveWaveform   = true
 
     @State private var isDraggingSeek = false
     @State private var seekPreview:    Double = 0
@@ -510,11 +509,7 @@ struct NowPlayingNotchView: View {
             ZStack {
                 // Left-aligned accessories
                 HStack {
-                    if showShuffle {
-                        IconButton(icon: "shuffle", size: 15, opacity: 0.5) {
-                            music.toggleShuffle()
-                        }
-                    }
+                    accessoryButton(type: leftAccessory)
                     Spacer()
                 }
                 
@@ -547,20 +542,29 @@ struct NowPlayingNotchView: View {
                 // Right-aligned accessories
                 HStack {
                     Spacer()
-                    if showRepeat {
-                        IconButton(icon: "repeat", size: 15, opacity: 0.5) {
-                            music.toggleRepeat()
-                        }
-                    } else if showFavorites {
-                        IconButton(icon: "heart",  size: 15, opacity: 0.5) { }
-                    } else {
-                        IconButton(icon: "airplayaudio", size: 15, opacity: 0.5) { }
-                    }
+                    accessoryButton(type: rightAccessory)
                 }
             }
             .padding(.horizontal, 24)
             .padding(.top, 10)
             .padding(.bottom, 16)
+        }
+    }
+
+    @ViewBuilder
+    private func accessoryButton(type: String) -> some View {
+        switch type {
+        case "shuffle":
+            IconButton(icon: "shuffle", size: 15, opacity: 0.5) { music.toggleShuffle() }
+        case "repeat":
+            IconButton(icon: "repeat", size: 15, opacity: 0.5) { music.toggleRepeat() }
+        case "like":
+            IconButton(icon: "heart", size: 15, opacity: 0.5) { music.toggleLike() }
+        case "devices":
+            IconButton(icon: "airplayaudio", size: 15, opacity: 0.5) { music.toggleAirPlay() }
+        default:
+            // "none" or unknown
+            EmptyView()
         }
     }
     
