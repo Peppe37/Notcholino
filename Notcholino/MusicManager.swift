@@ -53,7 +53,7 @@ final class MusicManager: NSObject, ObservableObject {
                     set artURL to artwork url of current track
                     set shuf to shuffling
                     set rep to repeating
-                    set out to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL & "|||" & (shuf as string) & "|||" & (rep as string) & "|||false"
+                    set out to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL & "|||" & (shuf as string) & "|||" & (rep as string) & "|||unknown"
                 end if
             end tell
         end if
@@ -96,7 +96,7 @@ final class MusicManager: NSObject, ObservableObject {
             
             let isShuffling = (parts.count > 6) ? (parts[6] == "true") : false
             let isRepeating = (parts.count > 7) ? (parts[7] == "true" || parts[7] == "all" || parts[7] == "one") : false
-            let isLoved     = (parts.count > 8) ? (parts[8] == "true") : false
+            let isLovedStr  = (parts.count > 8) ? parts[8] : "false"
 
             DispatchQueue.main.async {
                 self.activePlayer  = player
@@ -105,14 +105,22 @@ final class MusicManager: NSObject, ObservableObject {
                 self.trackDuration = duration
                 self.isShuffleEnabled = isShuffling
                 self.isRepeatEnabled  = isRepeating
-                self.isLiked          = isLoved
                 
-                // Only reset position if track changed
+                // Only reset position and local states if track changed
                 if self.trackName != tName {
                     self.trackPosition = position
                     self.trackName = tName
+                    
+                    // If unknown (Spotify), we default to false on new track.
+                    self.isLiked = (isLovedStr == "true")
+                    
                     // Load new artwork
                     self.fetchArtwork(player: player, urlString: artURL)
+                } else {
+                    // Track is the same. If status is unknown, preserve our local toggled state.
+                    if isLovedStr != "unknown" {
+                        self.isLiked = (isLovedStr == "true")
+                    }
                 }
             }
         }
