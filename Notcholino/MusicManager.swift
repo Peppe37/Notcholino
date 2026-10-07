@@ -259,10 +259,14 @@ final class MusicManager: NSObject, ObservableObject {
         runOsascript("""
         if application "Spotify" is running then
             tell application "System Events"
-                tell process "Spotify"
-                    keystroke "b" using {option down, shift down}
-                end tell
+                set frontApp to name of first application process whose frontmost is true
             end tell
+            tell application "Spotify" to activate
+            delay 0.1
+            tell application "System Events"
+                keystroke "b" using {option down, shift down}
+            end tell
+            tell application frontApp to activate
         else if application "Music" is running then
             tell application "Music"
                 if loved of current track is true then
