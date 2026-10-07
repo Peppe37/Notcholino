@@ -156,7 +156,7 @@ struct NotchContentView: View {
 
     private var isSystemHudActive: Bool {
         switch sysEvt.currentMode {
-        case .volume, .brightness, .micMute, .mediaKey: return true
+        case .volume, .brightness: return true
         default: return false
         }
     }
@@ -180,8 +180,7 @@ struct NotchContentView: View {
             return isSystemHudActive ? baseH + 46 : baseH
         } else {
             switch sysEvt.currentMode {
-            case .volume, .brightness, .mediaKey: return 80
-            case .micMute: return 70
+            case .volume, .brightness: return 60
             default: return baseH
             }
         }
@@ -216,7 +215,7 @@ struct NotchContentView: View {
                             
                             if isSystemHudActive {
                                 activeContent
-                                    .frame(height: isHovering ? 46 : expandH)
+                                    .frame(height: isHovering ? 46 : 60)
                                     .scaleEffect(isHovering ? 0.7 : 1.0)
                             }
                         }
@@ -335,18 +334,14 @@ struct NotchContentView: View {
         case .volume(let v):
             SystemHUDView(
                 icon: v == 0 ? "speaker.slash.fill" : (v < 0.4 ? "speaker.wave.1.fill" : "speaker.wave.3.fill"),
-                label: "Volume",
                 value: CGFloat(v),
-                color: .white
+                isVolume: true
             )
         case .brightness(let b):
-            SystemHUDView(icon: "sun.max.fill", label: "Brightness", value: CGFloat(b), color: .yellow)
+            SystemHUDView(icon: "sun.max.fill", value: CGFloat(b), isVolume: false)
 
-        case .mediaKey(let k):
-            MediaKeyHUDView(event: k, music: music)
-
-        case .micMute(let m):
-            MicHUDView(muted: m)
+        case .mediaKey, .micMute:
+            EmptyView()
 
         default:
             VStack(spacing: 0) {
@@ -383,39 +378,57 @@ struct NotchContentView: View {
 
 struct SystemHUDView: View {
     let icon:  String
-    let label: String
     let value: CGFloat
-    let color: Color
+    let isVolume: Bool
+
+    @AppStorage("sysHudTheme")    private var theme = 1
+    @AppStorage("sysHudShowText") private var showText = true
+    @AppStorage("sysHudUseDB")    private var useDB = false
+
+    private var barColor: Color {
+        if theme == 0 { return .white }
+        if !isVolume { return .yellow }
+        
+        // Dynamic volume color
+        if value > 0.8 { return .red }
+        if value > 0.6 { return .yellow }
+        return .white
+    }
+
+    private var textString: String {
+        if isVolume && useDB {
+            let db = -60.0 + (Double(value) * 60.0)
+            if value == 0 { return "-∞ dB" }
+            return String(format: "%.1f dB", db)
+        } else {
+            return "\(Int(value * 100))%"
+        }
+    }
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(color)
-                .frame(width: 32)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(barColor)
+                .frame(width: 24)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text(label)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.8))
-
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.white.opacity(0.15)).frame(height: 8)
-                        Capsule().fill(color)
-                            .frame(width: max(8, geo.size.width * value), height: 8)
-                    }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.15)).frame(height: 6)
+                    Capsule().fill(barColor)
+                        .frame(width: max(6, geo.size.width * value), height: 6)
                 }
-                .frame(height: 8)
             }
+            .frame(height: 6)
 
-            Text("\(Int(value * 100))%")
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.6))
-                .frame(width: 40, alignment: .trailing)
+            if showText {
+                Text(textString)
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .frame(width: 50, alignment: .trailing)
+            }
         }
         .padding(.horizontal, 24)
-        .padding(.vertical, 16)
     }
 }
 

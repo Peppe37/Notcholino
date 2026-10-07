@@ -55,19 +55,19 @@ final class SystemEventsManager: ObservableObject {
                 case 0, 1, 7: // volume up, down, mute
                     let vol = self.readVolume()
                     self.systemVolume = vol
-                    self.showHUD(.volume(vol))
+                    if UserDefaults.standard.object(forKey: "soundEnabled") as? Bool ?? true {
+                        self.showHUD(.volume(vol))
+                    }
                 case 2: // brightness up
                     self.brightness = min(1.0, self.brightness + 0.0625)
-                    self.showHUD(.brightness(self.brightness))
+                    if UserDefaults.standard.object(forKey: "displayEnabled") as? Bool ?? true {
+                        self.showHUD(.brightness(self.brightness))
+                    }
                 case 3: // brightness down
                     self.brightness = max(0.0, self.brightness - 0.0625)
-                    self.showHUD(.brightness(self.brightness))
-                case 16:
-                    self.showHUD(.mediaKey(.play))
-                case 17, 19:
-                    self.showHUD(.mediaKey(.next))
-                case 18, 20:
-                    self.showHUD(.mediaKey(.previous))
+                    if UserDefaults.standard.object(forKey: "displayEnabled") as? Bool ?? true {
+                        self.showHUD(.brightness(self.brightness))
+                    }
                 default: break
                 }
             }

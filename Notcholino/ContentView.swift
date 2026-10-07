@@ -222,15 +222,24 @@ struct FocusSettingsView: View {
     }
 }
 
-// MARK: - Display Settings (placeholder)
+// MARK: - Display Settings
 
 struct DisplaySettingsView: View {
     @AppStorage("displayEnabled") private var enabled = true
+    @AppStorage("sysHudTheme")    private var theme = 1
+    @AppStorage("sysHudShowText") private var showText = true
 
     var body: some View {
         Form {
             Section {
                 Toggle("Show display brightness changes", isOn: $enabled)
+            }
+            Section("Appearance") {
+                Picker("Theme", selection: $theme) {
+                    Text("Monochrome").tag(0)
+                    Text("Dynamic").tag(1)
+                }
+                Toggle("Show percentage text", isOn: $showText)
             }
         }
         .formStyle(.grouped)
@@ -238,15 +247,27 @@ struct DisplaySettingsView: View {
     }
 }
 
-// MARK: - Sound Settings (placeholder)
+// MARK: - Sound Settings
 
 struct SoundSettingsView: View {
-    @AppStorage("soundEnabled") private var enabled = true
+    @AppStorage("soundEnabled")   private var enabled = true
+    @AppStorage("sysHudTheme")    private var theme = 1
+    @AppStorage("sysHudShowText") private var showText = true
+    @AppStorage("sysHudUseDB")    private var useDB = false
 
     var body: some View {
         Form {
             Section {
                 Toggle("Show volume changes", isOn: $enabled)
+            }
+            Section("Appearance") {
+                Picker("Theme", selection: $theme) {
+                    Text("Monochrome").tag(0)
+                    Text("Dynamic").tag(1)
+                }
+                Toggle("Show volume text", isOn: $showText)
+                Toggle("Use Decibels (dB)", isOn: $useDB)
+                    .disabled(!showText)
             }
         }
         .formStyle(.grouped)
