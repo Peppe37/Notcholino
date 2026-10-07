@@ -244,8 +244,10 @@ struct NotchContentView: View {
             .animation(.spring(response: 0.3,  dampingFraction: 0.8),  value: sysEvt.currentMode)
             .animation(.spring(response: 0.3,  dampingFraction: 0.8),  value: isPlayingCompact)
             .onAppear { publishLayout() }
-            .onChange(of: curW) { _ in publishLayout() }
-            .onChange(of: curH) { _ in publishLayout() }
+            .onChange(of: isHovering) { _ in publishLayout() }
+            .onChange(of: sysEvt.currentMode) { _ in publishLayout() }
+            .onChange(of: music.isPlaying) { _ in publishLayout() }
+            .onChange(of: activeTab) { _ in publishLayout() }
             .onHover { setHovering($0) }
             .onReceive(NotificationCenter.default.publisher(for: .notchMouseLeft)) { _ in setHovering(false) }
             // Horizontal swipe
