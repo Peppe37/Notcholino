@@ -264,6 +264,8 @@ struct NowPlayingSettingsView: View {
     @AppStorage("npRightAccessory")    private var rightAccessory = "repeat"
     @AppStorage("npColorStyle")        private var colorStyle = 2
     @AppStorage("npLiveWaveform")      private var liveWaveform = true
+    @AppStorage("spotifyClientID")     private var spotifyClientID = ""
+    @ObservedObject private var spotify = SpotifyAuth.shared
 
     var body: some View {
         Form {
@@ -296,6 +298,28 @@ struct NowPlayingSettingsView: View {
                     Text("Like").tag("like")
                     Text("Devices").tag("devices")
                 }
+            }
+
+            Section {
+                TextField("Client ID", text: $spotifyClientID)
+                HStack {
+                    Text(spotify.isConnected ? "Connected" : "Not connected")
+                        .foregroundStyle(spotify.isConnected ? .green : .secondary)
+                    Spacer()
+                    if spotify.isConnected {
+                        Button("Disconnect") { spotify.disconnect() }
+                    } else {
+                        Button("Connect") { spotify.connect() }
+                            .disabled(spotifyClientID.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+                if let err = spotify.lastError {
+                    Text(err).font(.caption).foregroundStyle(.red)
+                }
+            } header: {
+                Text("Spotify Likes")
+            } footer: {
+                Text("Create an app at developer.spotify.com/dashboard, add the redirect URI \(SpotifyAuth.redirectURI), then paste its Client ID here.")
             }
 
             Section("Appearance") {

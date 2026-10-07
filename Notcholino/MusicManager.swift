@@ -13,6 +13,7 @@ final class MusicManager: NSObject, ObservableObject {
     @Published var isShuffleEnabled: Bool = false
     @Published var isRepeatEnabled:  Bool = false
     @Published var isLiked:          Bool = false
+    private var spotifyTrackURI = ""
 
     private var pollTimer: Timer?
     private var tickTimer: Timer?
@@ -53,7 +54,7 @@ final class MusicManager: NSObject, ObservableObject {
                     set artURL to artwork url of current track
                     set shuf to shuffling
                     set rep to repeating
-                    set out to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL & "|||" & (shuf as string) & "|||" & (rep as string) & "|||unknown"
+                    set out to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL & "|||" & (shuf as string) & "|||" & (rep as string) & "|||unknown|||" & (id of current track)
                 end if
             end tell
         end if
@@ -97,6 +98,7 @@ final class MusicManager: NSObject, ObservableObject {
             let isShuffling = (parts.count > 6) ? (parts[6] == "true") : false
             let isRepeating = (parts.count > 7) ? (parts[7] == "true" || parts[7] == "all" || parts[7] == "one") : false
             let isLovedStr  = (parts.count > 8) ? parts[8] : "false"
+            let trackURI    = (player == "Spotify" && parts.count > 9) ? parts[9] : ""
 
             DispatchQueue.main.async {
                 self.activePlayer  = player
@@ -111,8 +113,10 @@ final class MusicManager: NSObject, ObservableObject {
                     self.trackPosition = position
                     self.trackName = tName
                     
-                    // If unknown (Spotify), we default to false on new track.
+                    // If unknown (Spotify), default to false until the Web API answers.
                     self.isLiked = (isLovedStr == "true")
+                    self.spotifyTrackURI = trackURI
+                    self.refreshSpotifyLike(uri: trackURI)
                     
                     // Load new artwork
                     self.fetchArtwork(player: player, urlString: artURL)
@@ -255,7 +259,27 @@ final class MusicManager: NSObject, ObservableObject {
         """) { _ in }
     }
 
+    private func refreshSpotifyLike(uri: String) {
+        guard !uri.isEmpty, SpotifyAuth.shared.isConnected else { return }
+        Task {
+            guard let saved = await SpotifyAuth.shared.isSaved(trackURI: uri) else { return }
+            await MainActor.run {
+                if self.spotifyTrackURI == uri { self.isLiked = saved }
+            }
+        }
+    }
+
     func toggleLike() {
+        if activePlayer == "Spotify" {
+            let uri = spotifyTrackURI
+            let target = !isLiked   // the view flips isLiked right after this call
+            guard !uri.isEmpty, SpotifyAuth.shared.isConnected else { return }
+            Task {
+                let ok = await SpotifyAuth.shared.setSaved(target, trackURI: uri)
+                if !ok { await MainActor.run { if self.spotifyTrackURI == uri { self.isLiked = !target } } }
+            }
+            return
+        }
         runOsascript("""
         if application "Music" is running then
             tell application "Music"

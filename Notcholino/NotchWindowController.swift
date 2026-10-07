@@ -452,6 +452,8 @@ struct NowPlayingNotchView: View {
     @AppStorage("npRightAccessory") private var rightAccessory = "repeat"
     @AppStorage("npLiveWaveform")   private var liveWaveform   = true
 
+    @ObservedObject private var spotify = SpotifyAuth.shared
+
     @State private var isDraggingSeek = false
     @State private var seekPreview:    Double = 0
     @State private var iconScale: CGFloat = 1.0
@@ -601,9 +603,11 @@ struct NowPlayingNotchView: View {
                 music.isRepeatEnabled.toggle()
             }
         case "like":
-            if music.activePlayer == "Spotify" {
-                // Spotify non supporta i preferiti via AppleScript
-                IconButton(icon: "heart.slash", size: 15, opacity: 0.3, color: .gray) { }
+            if music.activePlayer == "Spotify" && !spotify.isConnected {
+                // Likes on Spotify go through the Web API: connect first
+                IconButton(icon: "heart.slash", size: 15, opacity: 0.3, color: .gray) {
+                    if !spotify.clientID.isEmpty { spotify.connect() }
+                }
             } else {
                 let isLiked = music.isLiked
                 IconButton(icon: isLiked ? "heart.fill" : "heart", size: 15, opacity: isLiked ? 1.0 : 0.5, color: isLiked ? .green : .white) {
