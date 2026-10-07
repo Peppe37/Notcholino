@@ -249,7 +249,13 @@ final class MusicManager: NSObject, ObservableObject {
 
     func toggleLike() {
         runOsascript("""
-        if application "Music" is running then
+        if application "Spotify" is running then
+            tell application "System Events"
+                tell process "Spotify"
+                    keystroke "b" using {option down, shift down}
+                end tell
+            end tell
+        else if application "Music" is running then
             tell application "Music"
                 if loved of current track is true then
                     set loved of current track to false
