@@ -199,6 +199,38 @@ final class MusicManager: NSObject, ObservableObject {
         """) { _ in }
     }
 
+    func toggleShuffle() {
+        runOsascript("""
+        if application "Spotify" is running then
+            tell application "Spotify" to set shuffling to not shuffling
+        else if application "Music" is running then
+            tell application "Music" to set shuffle enabled to not shuffle enabled
+        end if
+        """) { _ in }
+    }
+
+    func toggleRepeat() {
+        runOsascript("""
+        if application "Spotify" is running then
+            tell application "Spotify"
+                if repeating then
+                    set repeating to false
+                else
+                    set repeating to true
+                end if
+            end tell
+        else if application "Music" is running then
+            tell application "Music"
+                if song repeat is off then
+                    set song repeat to all
+                else
+                    set song repeat to off
+                end if
+            end tell
+        end if
+        """) { _ in }
+    }
+
 
     // MARK: - Helpers
 

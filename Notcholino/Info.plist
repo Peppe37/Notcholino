@@ -24,5 +24,7 @@
 	<string>Notcholino needs Apple Events access to control music players.</string>
 	<key>NSAppleScriptEnabled</key>
 	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Notcholino needs access to display your upcoming events.</string>
 </dict>
 </plist>

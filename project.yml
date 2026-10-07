@@ -21,3 +21,4 @@ targets:
         LSUIElement: true
         NSAppleEventsUsageDescription: "Notcholino needs Apple Events access to control music players."
         NSAppleScriptEnabled: true
+        NSCalendarsFullAccessUsageDescription: "Notcholino needs access to display your upcoming events."

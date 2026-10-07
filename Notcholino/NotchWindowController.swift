@@ -32,7 +32,7 @@ class NotchWindowController: NSWindowController {
         }
 
         let W: CGFloat = 520
-        let H: CGFloat = 280
+        let H: CGFloat = 310
 
         let panel = NSPanel(
             contentRect: NSRect(
@@ -94,6 +94,7 @@ struct NotchContentView: View {
 
     @StateObject private var music   = MusicManager()
     @StateObject private var sysEvt  = SystemEventsManager()
+    @StateObject private var calMgr  = CalendarManager()
 
     @AppStorage("notchWidth")  private var tuningW: Double = 0
     @AppStorage("notchHeight") private var tuningH: Double = 0
@@ -126,8 +127,8 @@ struct NotchContentView: View {
         case .volume, .brightness:  return 80
         case .micMute:              return 70
         case .mediaKey:             return 80
-        case .music:                return 180
-        case .calendar:             return 200
+        case .music:                return 180 + 24 // Added 24pt for hardware notch clearance
+        case .calendar:             return 200 + 24
         }
     }
 
@@ -140,6 +141,7 @@ struct NotchContentView: View {
                 // Invisible footprint to maintain size and catch hover
                 Color.clear
                     .frame(width: curW, height: curH)
+                    .contentShape(NotchShape(cornerRadius: isExpanded ? 28 : 10, flareRadius: flare))
 
                 // Content Layer
                 Group {
@@ -206,6 +208,7 @@ struct NotchContentView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .environmentObject(calMgr)
     }
 
     private var isMusicMode: Bool {
@@ -262,12 +265,15 @@ struct NotchContentView: View {
 
         default:
             VStack(spacing: 0) {
+                // Hardware notch clearance spacer
+                Spacer().frame(height: 24)
+                
                 if isMusicMode {
                     HStack(spacing: 6) {
                         Circle().fill(activeTab == 0 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
                         Circle().fill(activeTab == 1 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
                     }
-                    .padding(.top, 10)
+                    .padding(.top, 4)
                     .allowsHitTesting(false)
                 }
 
@@ -403,6 +409,7 @@ struct NowPlayingNotchView: View {
 
     @State private var isDraggingSeek = false
     @State private var seekPreview:    Double = 0
+    @State private var iconScale: CGFloat = 1.0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -499,43 +506,73 @@ struct NowPlayingNotchView: View {
             .padding(.horizontal, 24)
             .padding(.top, 12)
 
-            HStack(spacing: 0) {
-                if showShuffle {
-                    IconButton(icon: "shuffle", size: 15, opacity: 0.5) { }
+            // Fixed layout for buttons so they don't move around
+            ZStack {
+                // Left-aligned accessories
+                HStack {
+                    if showShuffle {
+                        IconButton(icon: "shuffle", size: 15, opacity: 0.5) {
+                            music.toggleShuffle()
+                        }
+                    }
                     Spacer()
                 }
-
-                Spacer()
-                IconButton(icon: "backward.fill", size: 22) { music.previousTrack() }
-                Spacer().frame(width: 28)
                 
-                Button {
-                    music.playPause()
-                } label: {
-                    ZStack {
-                        Circle().fill(Color.white.opacity(0.15)).frame(width: 44, height: 44)
-                        Image(systemName: music.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(.white)
+                // Center-aligned main controls
+                HStack(spacing: 28) {
+                    IconButton(icon: "backward.fill", size: 22) {
+                        music.previousTrack()
+                    }
+                    
+                    Button {
+                        togglePlayWithAnimation()
+                    } label: {
+                        ZStack {
+                            Circle().fill(Color.white.opacity(0.15)).frame(width: 44, height: 44)
+                            Image(systemName: music.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundStyle(.white)
+                                .scaleEffect(iconScale)
+                                .contentTransition(.symbolEffect(.replace))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .highPriorityGesture(TapGesture().onEnded { togglePlayWithAnimation() })
+
+                    IconButton(icon: "forward.fill", size: 22) {
+                        music.nextTrack()
                     }
                 }
-                .buttonStyle(.plain)
-                .highPriorityGesture(TapGesture().onEnded { music.playPause() })
-
-                Spacer().frame(width: 28)
-                IconButton(icon: "forward.fill", size: 22) { music.nextTrack() }
-                Spacer()
-
-                if showRepeat    { Spacer(); IconButton(icon: "repeat", size: 15, opacity: 0.5) { } }
-                if showFavorites { Spacer(); IconButton(icon: "heart",  size: 15, opacity: 0.5) { } }
-                if !showRepeat && !showFavorites {
-                    IconButton(icon: "airplayaudio", size: 15, opacity: 0.5) { }
+                
+                // Right-aligned accessories
+                HStack {
                     Spacer()
+                    if showRepeat {
+                        IconButton(icon: "repeat", size: 15, opacity: 0.5) {
+                            music.toggleRepeat()
+                        }
+                    } else if showFavorites {
+                        IconButton(icon: "heart",  size: 15, opacity: 0.5) { }
+                    } else {
+                        IconButton(icon: "airplayaudio", size: 15, opacity: 0.5) { }
+                    }
                 }
             }
             .padding(.horizontal, 24)
             .padding(.top, 10)
             .padding(.bottom, 16)
+        }
+    }
+    
+    private func togglePlayWithAnimation() {
+        music.playPause()
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
+            iconScale = 0.7
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
+                iconScale = 1.0
+            }
         }
     }
 }
@@ -611,6 +648,7 @@ struct IconButton: View {
 // MARK: - Calendar Notch View
 
 struct CalendarNotchView: View {
+    @EnvironmentObject var calMgr: CalendarManager
     @AppStorage("calDisplayMode") private var displayMode = 0
 
     private var cal:   Calendar { .current }
@@ -652,17 +690,34 @@ struct CalendarNotchView: View {
                 Spacer()
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("No events today")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.8))
-                    Text("Your schedule is clear")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.5))
+                    if let event = calMgr.upcomingEvent {
+                        Text(event.title)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.8))
+                            .lineLimit(1)
+                        Text("\(calMgr.formatTime(event.startDate)) - \(calMgr.formatTime(event.endDate))")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.5))
+                    } else if calMgr.hasAccess {
+                        Text("No events today")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.8))
+                        Text("Your schedule is clear")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.5))
+                    } else {
+                        Text("No Calendar Access")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.8))
+                        Text("Please grant permission")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.red.opacity(0.8))
+                    }
                 }
                 .padding(.bottom, 20)
             }
             .padding(.leading, 32)
-            .padding(.top, 24)
+            .padding(.top, 16)
 
             if displayMode == 0 {
                 Spacer()
@@ -697,7 +752,7 @@ struct CalendarNotchView: View {
                     }
                 }
                 .padding(.trailing, 28)
-                .padding(.top, 24)
+                .padding(.top, 16)
             }
         }
     }
