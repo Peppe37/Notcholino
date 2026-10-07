@@ -163,7 +163,7 @@ struct NotchContentView: View {
 
     private var pillW: CGFloat {
         let base = baseW + CGFloat(tuningW) + flare * 2
-        return isPlayingCompact ? base + 90 : base // Add extra width for compact icons
+        return isPlayingCompact ? base + 130 : base // Extra width to clear wide MacBook Pro hardware notches
     }
     
     private var pillH: CGFloat { baseH + CGFloat(tuningH) }
@@ -317,14 +317,14 @@ struct NotchContentView: View {
                         .foregroundStyle(.white)
                 }
             }
-            .padding(.leading, 8)
+            .padding(.leading, flare + 14)
 
             Spacer()
 
             // Right: Waveform
             WaveformView(isPlaying: true, fill: AnyShapeStyle(music.primaryColor))
                 .frame(width: 24, height: 14)
-                .padding(.trailing, 8)
+                .padding(.trailing, flare + 14)
         }
     }
 
