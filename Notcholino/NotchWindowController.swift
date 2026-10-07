@@ -21,6 +21,7 @@ extension Notification.Name {
     static let notchScrollWheel = Notification.Name("notchScrollWheel")
     static let notchLayoutChanged = Notification.Name("notchLayoutChanged")
     static let notchMouseLeft = Notification.Name("notchMouseLeft")
+    static let notchMouseEntered = Notification.Name("notchMouseEntered")
 }
 
 // MARK: - Window Controller
@@ -101,7 +102,11 @@ class NotchWindowController: NSWindowController {
         guard window.ignoresMouseEvents == inside else { return }
         window.ignoresMouseEvents = !inside
         // A window that ignores events never gets mouseExited, so tell the view
-        if !inside { NotificationCenter.default.post(name: .notchMouseLeft, object: nil) }
+        if inside {
+            NotificationCenter.default.post(name: .notchMouseEntered, object: nil)
+        } else {
+            NotificationCenter.default.post(name: .notchMouseLeft, object: nil)
+        }
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -248,7 +253,7 @@ struct NotchContentView: View {
             .onChange(of: sysEvt.currentMode) { _ in publishLayout() }
             .onChange(of: music.isPlaying) { _ in publishLayout() }
             .onChange(of: activeTab) { _ in publishLayout() }
-            .onHover { setHovering($0) }
+            .onReceive(NotificationCenter.default.publisher(for: .notchMouseEntered)) { _ in setHovering(true) }
             .onReceive(NotificationCenter.default.publisher(for: .notchMouseLeft)) { _ in setHovering(false) }
             // Horizontal swipe
             .simultaneousGesture(
