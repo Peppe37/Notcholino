@@ -439,24 +439,14 @@ struct NowPlayingNotchView: View {
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.white.opacity(0.6))
                         .lineLimit(1)
-
-                    if music.isPlaying && liveWaveform {
-                        WaveformView(isPlaying: music.isPlaying, color: .green)
-                            .frame(height: 14)
-                            .padding(.top, 2)
-                    }
                 }
 
                 Spacer()
 
-                Group {
-                    if music.activePlayer == "Spotify" {
-                        Image(systemName: "waveform.circle.fill").foregroundStyle(.green)
-                    } else if music.activePlayer == "Music" {
-                        Image(systemName: "music.note.list").foregroundStyle(.pink)
-                    }
+                if music.isPlaying && liveWaveform {
+                    WaveformView(isPlaying: music.isPlaying, color: music.activePlayer == "Music" ? .pink : .green)
+                        .frame(width: 24, height: 16)
                 }
-                .font(.system(size: 18))
             }
             .padding(.horizontal, 24)
             .padding(.top, 14)
