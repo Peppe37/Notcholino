@@ -134,7 +134,7 @@ struct NotchShape: Shape {
 // MARK: - Main Notch Content View
 
 struct NotchContentView: View {
-    @State private var isExpanded   = false
+    @State private var isHovering   = false
     @State private var activeTab    = 0   // 0=music 1=calendar
     @State private var collapseTask: Task<Void, Never>?
 
@@ -151,7 +151,14 @@ struct NotchContentView: View {
     private let flare: CGFloat = 12
 
     private var isPlayingCompact: Bool {
-        music.isPlaying && !isExpanded && sysEvt.currentMode == .music
+        music.isPlaying && !isHovering && !isSystemHudActive
+    }
+
+    private var isSystemHudActive: Bool {
+        switch sysEvt.currentMode {
+        case .volume, .brightness, .micMute, .mediaKey: return true
+        default: return false
+        }
     }
 
     private var pillW: CGFloat {
@@ -163,19 +170,25 @@ struct NotchContentView: View {
 
     // Expanded size based on mode
     private var expandW: CGFloat {
-        switch sysEvt.currentMode {
-        case .volume, .brightness, .micMute, .mediaKey: return 340
-        default: return 400
+        if isHovering { return 400 }
+        return isSystemHudActive ? 340 : 400
+    }
+    
+    private var expandH: CGFloat {
+        let baseH: CGFloat = (activeTab == 0) ? (180 + 24) : (200 + 24)
+        if isHovering {
+            return isSystemHudActive ? baseH + 46 : baseH
+        } else {
+            switch sysEvt.currentMode {
+            case .volume, .brightness, .mediaKey: return 80
+            case .micMute: return 70
+            default: return baseH
+            }
         }
     }
-    private var expandH: CGFloat {
-        switch sysEvt.currentMode {
-        case .volume, .brightness:  return 80
-        case .micMute:              return 70
-        case .mediaKey:             return 80
-        case .music:                return 180 + 24 // Added 24pt for hardware notch clearance
-        case .calendar:             return 200 + 24
-        }
+
+    private var isExpanded: Bool {
+        return isHovering || isSystemHudActive
     }
 
     private var curW: CGFloat { isExpanded ? expandW : pillW }
@@ -192,9 +205,23 @@ struct NotchContentView: View {
                 // Content Layer
                 Group {
                     if isExpanded {
-                        activeContent
-                            .frame(width: expandW, height: expandH)
-                            .transition(.opacity)
+                        VStack(spacing: 0) {
+                            if isHovering || !isSystemHudActive {
+                                if activeTab == 0 {
+                                    NowPlayingNotchView(music: music)
+                                } else {
+                                    CalendarNotchView()
+                                }
+                            }
+                            
+                            if isSystemHudActive {
+                                activeContent
+                                    .frame(height: isHovering ? 46 : expandH)
+                                    .scaleEffect(isHovering ? 0.7 : 1.0)
+                            }
+                        }
+                        .frame(width: expandW, height: expandH)
+                        .transition(.opacity)
                     } else if isPlayingCompact {
                         compactMusicContent
                             .frame(width: pillW, height: pillH)
@@ -253,12 +280,12 @@ struct NotchContentView: View {
     private func setHovering(_ hovering: Bool) {
         collapseTask?.cancel()
         if hovering {
-            withAnimation { isExpanded = true }
+            withAnimation { isHovering = true }
         } else {
             collapseTask = Task {
                 try? await Task.sleep(nanoseconds: 400_000_000)
                 guard !Task.isCancelled else { return }
-                await MainActor.run { withAnimation { isExpanded = false } }
+                await MainActor.run { withAnimation { isHovering = false } }
             }
         }
     }

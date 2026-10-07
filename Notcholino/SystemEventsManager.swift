@@ -56,7 +56,11 @@ final class SystemEventsManager: ObservableObject {
                     let vol = self.readVolume()
                     self.systemVolume = vol
                     self.showHUD(.volume(vol))
-                case 2, 3:    // brightness up, down
+                case 2: // brightness up
+                    self.brightness = min(1.0, self.brightness + 0.0625)
+                    self.showHUD(.brightness(self.brightness))
+                case 3: // brightness down
+                    self.brightness = max(0.0, self.brightness - 0.0625)
                     self.showHUD(.brightness(self.brightness))
                 case 16:
                     self.showHUD(.mediaKey(.play))
@@ -102,7 +106,7 @@ final class SystemEventsManager: ObservableObject {
         addr = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyVolumeScalar,
             mScope:    kAudioDevicePropertyScopeOutput,
-            mElement:  1) // channel 1
+            mElement:  kAudioObjectPropertyElementMain)
         let status = AudioObjectGetPropertyData(deviceID, &addr, 0, nil, &propSize, &vol)
         return status == noErr ? vol : 0.5
     }
