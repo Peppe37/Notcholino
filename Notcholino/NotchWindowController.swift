@@ -870,7 +870,7 @@ struct CalendarNotchView: View {
                         }
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            if let url = URL(string: "ical://") {
+                            if let url = calMgr.url(for: event) {
                                 NSWorkspace.shared.open(url)
                             }
                         }
@@ -923,6 +923,12 @@ struct CalendarNotchView: View {
                                         .foregroundStyle(t.isEmpty ? .clear : t == dayNum ? .white : .white.opacity(0.6))
                                 }
                                 .frame(width: 22, height: 20)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    if !t.isEmpty, let d = Int(t), let url = calMgr.url(forDay: d) {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                }
                             }
                         }
                     }

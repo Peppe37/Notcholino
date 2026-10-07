@@ -95,4 +95,18 @@ final class CalendarManager: ObservableObject {
         f.timeStyle = .short
         return f.string(from: date)
     }
+    
+    func url(for event: EKEvent) -> URL? {
+        let interval = event.startDate.timeIntervalSinceReferenceDate
+        return URL(string: "calshow:\(interval)")
+    }
+    
+    func url(forDay day: Int) -> URL? {
+        var comps = Calendar.current.dateComponents([.year, .month], from: Date())
+        comps.day = day
+        if let target = Calendar.current.date(from: comps) {
+            return URL(string: "calshow:\(target.timeIntervalSinceReferenceDate)")
+        }
+        return nil
+    }
 }
