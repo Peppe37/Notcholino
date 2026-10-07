@@ -32,11 +32,10 @@ class NotchWindowController: NSWindowController {
     private var notchSize = NSSize(width: 174, height: 32)
     private var monitors: [Any] = []
 
-    init() {
-        guard let screen = NSScreen.main else {
-            super.init(window: nil)
-            return
-        }
+    let targetScreen: NSScreen
+
+    init(screen: NSScreen) {
+        self.targetScreen = screen
 
         let W: CGFloat = 520
         let H: CGFloat = 310

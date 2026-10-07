@@ -31,10 +31,44 @@ struct OpenSettingsButton: View {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-    var notchWindowController: NotchWindowController?
+    var notchControllers: [NotchWindowController] = []
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        notchWindowController = NotchWindowController()
-        notchWindowController?.window?.orderFront(nil)
+        setupNotches()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(setupNotches), name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        UserDefaults.standard.addObserver(self, forKeyPath: "displayScreens", options: .new, context: nil)
+    }
+    
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == "displayScreens" {
+            setupNotches()
+        }
+    }
+    
+    @objc private func setupNotches() {
+        // Close existing notches
+        for controller in notchControllers {
+            controller.close()
+        }
+        notchControllers.removeAll()
+        
+        let displayScreens = UserDefaults.standard.integer(forKey: "displayScreens")
+        
+        if displayScreens == 1 {
+            // All screens
+            for screen in NSScreen.screens {
+                let controller = NotchWindowController(screen: screen)
+                controller.window?.orderFront(nil)
+                notchControllers.append(controller)
+            }
+        } else {
+            // Main screen only (first screen is always the primary display with menu bar)
+            if let primaryScreen = NSScreen.screens.first {
+                let controller = NotchWindowController(screen: primaryScreen)
+                controller.window?.orderFront(nil)
+                notchControllers.append(controller)
+            }
+        }
     }
 }
