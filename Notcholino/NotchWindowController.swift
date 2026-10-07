@@ -880,9 +880,7 @@ struct CalendarNotchView: View {
                         }
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            if let url = calMgr.url(for: event) {
-                                NSWorkspace.shared.open(url)
-                            }
+                            calMgr.openCalendar(at: event.startDate)
                         }
                     } else if calMgr.hasAccess {
                         Text("No events today")
@@ -935,8 +933,12 @@ struct CalendarNotchView: View {
                                 .frame(width: 22, height: 20)
                                 .contentShape(Rectangle())
                                 .onTapGesture {
-                                    if !t.isEmpty, let d = Int(t), let url = calMgr.url(forDay: d) {
-                                        NSWorkspace.shared.open(url)
+                                    if !t.isEmpty, let d = Int(t) {
+                                        var comps = Calendar.current.dateComponents([.year, .month], from: Date())
+                                        comps.day = d
+                                        if let target = Calendar.current.date(from: comps) {
+                                            calMgr.openCalendar(at: target)
+                                        }
                                     }
                                 }
                             }

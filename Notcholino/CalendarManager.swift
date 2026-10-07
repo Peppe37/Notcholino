@@ -96,17 +96,35 @@ final class CalendarManager: ObservableObject {
         return f.string(from: date)
     }
     
-    func url(for event: EKEvent) -> URL? {
-        let interval = event.startDate.timeIntervalSinceReferenceDate
-        return URL(string: "calshow:\(interval)")
-    }
-    
-    func url(forDay day: Int) -> URL? {
-        var comps = Calendar.current.dateComponents([.year, .month], from: Date())
-        comps.day = day
-        if let target = Calendar.current.date(from: comps) {
-            return URL(string: "calshow:\(target.timeIntervalSinceReferenceDate)")
+    func openCalendar(at date: Date) {
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+        
+        guard let y = comps.year, let m = comps.month, let d = comps.day,
+              let h = comps.hour, let min = comps.minute, let s = comps.second else { return }
+              
+        let scriptSource = """
+        tell application "Calendar"
+            activate
+            set targetDate to current date
+            set year of targetDate to \(y)
+            set month of targetDate to \(m)
+            set day of targetDate to \(d)
+            set hours of targetDate to \(h)
+            set minutes of targetDate to \(min)
+            set seconds of targetDate to \(s)
+            view calendar at targetDate
+        end tell
+        """
+        
+        if let script = NSAppleScript(source: scriptSource) {
+            DispatchQueue.global(qos: .userInitiated).async {
+                var error: NSDictionary?
+                script.executeAndReturnError(&error)
+                if let err = error {
+                    print("Calendar AppleScript Error: \(err)")
+                }
+            }
         }
-        return nil
     }
 }
