@@ -401,17 +401,7 @@ struct SystemHUDView: View {
     }
 
     private var textString: String {
-        if isVolume {
-            if soundTheme == 1 { // Theme 1 is Decibel
-                let db = -60.0 + (Double(value) * 60.0)
-                if value == 0 { return "-∞ dB" }
-                return String(format: "%.1f dB", db)
-            } else {
-                return "\(Int(value * 100))%"
-            }
-        } else {
-            return "\(Int(value * 100))%"
-        }
+        return "\(Int(value * 100))%"
     }
     
     private var showText: Bool {
