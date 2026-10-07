@@ -7,7 +7,6 @@ final class NotchHostingView: NSHostingView<AnyView> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override var acceptsFirstResponder: Bool { true }
 
-    // Route scroll wheel events as a notification (most reliable for nonactivatingPanel)
     override func scrollWheel(with event: NSEvent) {
         let delta = event.scrollingDeltaY
         NotificationCenter.default.post(
@@ -104,23 +103,31 @@ struct NotchContentView: View {
     private let baseH: CGFloat = 32
     private let flare: CGFloat = 12
 
-    private var pillW: CGFloat { baseW + CGFloat(tuningW) + flare * 2 }
+    private var isPlayingCompact: Bool {
+        music.isPlaying && !isExpanded && sysEvt.currentMode == .music
+    }
+
+    private var pillW: CGFloat {
+        let base = baseW + CGFloat(tuningW) + flare * 2
+        return isPlayingCompact ? base + 90 : base // Add extra width for compact icons
+    }
+    
     private var pillH: CGFloat { baseH + CGFloat(tuningH) }
 
     // Expanded size based on mode
     private var expandW: CGFloat {
         switch sysEvt.currentMode {
-        case .volume, .brightness, .micMute, .mediaKey: return 300
-        default: return 380
+        case .volume, .brightness, .micMute, .mediaKey: return 340
+        default: return 400
         }
     }
     private var expandH: CGFloat {
         switch sysEvt.currentMode {
         case .volume, .brightness:  return 80
-        case .micMute:              return 64
-        case .mediaKey:             return 72
-        case .music:                return 170
-        case .calendar:             return 190
+        case .micMute:              return 70
+        case .mediaKey:             return 80
+        case .music:                return 180
+        case .calendar:             return 200
         }
     }
 
@@ -130,27 +137,33 @@ struct NotchContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
-                // Black background
-                NotchShape(cornerRadius: isExpanded ? 26 : 10, flareRadius: flare)
-                    .fill(Color.black)
-                    .frame(width: curW, height: curH)
-                    .shadow(color: .black.opacity(isExpanded ? 0.55 : 0), radius: 22, y: 14)
-
-                // Content — clipped to shape
+                // Content Layer
                 Group {
                     if isExpanded {
                         activeContent
                             .frame(width: expandW, height: expandH)
                             .transition(.opacity)
+                    } else if isPlayingCompact {
+                        compactMusicContent
+                            .frame(width: pillW, height: pillH)
+                            .transition(.opacity)
                     }
                 }
-                .clipShape(NotchShape(cornerRadius: isExpanded ? 26 : 10, flareRadius: flare))
                 .frame(width: curW, height: curH)
+                // Perfect clipping to avoid ghosting
+                .clipShape(NotchShape(cornerRadius: isExpanded ? 28 : 10, flareRadius: flare))
             }
+            .background(
+                // Background and Shadow Layer
+                NotchShape(cornerRadius: isExpanded ? 28 : 10, flareRadius: flare)
+                    .fill(Color.black)
+                    .shadow(color: .black.opacity(isExpanded ? 0.6 : 0), radius: 24, y: 16)
+            )
             .animation(.spring(response: 0.38, dampingFraction: 0.74), value: isExpanded)
             .animation(.spring(response: 0.38, dampingFraction: 0.74), value: curH)
             .animation(.spring(response: 0.38, dampingFraction: 0.74), value: curW)
             .animation(.spring(response: 0.3,  dampingFraction: 0.8),  value: sysEvt.currentMode)
+            .animation(.spring(response: 0.3,  dampingFraction: 0.8),  value: isPlayingCompact)
             .onHover { hovering in
                 collapseTask?.cancel()
                 if hovering {
@@ -163,19 +176,19 @@ struct NotchContentView: View {
                     }
                 }
             }
-            // Horizontal swipe — changes music/calendar tabs
+            // Horizontal swipe
             .simultaneousGesture(
                 DragGesture(minimumDistance: 20, coordinateSpace: .local)
                     .onEnded { val in
                         guard isExpanded, isMusicMode else { return }
-                        if val.translation.width < -25 {
+                        if val.translation.width < -30 {
                             withAnimation { activeTab = min(activeTab + 1, 1) }
-                        } else if val.translation.width > 25 {
+                        } else if val.translation.width > 30 {
                             withAnimation { activeTab = max(activeTab - 1, 0) }
                         }
                     }
             )
-            // Scroll wheel via notification from NotchHostingView.scrollWheel
+            // Scroll wheel
             .onReceive(NotificationCenter.default.publisher(for: .notchScrollWheel)) { notif in
                 guard isExpanded, isMusicMode,
                       let dy = notif.userInfo?["dy"] as? CGFloat else { return }
@@ -195,6 +208,35 @@ struct NotchContentView: View {
         sysEvt.currentMode == .music || sysEvt.currentMode == .calendar
     }
 
+    // MARK: - Compact Content (Live Activity Style)
+    @ViewBuilder
+    private var compactMusicContent: some View {
+        HStack(spacing: 0) {
+            // Left: Album Art
+            ZStack {
+                if let img = music.albumArt {
+                    Image(nsImage: img)
+                        .resizable().scaledToFill()
+                        .frame(width: 22, height: 22)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                } else {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white)
+                }
+            }
+            .padding(.leading, flare + 12)
+
+            Spacer()
+
+            // Right: Waveform
+            WaveformView(isPlaying: true, color: .green)
+                .frame(width: 24, height: 14)
+                .padding(.trailing, flare + 12)
+        }
+    }
+
+    // MARK: - Expanded Content
     @ViewBuilder
     private var activeContent: some View {
         switch sysEvt.currentMode {
@@ -214,15 +256,14 @@ struct NotchContentView: View {
         case .micMute(let m):
             MicHUDView(muted: m)
 
-        default: // .music or .calendar
+        default:
             VStack(spacing: 0) {
-                // Tab dots
                 if isMusicMode {
-                    HStack(spacing: 5) {
-                        Circle().fill(activeTab == 0 ? .white : Color.white.opacity(0.3)).frame(width: 4, height: 4)
-                        Circle().fill(activeTab == 1 ? .white : Color.white.opacity(0.3)).frame(width: 4, height: 4)
+                    HStack(spacing: 6) {
+                        Circle().fill(activeTab == 0 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
+                        Circle().fill(activeTab == 1 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
                     }
-                    .padding(.top, 9)
+                    .padding(.top, 10)
                     .allowsHitTesting(false)
                 }
 
@@ -238,7 +279,7 @@ struct NotchContentView: View {
                             removal:   .move(edge: .trailing).combined(with: .opacity)))
                 }
             }
-            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: activeTab)
+            .animation(.spring(response: 0.32, dampingFraction: 0.85), value: activeTab)
         }
     }
 }
@@ -252,35 +293,34 @@ struct SystemHUDView: View {
     let color: Color
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 16) {
             Image(systemName: icon)
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(color)
-                .frame(width: 28)
+                .frame(width: 32)
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(label)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.8))
 
-                // Bar
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(Color.white.opacity(0.15)).frame(height: 6)
+                        Capsule().fill(Color.white.opacity(0.15)).frame(height: 8)
                         Capsule().fill(color)
-                            .frame(width: max(6, geo.size.width * value), height: 6)
+                            .frame(width: max(8, geo.size.width * value), height: 8)
                     }
                 }
-                .frame(height: 6)
+                .frame(height: 8)
             }
 
             Text("\(Int(value * 100))%")
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.55))
-                .frame(width: 36, alignment: .trailing)
+                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.6))
+                .frame(width: 40, alignment: .trailing)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
     }
 }
 
@@ -291,26 +331,27 @@ struct MediaKeyHUDView: View {
     @ObservedObject var music: MusicManager
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
             Image(systemName: iconName)
-                .font(.system(size: 22, weight: .semibold))
+                .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(.white)
+                .frame(width: 32)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(music.trackName.isEmpty ? "—" : music.trackName)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 Text(music.artistName.isEmpty ? "" : music.artistName)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.6))
                     .lineLimit(1)
             }
 
             Spacer()
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
     }
 
     private var iconName: String {
@@ -329,18 +370,19 @@ struct MicHUDView: View {
     let muted: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
             Image(systemName: muted ? "mic.slash.fill" : "mic.fill")
-                .font(.system(size: 22))
+                .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(muted ? .red : .green)
+                .frame(width: 32)
 
             Text(muted ? "Microphone Off" : "Microphone On")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(.white)
 
             Spacer()
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
         .padding(.vertical, 16)
     }
 }
@@ -355,51 +397,48 @@ struct NowPlayingNotchView: View {
     @AppStorage("npShowFavorites") private var showFavorites = false
     @AppStorage("npLiveWaveform")  private var liveWaveform  = true
 
-    // Seek drag
     @State private var isDraggingSeek = false
     @State private var seekPreview:    Double = 0
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                // ── Album art ───────────────────────────────────────────────
+            HStack(spacing: 14) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(LinearGradient(colors: [.purple.opacity(0.7), .blue.opacity(0.7)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                     if let img = music.albumArt {
                         Image(nsImage: img)
                             .resizable().scaledToFill()
-                            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     } else {
                         Image(systemName: "music.note")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: 20, weight: .medium))
                             .foregroundStyle(.white.opacity(0.65))
                     }
                 }
-                .frame(width: 44, height: 44)
+                .frame(width: 52, height: 52)
 
-                // ── Track info + waveform ───────────────────────────────────
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(music.isPlaying ? music.trackName : "Nothing Playing")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
                     Text(music.isPlaying ? music.artistName : "Open Spotify or Music")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.6))
                         .lineLimit(1)
 
                     if music.isPlaying && liveWaveform {
-                        WaveformView(isPlaying: music.isPlaying)
+                        WaveformView(isPlaying: music.isPlaying, color: .green)
                             .frame(height: 14)
+                            .padding(.top, 2)
                     }
                 }
 
                 Spacer()
 
-                // ── Player icon ─────────────────────────────────────────────
                 Group {
                     if music.activePlayer == "Spotify" {
                         Image(systemName: "waveform.circle.fill").foregroundStyle(.green)
@@ -407,29 +446,25 @@ struct NowPlayingNotchView: View {
                         Image(systemName: "music.note.list").foregroundStyle(.pink)
                     }
                 }
-                .font(.system(size: 14))
+                .font(.system(size: 18))
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 8)
+            .padding(.horizontal, 24)
+            .padding(.top, 14)
 
-            // ── Scrubable progress bar ──────────────────────────────────────
-            VStack(spacing: 3) {
+            VStack(spacing: 6) {
                 GeometryReader { geo in
                     let pct: CGFloat = music.trackDuration > 0
-                        ? (isDraggingSeek
-                            ? CGFloat(seekPreview / music.trackDuration)
-                            : CGFloat(music.trackPosition / music.trackDuration))
+                        ? (isDraggingSeek ? CGFloat(seekPreview / music.trackDuration) : CGFloat(music.trackPosition / music.trackDuration))
                         : 0
 
                     ZStack(alignment: .leading) {
-                        Capsule().fill(Color.white.opacity(0.1)).frame(height: 4)
-                        Capsule().fill(Color.white.opacity(0.8))
-                            .frame(width: max(4, geo.size.width * pct), height: 4)
+                        Capsule().fill(Color.white.opacity(0.15)).frame(height: 6)
+                        Capsule().fill(Color.white.opacity(0.85))
+                            .frame(width: max(6, geo.size.width * pct), height: 6)
 
-                        // Thumb
                         Circle().fill(.white)
-                            .frame(width: 9, height: 9)
-                            .offset(x: max(0, geo.size.width * pct - 4.5))
+                            .frame(width: 12, height: 12)
+                            .offset(x: max(0, geo.size.width * pct - 6))
                     }
                     .contentShape(Rectangle())
                     .gesture(
@@ -441,13 +476,12 @@ struct NowPlayingNotchView: View {
                             }
                             .onEnded { val in
                                 let fraction = max(0, min(1, val.location.x / geo.size.width))
-                                let newPos = fraction * music.trackDuration
-                                music.seek(to: newPos)
+                                music.seek(to: fraction * music.trackDuration)
                                 isDraggingSeek = false
                             }
                     )
                 }
-                .frame(height: 10)
+                .frame(height: 12)
 
                 HStack {
                     Text(music.formatTime(isDraggingSeek ? seekPreview : music.trackPosition))
@@ -455,63 +489,58 @@ struct NowPlayingNotchView: View {
                     let rem = music.trackDuration - (isDraggingSeek ? seekPreview : music.trackPosition)
                     Text(rem > 0 ? "-\(music.formatTime(rem))" : "")
                 }
-                .font(.system(size: 9, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.4))
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.5))
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 6)
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
 
-            // ── Controls ────────────────────────────────────────────────────
             HStack(spacing: 0) {
                 if showShuffle {
-                    IconButton(icon: "shuffle", size: 13, opacity: 0.45) { }
+                    IconButton(icon: "shuffle", size: 15, opacity: 0.5) { }
                     Spacer()
                 }
 
                 Spacer()
-
-                IconButton(icon: "backward.fill", size: 19) { music.previousTrack() }
-
-                Spacer().frame(width: 20)
-
-                // Play/Pause — contentShape + highPriorityGesture to win over DragGesture
+                IconButton(icon: "backward.fill", size: 22) { music.previousTrack() }
+                Spacer().frame(width: 28)
+                
                 Button {
                     music.playPause()
                 } label: {
                     ZStack {
-                        Circle().fill(Color.white.opacity(0.12)).frame(width: 38, height: 38)
+                        Circle().fill(Color.white.opacity(0.15)).frame(width: 44, height: 44)
                         Image(systemName: music.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundStyle(.white)
                     }
                 }
                 .buttonStyle(.plain)
                 .highPriorityGesture(TapGesture().onEnded { music.playPause() })
 
-                Spacer().frame(width: 20)
-
-                IconButton(icon: "forward.fill", size: 19) { music.nextTrack() }
-
+                Spacer().frame(width: 28)
+                IconButton(icon: "forward.fill", size: 22) { music.nextTrack() }
                 Spacer()
 
-                if showRepeat    { Spacer(); IconButton(icon: "repeat", size: 13, opacity: 0.45) { } }
-                if showFavorites { Spacer(); IconButton(icon: "heart",  size: 13, opacity: 0.45) { } }
+                if showRepeat    { Spacer(); IconButton(icon: "repeat", size: 15, opacity: 0.5) { } }
+                if showFavorites { Spacer(); IconButton(icon: "heart",  size: 15, opacity: 0.5) { } }
                 if !showRepeat && !showFavorites {
-                    IconButton(icon: "airplayaudio", size: 13, opacity: 0.45) { }
+                    IconButton(icon: "airplayaudio", size: 15, opacity: 0.5) { }
                     Spacer()
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 6)
-            .padding(.bottom, 10)
+            .padding(.horizontal, 24)
+            .padding(.top, 10)
+            .padding(.bottom, 16)
         }
     }
 }
 
-// MARK: - Waveform (animated EQ bars)
+// MARK: - Waveform
 
 struct WaveformView: View {
     let isPlaying: Bool
+    var color: Color = .green
 
     @State private var heights: [CGFloat] = [0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.4]
     @State private var timer: Timer?
@@ -520,12 +549,12 @@ struct WaveformView: View {
         HStack(alignment: .bottom, spacing: 2) {
             ForEach(0..<heights.count, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 1.5)
-                    .fill(Color.green.opacity(0.75))
-                    .frame(width: 2.5, height: max(3, heights[i] * 12))
+                    .fill(color.opacity(0.85))
+                    .frame(width: 3, height: max(4, heights[i] * 14))
                     .animation(
-                        .easeInOut(duration: Double.random(in: 0.2...0.45))
+                        .easeInOut(duration: Double.random(in: 0.25...0.5))
                             .repeatForever(autoreverses: true)
-                            .delay(Double(i) * 0.04),
+                            .delay(Double(i) * 0.05),
                         value: heights[i]
                     )
             }
@@ -540,14 +569,14 @@ struct WaveformView: View {
     private func startAnimating() {
         guard isPlaying else { return }
         randomizeHeights()
-        timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 0.28, repeats: true) { _ in
             randomizeHeights()
         }
     }
 
     private func stopAnimating() {
         timer?.invalidate()
-        withAnimation { heights = heights.map { _ in 0.15 } }
+        withAnimation { heights = heights.map { _ in 0.2 } }
     }
 
     private func randomizeHeights() {
@@ -566,9 +595,9 @@ struct IconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: size, weight: .medium))
+                .font(.system(size: size, weight: .bold))
                 .foregroundStyle(.white.opacity(opacity))
-                .frame(width: 30, height: 30)
+                .frame(width: 36, height: 36)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -583,9 +612,9 @@ struct CalendarNotchView: View {
     private var cal:   Calendar { .current }
     private var today: Date     { Date() }
 
-    private var dayName: String  { format("EEE").uppercased() }
+    private var dayName: String  { format("EEEE").uppercased() } // Full day name
     private var dayNum:  String  { format("d") }
-    private var monthName: String { format("MMM").uppercased() }
+    private var monthName: String { format("MMMM yyyy").uppercased() } // Full month year
 
     private func format(_ f: String) -> String {
         let df = DateFormatter(); df.dateFormat = f; return df.string(from: today)
@@ -606,61 +635,65 @@ struct CalendarNotchView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(dayName)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 15, weight: .heavy))
                     .foregroundStyle(.red)
                 Text(dayNum)
-                    .font(.system(size: displayMode == 0 ? 46 : 64, weight: .thin))
+                    .font(.system(size: displayMode == 0 ? 56 : 76, weight: .light))
                     .foregroundStyle(.white)
-                    .padding(.top, -4)
+                    .padding(.top, -8)
+                    .padding(.bottom, 4)
+                
                 Spacer()
-                VStack(alignment: .leading, spacing: 1) {
+                
+                VStack(alignment: .leading, spacing: 2) {
                     Text("No events today")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
                     Text("Your schedule is clear")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.white.opacity(0.35))
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.5))
                 }
-                .padding(.bottom, 12)
+                .padding(.bottom, 20)
             }
-            .padding(.leading, 16)
-            .padding(.top, 12)
+            .padding(.leading, 32)
+            .padding(.top, 24)
 
             if displayMode == 0 {
                 Spacer()
-                VStack(alignment: .trailing, spacing: 3) {
+                VStack(alignment: .trailing, spacing: 6) {
                     Text(monthName)
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(.red)
+                        .padding(.bottom, 2)
 
-                    HStack(spacing: 0) {
+                    HStack(spacing: 4) {
                         ForEach(0..<7, id: \.self) { i in
                             Text(wds[i])
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(i >= 5 ? .white.opacity(0.25) : .white.opacity(0.4))
-                                .frame(width: 19, alignment: .center)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(i >= 5 ? .white.opacity(0.3) : .white.opacity(0.5))
+                                .frame(width: 22, alignment: .center)
                         }
                     }
 
                     ForEach(0..<monthGrid.count, id: \.self) { row in
-                        HStack(spacing: 0) {
+                        HStack(spacing: 4) {
                             ForEach(0..<7, id: \.self) { col in
                                 let t = monthGrid[row][col]
                                 ZStack {
-                                    if t == dayNum { Circle().fill(Color.red).frame(width: 16, height: 16) }
+                                    if t == dayNum { Circle().fill(Color.red).frame(width: 20, height: 20) }
                                     Text(t)
-                                        .font(.system(size: 9, weight: t == dayNum ? .bold : .regular))
-                                        .foregroundStyle(t.isEmpty ? .clear : t == dayNum ? .white : .white.opacity(0.5))
+                                        .font(.system(size: 11, weight: t == dayNum ? .bold : .medium))
+                                        .foregroundStyle(t.isEmpty ? .clear : t == dayNum ? .white : .white.opacity(0.6))
                                 }
-                                .frame(width: 19, height: 16)
+                                .frame(width: 22, height: 20)
                             }
                         }
                     }
                 }
-                .padding(.trailing, 14)
-                .padding(.top, 12)
+                .padding(.trailing, 28)
+                .padding(.top, 24)
             }
         }
     }
