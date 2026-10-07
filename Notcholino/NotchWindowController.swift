@@ -137,6 +137,10 @@ struct NotchContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
+                // Invisible footprint to maintain size and catch hover
+                Color.clear
+                    .frame(width: curW, height: curH)
+
                 // Content Layer
                 Group {
                     if isExpanded {
