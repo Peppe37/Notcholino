@@ -13,7 +13,7 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
 
     /// Client ID of the app registered on developer.spotify.com/dashboard.
     /// With PKCE it is public (not a secret), so it ships with the app and users never see it.
-    static let bundledClientID = "639c57212b7848eaa7c3f196651b6e4b"
+    static let bundledClientID = "74f253971d87485ca5b27c9c419be8a1"
 
     private let scopes = "user-library-read user-library-modify"
     private let keychainService = "com.giuseppe.Notcholino.spotify"
