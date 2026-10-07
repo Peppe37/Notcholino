@@ -51,21 +51,58 @@ final class MusicManager: NSObject, ObservableObject {
         if application "Spotify" is running then
             tell application "Spotify"
                 if player state is playing then
-                    set d to (duration of current track) / 1000
-                    set artURL to artwork url of current track
-                    set shuf to shuffling
-                    set rep to repeating
-                    set out to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL & "|||" & (shuf as string) & "|||" & (rep as string) & "|||unknown|||" & (id of current track)
+                    try
+                        set d to (duration of current track) / 1000
+                    on error
+                        set d to 0
+                    end try
+                    try
+                        set artURL to artwork url of current track
+                    on error
+                        set artURL to ""
+                    end try
+                    try
+                        set shuf to shuffling
+                    on error
+                        set shuf to false
+                    end try
+                    try
+                        set rep to repeating
+                    on error
+                        set rep to false
+                    end try
+                    try
+                        set tId to id of current track
+                    on error
+                        set tId to ""
+                    end try
+                    set out to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL & "|||" & (shuf as string) & "|||" & (rep as string) & "|||unknown|||" & tId
                 end if
             end tell
         end if
         if out is "None|||" and application "Music" is running then
             tell application "Music"
                 if player state is playing then
-                    set d to duration of current track
-                    set shuf to shuffle enabled
-                    set rep to (song repeat as string)
-                    set lvd to loved of current track
+                    try
+                        set d to duration of current track
+                    on error
+                        set d to 0
+                    end try
+                    try
+                        set shuf to shuffle enabled
+                    on error
+                        set shuf to false
+                    end try
+                    try
+                        set rep to (song repeat as string)
+                    on error
+                        set rep to "off"
+                    end try
+                    try
+                        set lvd to loved of current track
+                    on error
+                        set lvd to false
+                    end try
                     set out to "Music|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & "|||" & (shuf as string) & "|||" & rep & "|||" & (lvd as string)
                 end if
             end tell
