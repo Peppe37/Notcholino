@@ -233,6 +233,7 @@ struct DisplaySettingsView: View {
         Form {
             Section {
                 Toggle("Show display brightness changes", isOn: $enabled)
+                    .onChange(of: enabled) { _ in updateOSDSuppression() }
             }
             Section("Appearance") {
                 Picker("Theme", selection: $theme) {
@@ -258,6 +259,7 @@ struct SoundSettingsView: View {
         Form {
             Section {
                 Toggle("Show volume changes", isOn: $enabled)
+                    .onChange(of: enabled) { _ in updateOSDSuppression() }
             }
             Section("Appearance") {
                 Picker("Theme", selection: $theme) {
@@ -462,5 +464,15 @@ struct LabeledSlider: View {
                 .tint(.accentColor)
         }
         .padding(.vertical, 2)
+    }
+}
+
+func updateOSDSuppression() {
+    let soundEnabled = UserDefaults.standard.object(forKey: "soundEnabled") as? Bool ?? true
+    let displayEnabled = UserDefaults.standard.object(forKey: "displayEnabled") as? Bool ?? true
+    if soundEnabled || displayEnabled {
+        OSDManager.shared.startSuppressing()
+    } else {
+        OSDManager.shared.stopSuppressing()
     }
 }

@@ -4,6 +4,8 @@ import SwiftUI
 import CoreAudio
 import AudioToolbox
 
+
+
 // MARK: - Notch Display Mode
 
 enum NotchMode: Equatable {
@@ -31,7 +33,15 @@ final class SystemEventsManager: ObservableObject {
 
     init() {
         systemVolume = readVolume()
+        brightness = readBrightness()
         setupGlobalMonitor()
+        
+        // Suppress native OSD if our HUDs are enabled
+        let soundEnabled = UserDefaults.standard.object(forKey: "soundEnabled") as? Bool ?? true
+        let displayEnabled = UserDefaults.standard.object(forKey: "displayEnabled") as? Bool ?? true
+        if soundEnabled || displayEnabled {
+            OSDManager.shared.startSuppressing()
+        }
     }
 
     deinit {
@@ -53,20 +63,27 @@ final class SystemEventsManager: ObservableObject {
             DispatchQueue.main.async {
                 switch keyCode {
                 case 0, 1, 7: // volume up, down, mute
-                    let vol = self.readVolume()
-                    self.systemVolume = vol
-                    if UserDefaults.standard.object(forKey: "soundEnabled") as? Bool ?? true {
-                        self.showHUD(.volume(vol))
+                    let soundEnabled = UserDefaults.standard.object(forKey: "soundEnabled") as? Bool ?? true
+                    if soundEnabled {
+                        self.showHUD(.volume(self.systemVolume)) // show immediately for responsiveness
                     }
-                case 2: // brightness up
-                    self.brightness = min(1.0, self.brightness + 0.0625)
-                    if UserDefaults.standard.object(forKey: "displayEnabled") as? Bool ?? true {
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        let vol = self.readVolume()
+                        self.systemVolume = vol
+                        if soundEnabled { self.currentMode = .volume(vol) }
+                    }
+                    
+                case 2, 3: // brightness up, down
+                    let displayEnabled = UserDefaults.standard.object(forKey: "displayEnabled") as? Bool ?? true
+                    if displayEnabled {
                         self.showHUD(.brightness(self.brightness))
                     }
-                case 3: // brightness down
-                    self.brightness = max(0.0, self.brightness - 0.0625)
-                    if UserDefaults.standard.object(forKey: "displayEnabled") as? Bool ?? true {
-                        self.showHUD(.brightness(self.brightness))
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        let br = self.readBrightness()
+                        self.brightness = br
+                        if displayEnabled { self.currentMode = .brightness(br) }
                     }
                 default: break
                 }
@@ -109,5 +126,25 @@ final class SystemEventsManager: ObservableObject {
             mElement:  kAudioObjectPropertyElementMain)
         let status = AudioObjectGetPropertyData(deviceID, &addr, 0, nil, &propSize, &vol)
         return status == noErr ? vol : 0.5
+    }
+
+    // MARK: - Brightness reading (DisplayServices)
+
+    private static let displayServicesHandle: UnsafeMutableRawPointer? = {
+        return dlopen("/System/Library/PrivateFrameworks/DisplayServices.framework/DisplayServices", RTLD_NOW)
+    }()
+    
+    private static let getBrightnessFunc: (@convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32)? = {
+        guard let handle = displayServicesHandle,
+              let sym = dlsym(handle, "DisplayServicesGetLinearBrightness") else { return nil }
+        return unsafeBitCast(sym, to: (@convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32).self)
+    }()
+
+    func readBrightness() -> Float {
+        var b: Float = 0.5
+        if let f = Self.getBrightnessFunc {
+            f(CGMainDisplayID(), &b)
+        }
+        return b
     }
 }
