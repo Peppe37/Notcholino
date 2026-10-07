@@ -20,14 +20,16 @@ final class NotchHostingView: NSHostingView<AnyView> {
 extension Notification.Name {
     static let notchScrollWheel = Notification.Name("notchScrollWheel")
     static let notchLayoutChanged = Notification.Name("notchLayoutChanged")
+    static let notchMouseLeft = Notification.Name("notchMouseLeft")
 }
 
 // MARK: - Window Controller
 
 class NotchWindowController: NSWindowController {
 
-    private let expandedSize = NSSize(width: 520, height: 310)
-    private var shrinkWorkItem: DispatchWorkItem?
+    /// Size of the visible notch (not the window), used to decide where clicks are ours.
+    private var notchSize = NSSize(width: 174, height: 32)
+    private var monitors: [Any] = []
 
     init() {
         guard let screen = NSScreen.main else {
@@ -40,8 +42,8 @@ class NotchWindowController: NSWindowController {
 
         let panel = NSPanel(
             contentRect: NSRect(
-                x: (screen.frame.width - W) / 2,
-                y: screen.frame.height - H,
+                x: screen.frame.midX - W / 2,
+                y: screen.frame.maxY - H,
                 width: W, height: H),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered, defer: false)
@@ -51,7 +53,6 @@ class NotchWindowController: NSWindowController {
         panel.hasShadow          = false
         panel.level              = .screenSaver
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
-        panel.ignoresMouseEvents = false
         panel.isMovable          = false
 
         super.init(window: panel)
@@ -64,35 +65,33 @@ class NotchWindowController: NSWindowController {
         NotificationCenter.default.addObserver(
             forName: .notchLayoutChanged, object: nil, queue: .main
         ) { [weak self] notif in
-            guard let info = notif.userInfo,
-                  let expanded = info["expanded"] as? Bool,
-                  let w = info["w"] as? CGFloat,
-                  let h = info["h"] as? CGFloat else { return }
-            self?.updateFrame(expanded: expanded, collapsedSize: NSSize(width: w, height: h))
+            guard let w = notif.userInfo?["w"] as? CGFloat,
+                  let h = notif.userInfo?["h"] as? CGFloat else { return }
+            self?.notchSize = NSSize(width: w, height: h)
+            self?.updateMouseTransparency()
         }
+
+        // The window stays at full size (resizing it made the expansion glitch), so
+        // instead let clicks fall through to other apps whenever the cursor is
+        // outside the visible notch.
+        panel.ignoresMouseEvents = true
+        let handler: (NSEvent) -> Void = { [weak self] _ in self?.updateMouseTransparency() }
+        if let g = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: handler) { monitors.append(g) }
+        if let l = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved, handler: { e in handler(e); return e }) { monitors.append(l) }
     }
 
-    /// Keeps the panel as small as the visible notch while collapsed, so the
-    /// transparent area around it doesn't swallow clicks meant for other apps.
-    private func updateFrame(expanded: Bool, collapsedSize: NSSize) {
-        shrinkWorkItem?.cancel()
-        if expanded {
-            applyFrame(expandedSize)
-        } else {
-            // Wait for the collapse animation to finish before shrinking the window
-            let item = DispatchWorkItem { [weak self] in self?.applyFrame(collapsedSize) }
-            shrinkWorkItem = item
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: item)
-        }
-    }
+    deinit { monitors.forEach { NSEvent.removeMonitor($0) } }
 
-    private func applyFrame(_ size: NSSize) {
-        guard let window, let screen = window.screen ?? NSScreen.main else { return }
-        let frame = NSRect(
-            x: screen.frame.midX - size.width / 2,
-            y: screen.frame.maxY - size.height,
-            width: size.width, height: size.height)
-        if window.frame != frame { window.setFrame(frame, display: true) }
+    private func updateMouseTransparency() {
+        guard let window else { return }
+        let f = window.frame
+        let rect = NSRect(x: f.midX - notchSize.width / 2, y: f.maxY - notchSize.height,
+                          width: notchSize.width, height: notchSize.height).insetBy(dx: -4, dy: -4)
+        let inside = rect.contains(NSEvent.mouseLocation)
+        guard window.ignoresMouseEvents == inside else { return }
+        window.ignoresMouseEvents = !inside
+        // A window that ignores events never gets mouseExited, so tell the view
+        if !inside { NotificationCenter.default.post(name: .notchMouseLeft, object: nil) }
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -208,20 +207,10 @@ struct NotchContentView: View {
             .animation(.spring(response: 0.3,  dampingFraction: 0.8),  value: sysEvt.currentMode)
             .animation(.spring(response: 0.3,  dampingFraction: 0.8),  value: isPlayingCompact)
             .onAppear { publishLayout() }
-            .onChange(of: isExpanded)        { _ in publishLayout() }
-            .onChange(of: isPlayingCompact)  { _ in publishLayout() }
-            .onHover { hovering in
-                collapseTask?.cancel()
-                if hovering {
-                    withAnimation { isExpanded = true }
-                } else {
-                    collapseTask = Task {
-                        try? await Task.sleep(nanoseconds: 400_000_000)
-                        guard !Task.isCancelled else { return }
-                        await MainActor.run { withAnimation { isExpanded = false } }
-                    }
-                }
-            }
+            .onChange(of: curW) { _ in publishLayout() }
+            .onChange(of: curH) { _ in publishLayout() }
+            .onHover { setHovering($0) }
+            .onReceive(NotificationCenter.default.publisher(for: .notchMouseLeft)) { _ in setHovering(false) }
             // Horizontal swipe
             .simultaneousGesture(
                 DragGesture(minimumDistance: 20, coordinateSpace: .local)
@@ -251,10 +240,23 @@ struct NotchContentView: View {
         .environmentObject(calMgr)
     }
 
+    private func setHovering(_ hovering: Bool) {
+        collapseTask?.cancel()
+        if hovering {
+            withAnimation { isExpanded = true }
+        } else {
+            collapseTask = Task {
+                try? await Task.sleep(nanoseconds: 400_000_000)
+                guard !Task.isCancelled else { return }
+                await MainActor.run { withAnimation { isExpanded = false } }
+            }
+        }
+    }
+
     private func publishLayout() {
         NotificationCenter.default.post(
             name: .notchLayoutChanged, object: nil,
-            userInfo: ["expanded": isExpanded, "w": pillW, "h": pillH])
+            userInfo: ["w": curW, "h": curH])
     }
 
     private var isMusicMode: Bool {
