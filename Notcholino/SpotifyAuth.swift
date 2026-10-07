@@ -157,10 +157,15 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
         let id = uri.components(separatedBy: ":").last ?? uri
 
         let newPath = "/v1/me/library" + (contains ? "/contains" : "")
-        if let r = await apiCall(method, path: newPath, query: ("uris", uri), token: token), r.1 != 404 { return r }
+        if let r = await apiCall(method, path: newPath, query: ("uris", uri), token: token), (200..<300).contains(r.1) { return r }
 
         let oldPath = "/v1/me/tracks" + (contains ? "/contains" : "")
-        return await apiCall(method, path: oldPath, query: ("ids", id), token: token)
+        let r = await apiCall(method, path: oldPath, query: ("ids", id), token: token)
+        if let r, !(200..<300).contains(r.1) {
+            print("Spotify \(method) \(oldPath) -> \(r.1): \(String(data: r.0, encoding: .utf8) ?? "")")
+            setError("Spotify like failed (\(r.1))")
+        }
+        return r
     }
 
     private func apiCall(_ method: String, path: String, query: (String, String), token: String) async -> (Data, Int)? {
@@ -172,6 +177,9 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         guard let (data, resp) = try? await URLSession.shared.data(for: req),
               let status = (resp as? HTTPURLResponse)?.statusCode else { return nil }
+        if !(200..<300).contains(status) {
+            print("Spotify \(method) \(path) -> \(status): \(String(data: data, encoding: .utf8) ?? "")")
+        }
         if status == 401 { accessToken = nil }
         if status == 403 { setError("Missing permissions: disconnect and reconnect Spotify") }
         return (data, status)
