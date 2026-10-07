@@ -253,7 +253,6 @@ struct SoundSettingsView: View {
     @AppStorage("soundEnabled")   private var enabled = true
     @AppStorage("soundTheme")     private var theme = 1
     @AppStorage("soundShowText")  private var showText = true
-    @AppStorage("soundTextMode")  private var textMode = 0
 
     var body: some View {
         Form {
@@ -263,16 +262,9 @@ struct SoundSettingsView: View {
             Section("Appearance") {
                 Picker("Theme", selection: $theme) {
                     Text("Monochrome").tag(0)
-                    Text("Dynamic (Colors)").tag(1)
+                    Text("Decibel").tag(1)
                 }
                 Toggle("Show volume text", isOn: $showText)
-                if showText {
-                    Picker("Text Format", selection: $textMode) {
-                        Text("Percentage").tag(0)
-                        Text("Decibels (dB)").tag(1)
-                    }
-                    .pickerStyle(.segmented)
-                }
             }
         }
         .formStyle(.grouped)

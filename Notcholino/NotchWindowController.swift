@@ -317,16 +317,14 @@ struct NotchContentView: View {
                         .foregroundStyle(.white)
                 }
             }
-            .padding(.leading, flare + 4) // Move 8px right (away from center)
-            .padding(.top, 4)
+            .padding(.leading, 8)
 
             Spacer()
 
             // Right: Waveform
             WaveformView(isPlaying: true, fill: AnyShapeStyle(music.primaryColor))
                 .frame(width: 24, height: 14)
-                .padding(.trailing, flare + 4) // Move 8px left (away from center)
-                .padding(.top, 4)
+                .padding(.trailing, 8)
         }
     }
 
@@ -386,7 +384,6 @@ struct SystemHUDView: View {
 
     @AppStorage("soundTheme")      private var soundTheme = 1
     @AppStorage("soundShowText")   private var soundShowText = true
-    @AppStorage("soundTextMode")   private var soundTextMode = 0
 
     @AppStorage("displayTheme")    private var displayTheme = 1
     @AppStorage("displayShowText") private var displayShowText = true
@@ -405,7 +402,7 @@ struct SystemHUDView: View {
 
     private var textString: String {
         if isVolume {
-            if soundTextMode == 1 {
+            if soundTheme == 1 { // Theme 1 is Decibel
                 let db = -60.0 + (Double(value) * 60.0)
                 if value == 0 { return "-∞ dB" }
                 return String(format: "%.1f dB", db)
