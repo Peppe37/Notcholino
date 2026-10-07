@@ -1,30 +1,27 @@
 import Foundation
 import AppKit
-import Combine
 
-/// Reads Now Playing info by calling /usr/bin/osascript as a subprocess.
-/// This avoids the NSAppleScript initialization path that causes FSFindFolder warnings.
 final class MusicManager: NSObject, ObservableObject {
 
-    @Published var trackName: String    = ""
-    @Published var artistName: String   = ""
-    @Published var isPlaying: Bool      = false
-    @Published var activePlayer: String = "None"
-    @Published var trackDuration: Double = 0
-    @Published var trackPosition: Double = 0
+    @Published var trackName:    String   = ""
+    @Published var artistName:   String   = ""
+    @Published var albumArt:     NSImage? = nil
+    @Published var isPlaying:    Bool     = false
+    @Published var activePlayer: String   = "None"
+    @Published var trackDuration: Double  = 0
+    @Published var trackPosition: Double  = 0
 
     private var pollTimer: Timer?
     private var tickTimer: Timer?
-    private var isFetching = false
+    private var isFetching    = false
+    private var lastTrackName = ""
 
     override init() {
         super.init()
         fetchNowPlaying()
-        // Poll for track changes every 2 s
         pollTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             self?.fetchNowPlaying()
         }
-        // Advance position locally every 1 s (no need to re-query)
         tickTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self, self.isPlaying else { return }
             DispatchQueue.main.async {
@@ -38,95 +35,155 @@ final class MusicManager: NSObject, ObservableObject {
         tickTimer?.invalidate()
     }
 
-    // MARK: - Fetch (osascript subprocess, never on main thread)
+    // MARK: - Fetch track info
 
     func fetchNowPlaying() {
         guard !isFetching else { return }
         isFetching = true
+
         let script = """
-        set out to "None|||||||0|||0"
+        set out to "None|||"
         if application "Spotify" is running then
             tell application "Spotify"
                 if player state is playing then
                     set d to (duration of current track) / 1000
-                    set out to (name of current track) & "|||" & (artist of current track) & "|||Spotify|||" & (d as string) & "|||" & (player position as string)
+                    set artURL to artwork url of current track
+                    set out to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL
                 end if
             end tell
         end if
-        if out is "None|||||||0|||0" and application "Music" is running then
+        if out is "None|||" and application "Music" is running then
             tell application "Music"
                 if player state is playing then
-                    set out to (name of current track) & "|||" & (artist of current track) & "|||Music|||" & (duration of current track as string) & "|||" & (player position as string)
+                    set d to duration of current track
+                    set out to "Music|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||"
                 end if
             end tell
         end if
         return out
         """
+
         runOsascript(script) { [weak self] result in
             guard let self else { return }
             self.isFetching = false
-            guard let raw = result else { return }
+            guard let raw = result, !raw.isEmpty, raw != "None|||" else {
+                DispatchQueue.main.async {
+                    self.isPlaying = false
+                    self.trackName = ""
+                    self.artistName = ""
+                    self.activePlayer = "None"
+                }
+                return
+            }
+
             let parts = raw.components(separatedBy: "|||")
             guard parts.count >= 5 else { return }
-            let tName    = parts[0]
-            let aName    = parts[1]
-            let player   = parts[2]
+
+            let player   = parts[0]
+            let tName    = parts[1]
+            let aName    = parts[2]
             let duration = Double(parts[3].replacingOccurrences(of: ",", with: ".")) ?? 0
             let position = Double(parts[4].replacingOccurrences(of: ",", with: ".")) ?? 0
-            let playing  = player != "None" && !tName.isEmpty
+            let artURL   = parts.count > 5 ? parts[5] : ""
 
             DispatchQueue.main.async {
-                if self.trackName != tName { self.trackName = tName }
-                if self.artistName != aName { self.artistName = aName }
-                if self.activePlayer != player { self.activePlayer = player }
-                if self.isPlaying != playing { self.isPlaying = playing }
-                if self.trackDuration != duration { self.trackDuration = duration }
-                // Only reset position if track changed or we're off by more than 3s
-                if self.trackName != tName || abs(self.trackPosition - position) > 3 {
+                self.activePlayer  = player
+                self.artistName    = aName
+                self.isPlaying     = true
+                self.trackDuration = duration
+                // Only reset position if track changed
+                if self.trackName != tName {
                     self.trackPosition = position
+                    self.trackName = tName
+                    // Load new artwork
+                    self.fetchArtwork(player: player, urlString: artURL)
                 }
             }
+        }
+    }
+
+    // MARK: - Album Artwork
+
+    private func fetchArtwork(player: String, urlString: String) {
+        if player == "Spotify", let url = URL(string: urlString), !urlString.isEmpty {
+            // Spotify provides a CDN URL — download it
+            URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                guard let data, let img = NSImage(data: data) else { return }
+                DispatchQueue.main.async { self?.albumArt = img }
+            }.resume()
+        } else if player == "Music" {
+            // Apple Music: extract artwork via osascript saving to temp file
+            let tmp = NSTemporaryDirectory() + "notcholino_art.jpg"
+            let artScript = """
+            tell application "Music"
+                try
+                    set artData to data of artwork 1 of current track
+                    set f to open for access POSIX file "\(tmp)" with write permission
+                    set eof f to 0
+                    write artData to f
+                    close access f
+                    return "ok"
+                on error
+                    return "err"
+                end try
+            end tell
+            """
+            runOsascript(artScript) { [weak self] result in
+                guard result == "ok",
+                      let img = NSImage(contentsOfFile: tmp) else { return }
+                DispatchQueue.main.async { self?.albumArt = img }
+            }
+        } else {
+            DispatchQueue.main.async { self.albumArt = nil }
         }
     }
 
     // MARK: - Controls
 
     func playPause() {
-        let s = """
+        runOsascript("""
         if application "Spotify" is running then
             tell application "Spotify" to playpause
         else if application "Music" is running then
             tell application "Music" to playpause
         end if
-        """
-        runOsascript(s) { [weak self] _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { self?.fetchNowPlaying() }
+        """) { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self?.isFetching = false
+                self?.fetchNowPlaying()
+            }
         }
     }
 
     func nextTrack() {
-        let s = """
+        runOsascript("""
         if application "Spotify" is running then
             tell application "Spotify" to next track
         else if application "Music" is running then
             tell application "Music" to next track
         end if
-        """
-        runOsascript(s) { [weak self] _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { self?.fetchNowPlaying() }
+        """) { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self?.isFetching = false
+                self?.lastTrackName = ""
+                self?.fetchNowPlaying()
+            }
         }
     }
 
     func previousTrack() {
-        let s = """
+        runOsascript("""
         if application "Spotify" is running then
             tell application "Spotify" to previous track
         else if application "Music" is running then
             tell application "Music" to previous track
         end if
-        """
-        runOsascript(s) { [weak self] _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { self?.fetchNowPlaying() }
+        """) { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self?.isFetching = false
+                self?.lastTrackName = ""
+                self?.fetchNowPlaying()
+            }
         }
     }
 
@@ -138,22 +195,18 @@ final class MusicManager: NSObject, ObservableObject {
         return String(format: "%d:%02d", t / 60, t % 60)
     }
 
-    /// Runs AppleScript via /usr/bin/osascript on a background thread.
-    /// This avoids NSAppleScript's FSFindFolder call entirely.
     private func runOsascript(_ source: String, completion: @escaping (String?) -> Void) {
         DispatchQueue.global(qos: .background).async {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-            process.arguments = ["-e", source]
-
-            let pipe = Pipe()
-            process.standardOutput = pipe
-            process.standardError  = Pipe() // swallow stderr
-
+            let proc = Process()
+            proc.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            proc.arguments     = ["-e", source]
+            let pipe           = Pipe()
+            proc.standardOutput = pipe
+            proc.standardError  = Pipe()
             do {
-                try process.run()
-                process.waitUntilExit()
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                try proc.run()
+                proc.waitUntilExit()
+                let data   = pipe.fileHandleForReading.readDataToEndOfFile()
                 let result = String(data: data, encoding: .utf8)?
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 completion(result?.isEmpty == false ? result : nil)
