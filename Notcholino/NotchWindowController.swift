@@ -4,6 +4,8 @@ import SwiftUI
 // MARK: - NSHostingView con scroll wheel e acceptsFirstMouse
 
 final class NotchHostingView: NSHostingView<AnyView> {
+    var notchID: UUID = UUID()
+
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override var acceptsFirstResponder: Bool { true }
 
@@ -11,7 +13,7 @@ final class NotchHostingView: NSHostingView<AnyView> {
         let delta = event.scrollingDeltaY
         NotificationCenter.default.post(
             name: .notchScrollWheel,
-            object: nil,
+            object: notchID,
             userInfo: ["dy": delta]
         )
     }
@@ -31,6 +33,7 @@ class NotchWindowController: NSWindowController {
     /// Size of the visible notch (not the window), used to decide where clicks are ours.
     private var notchSize = NSSize(width: 174, height: 32)
     private var monitors: [Any] = []
+    let notchID = UUID()
 
     let targetScreen: NSScreen
 
@@ -57,8 +60,9 @@ class NotchWindowController: NSWindowController {
 
         super.init(window: panel)
 
-        let root = AnyView(NotchContentView())
+        let root = AnyView(NotchContentView(notchID: notchID))
         let hosting = NotchHostingView(rootView: root)
+        hosting.notchID = notchID
         hosting.layer?.backgroundColor = NSColor.clear.cgColor
         // Don't let SwiftUI resize the window to its content (it did: 406x210, and
         // the constraint update loop crashed with NSGenericException)
@@ -73,7 +77,7 @@ class NotchWindowController: NSWindowController {
         panel.contentView = container
 
         NotificationCenter.default.addObserver(
-            forName: .notchLayoutChanged, object: nil, queue: .main
+            forName: .notchLayoutChanged, object: notchID, queue: .main
         ) { [weak self] notif in
             guard let w = notif.userInfo?["w"] as? CGFloat,
                   let h = notif.userInfo?["h"] as? CGFloat else { return }
@@ -102,9 +106,9 @@ class NotchWindowController: NSWindowController {
         window.ignoresMouseEvents = !inside
         // A window that ignores events never gets mouseExited, so tell the view
         if inside {
-            NotificationCenter.default.post(name: .notchMouseEntered, object: nil)
+            NotificationCenter.default.post(name: .notchMouseEntered, object: notchID)
         } else {
-            NotificationCenter.default.post(name: .notchMouseLeft, object: nil)
+            NotificationCenter.default.post(name: .notchMouseLeft, object: notchID)
         }
     }
 
@@ -138,6 +142,7 @@ struct NotchShape: Shape {
 // MARK: - Main Notch Content View
 
 struct NotchContentView: View {
+    let notchID: UUID
     @State private var isHovering   = false
     @State private var activeTab    = 0   // 0=music 1=calendar
     @State private var collapseTask: Task<Void, Never>?
@@ -252,8 +257,12 @@ struct NotchContentView: View {
             .onChange(of: sysEvt.currentMode) { _ in publishLayout() }
             .onChange(of: music.isPlaying) { _ in publishLayout() }
             .onChange(of: activeTab) { _ in publishLayout() }
-            .onReceive(NotificationCenter.default.publisher(for: .notchMouseEntered)) { _ in setHovering(true) }
-            .onReceive(NotificationCenter.default.publisher(for: .notchMouseLeft)) { _ in setHovering(false) }
+            .onReceive(NotificationCenter.default.publisher(for: .notchMouseEntered)) { notif in
+                if (notif.object as? UUID) == notchID { setHovering(true) }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .notchMouseLeft)) { notif in
+                if (notif.object as? UUID) == notchID { setHovering(false) }
+            }
             // Horizontal swipe
             .simultaneousGesture(
                 DragGesture(minimumDistance: 20, coordinateSpace: .local)
@@ -268,7 +277,8 @@ struct NotchContentView: View {
             )
             // Scroll wheel
             .onReceive(NotificationCenter.default.publisher(for: .notchScrollWheel)) { notif in
-                guard isExpanded, isMusicMode,
+                guard (notif.object as? UUID) == notchID,
+                      isExpanded, isMusicMode,
                       let dy = notif.userInfo?["dy"] as? CGFloat else { return }
                 if dy > 5 {
                     withAnimation { activeTab = min(activeTab + 1, 1) }
@@ -298,7 +308,7 @@ struct NotchContentView: View {
 
     private func publishLayout() {
         NotificationCenter.default.post(
-            name: .notchLayoutChanged, object: nil,
+            name: .notchLayoutChanged, object: notchID,
             userInfo: ["w": curW, "h": curH])
     }
 
