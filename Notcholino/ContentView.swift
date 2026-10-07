@@ -12,6 +12,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
     case nowPlaying  = "Now Playing"
     case calendar    = "Calendar"
     case lockScreen  = "Lock Screen"
+    case plugins     = "Plugins"
     case license     = "License"
     case about       = "About"
 
@@ -26,6 +27,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .nowPlaying:   return "music.note"
         case .calendar:     return "calendar"
         case .lockScreen:   return "lock.fill"
+        case .plugins:      return "puzzlepiece.extension.fill"
         case .license:      return "checkmark.seal.fill"
         case .about:        return "info.circle.fill"
         }
@@ -42,6 +44,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .nowPlaying:   return .red
         case .calendar:     return .red
         case .lockScreen:   return Color(NSColor.labelColor)
+        case .plugins:      return .purple
         case .license:      return .teal
         case .about:        return Color(NSColor.secondaryLabelColor)
         }
@@ -101,6 +104,7 @@ struct ContentView: View {
         case .nowPlaying:   NowPlayingSettingsView()
         case .calendar:     CalendarSettingsView()
         case .lockScreen:   LockScreenSettingsView()
+        case .plugins:      PluginStoreSettingsView()
         case .license:      LicenseView()
         case .about:        AboutView()
         case nil:           EmptyView()
@@ -431,6 +435,50 @@ struct LockScreenSettingsView: View {
         }
         .formStyle(.grouped)
         .navigationTitle("Lock Screen")
+    }
+}
+
+// MARK: - Plugins
+struct PluginStoreSettingsView: View {
+    @ObservedObject private var pluginManager = PluginManager.shared
+    
+    var body: some View {
+        Form {
+            Section {
+                Text("Notcholino supports external compiled Swift `.bundle` plugins to extend its functionality.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Section("Installed Plugins") {
+                if pluginManager.loadedPlugins.isEmpty {
+                    Text("No plugins installed.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(pluginManager.loadedPlugins, id: \.pluginName) { plugin in
+                        VStack(alignment: .leading) {
+                            Text(plugin.pluginName)
+                                .font(.headline)
+                            Text("v\(plugin.pluginVersion) by \(plugin.pluginAuthor)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(plugin.pluginDescription)
+                                .font(.footnote)
+                                .padding(.top, 2)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            
+            Section("Plugin Store") {
+                Text("Store loading functionality will be connected to your GitHub pipeline manifest.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle("Plugins")
     }
 }
 

@@ -72,3 +72,68 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 }
+import SwiftUI
+import Combine
+
+/// Protocol that compiled plugins (.bundle) must implement and export as their Principal Class.
+@objc(NotcholinoPlugin)
+public protocol NotcholinoPlugin: NSObjectProtocol {
+    var pluginName: String { get }
+    var pluginVersion: String { get }
+    var pluginAuthor: String { get }
+    var pluginDescription: String { get }
+    
+    /// Called when the button in the Control Center is clicked
+    func onControlCenterButtonClick()
+    
+    /// Optional: Return the name of an SF Symbol for the Control Center button
+    var controlCenterIcon: String { get }
+}
+
+/// Manages downloading, loading, and interacting with plugins.
+final class PluginManager: ObservableObject {
+    static let shared = PluginManager()
+    
+    @Published var loadedPlugins: [NotcholinoPlugin] = []
+    
+    private let pluginsDirectory: URL
+    
+    init() {
+        // Define the plugins directory in Application Support
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        pluginsDirectory = appSupport.appendingPathComponent("Notcholino/Plugins")
+        
+        createPluginsDirectoryIfNeeded()
+        loadPlugins()
+    }
+    
+    private func createPluginsDirectoryIfNeeded() {
+        if !FileManager.default.fileExists(atPath: pluginsDirectory.path) {
+            try? FileManager.default.createDirectory(at: pluginsDirectory, withIntermediateDirectories: true, attributes: nil)
+        }
+    }
+    
+    /// Loads all .bundle files from the Plugins directory
+    func loadPlugins() {
+        loadedPlugins.removeAll()
+        
+        guard let urls = try? FileManager.default.contentsOfDirectory(at: pluginsDirectory, includingPropertiesForKeys: nil) else {
+            return
+        }
+        
+        let bundleURLs = urls.filter { $0.pathExtension == "bundle" }
+        
+        for url in bundleURLs {
+            guard let bundle = Bundle(url: url) else { continue }
+            
+            // Try to load the principal class
+            if let principalClass = bundle.principalClass as? NSObject.Type,
+               let pluginInstance = principalClass.init() as? NotcholinoPlugin {
+                loadedPlugins.append(pluginInstance)
+                print("Successfully loaded plugin: \(pluginInstance.pluginName)")
+            } else {
+                print("Failed to find NotcholinoPlugin principal class in bundle: \(url.lastPathComponent)")
+            }
+        }
+    }
+}

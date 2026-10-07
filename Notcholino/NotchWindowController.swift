@@ -144,7 +144,7 @@ struct NotchShape: Shape {
 struct NotchContentView: View {
     let notchID: UUID
     @State private var isHovering   = false
-    @State private var activeTab    = 0   // 0=music 1=calendar
+    @State private var activeTab    = 0   // -1=ControlCenter, 0=Music, 1=Calendar
     @State private var collapseTask: Task<Void, Never>?
 
     @StateObject private var music   = MusicManager()
@@ -215,10 +215,33 @@ struct NotchContentView: View {
                     if isExpanded {
                         VStack(spacing: 0) {
                             if isHovering || !isSystemHudActive {
-                                if activeTab == 0 {
-                                    NowPlayingNotchView(music: music)
-                                } else {
-                                    CalendarNotchView()
+                                VStack(spacing: 0) {
+                                    Spacer().frame(height: 24)
+                                    if isMusicMode {
+                                        HStack(spacing: 6) {
+                                            Circle().fill(activeTab == -1 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
+                                            Circle().fill(activeTab == 0 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
+                                            Circle().fill(activeTab == 1 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
+                                        }
+                                        .padding(.top, 4)
+                                        .allowsHitTesting(false)
+                                    }
+                                    if activeTab == -1 {
+                                        ControlCenterNotchView()
+                                            .transition(.asymmetric(
+                                                insertion: .move(edge: .leading).combined(with: .opacity),
+                                                removal:   .move(edge: .trailing).combined(with: .opacity)))
+                                    } else if activeTab == 0 {
+                                        NowPlayingNotchView(music: music)
+                                            .transition(.asymmetric(
+                                                insertion: .move(edge: activeTab == -1 ? .trailing : .leading).combined(with: .opacity),
+                                                removal:   .move(edge: activeTab == -1 ? .leading : .trailing).combined(with: .opacity)))
+                                    } else {
+                                        CalendarNotchView()
+                                            .transition(.asymmetric(
+                                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                                removal:   .move(edge: .leading).combined(with: .opacity)))
+                                    }
                                 }
                             }
 
@@ -271,7 +294,7 @@ struct NotchContentView: View {
                         if val.translation.width < -30 {
                             withAnimation { activeTab = min(activeTab + 1, 1) }
                         } else if val.translation.width > 30 {
-                            withAnimation { activeTab = max(activeTab - 1, 0) }
+                            withAnimation { activeTab = max(activeTab - 1, -1) }
                         }
                     }
             )
@@ -283,7 +306,7 @@ struct NotchContentView: View {
                 if dy > 5 {
                     withAnimation { activeTab = min(activeTab + 1, 1) }
                 } else if dy < -5 {
-                    withAnimation { activeTab = max(activeTab - 1, 0) }
+                    withAnimation { activeTab = max(activeTab - 1, -1) }
                 }
             }
 
@@ -361,32 +384,7 @@ struct NotchContentView: View {
             EmptyView()
 
         default:
-            VStack(spacing: 0) {
-                // Hardware notch clearance spacer
-                Spacer().frame(height: 24)
-
-                if isMusicMode {
-                    HStack(spacing: 6) {
-                        Circle().fill(activeTab == 0 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
-                        Circle().fill(activeTab == 1 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
-                    }
-                    .padding(.top, 4)
-                    .allowsHitTesting(false)
-                }
-
-                if activeTab == 0 {
-                    NowPlayingNotchView(music: music)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal:   .move(edge: .leading).combined(with: .opacity)))
-                } else {
-                    CalendarNotchView()
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .leading).combined(with: .opacity),
-                            removal:   .move(edge: .trailing).combined(with: .opacity)))
-                }
-            }
-            .animation(.spring(response: 0.32, dampingFraction: 0.85), value: activeTab)
+            EmptyView()
         }
     }
 }
@@ -955,5 +953,70 @@ struct CalendarNotchView: View {
                 }
             }
         }
+    }
+}
+import SwiftUI
+
+struct ControlCenterNotchView: View {
+    @ObservedObject private var pluginManager = PluginManager.shared
+    
+    // Grid layout for plugin buttons (4 columns)
+    let columns = [
+        GridItem(.adaptive(minimum: 60, maximum: 80), spacing: 16)
+    ]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Control Center")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(.white.opacity(0.8))
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+            
+            if pluginManager.loadedPlugins.isEmpty {
+                VStack {
+                    Spacer()
+                    Text("No plugins installed")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.5))
+                    Text("Download plugins from Settings")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.3))
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(pluginManager.loadedPlugins, id: \.pluginName) { plugin in
+                            Button {
+                                plugin.onControlCenterButtonClick()
+                            } label: {
+                                VStack(spacing: 8) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.white.opacity(0.1))
+                                            .frame(width: 48, height: 48)
+                                        
+                                        Image(systemName: plugin.controlCenterIcon.isEmpty ? "puzzlepiece.extension.fill" : plugin.controlCenterIcon)
+                                            .font(.system(size: 20))
+                                            .foregroundStyle(.white)
+                                    }
+                                    
+                                    Text(plugin.pluginName)
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(.white)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .contentShape(Rectangle())
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
