@@ -77,8 +77,9 @@ class NotchWindowController: NSWindowController {
         panel.contentView = container
 
         NotificationCenter.default.addObserver(
-            forName: .notchLayoutChanged, object: notchID, queue: .main
+            forName: .notchLayoutChanged, object: nil, queue: .main
         ) { [weak self] notif in
+            guard (notif.object as? UUID) == self?.notchID else { return }
             guard let w = notif.userInfo?["w"] as? CGFloat,
                   let h = notif.userInfo?["h"] as? CGFloat else { return }
             self?.notchSize = NSSize(width: w, height: h)
