@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import SwiftUI
 
 final class MusicManager: NSObject, ObservableObject {
 
@@ -130,6 +131,9 @@ final class MusicManager: NSObject, ObservableObject {
         }
     }
 
+    @Published var primaryColor:   Color = .white
+    @Published var secondaryColor: Color = .white
+
     // MARK: - Album Artwork
 
     private func fetchArtwork(player: String, urlString: String) {
@@ -137,7 +141,10 @@ final class MusicManager: NSObject, ObservableObject {
             // Spotify provides a CDN URL — download it
             URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
                 guard let data, let img = NSImage(data: data) else { return }
-                DispatchQueue.main.async { self?.albumArt = img }
+                DispatchQueue.main.async { 
+                    self?.albumArt = img 
+                    self?.updateColors(for: img)
+                }
             }.resume()
         } else if player == "Music" {
             // Apple Music: extract artwork via osascript saving to temp file
@@ -159,11 +166,44 @@ final class MusicManager: NSObject, ObservableObject {
             runOsascript(artScript) { [weak self] result in
                 guard result == "ok",
                       let img = NSImage(contentsOfFile: tmp) else { return }
-                DispatchQueue.main.async { self?.albumArt = img }
+                DispatchQueue.main.async { 
+                    self?.albumArt = img 
+                    self?.updateColors(for: img)
+                }
             }
         } else {
-            DispatchQueue.main.async { self.albumArt = nil }
+            DispatchQueue.main.async { 
+                self.albumArt = nil 
+                self.primaryColor = .white
+                self.secondaryColor = .white
+            }
         }
+    }
+
+    private func updateColors(for image: NSImage) {
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+        let ciImage = CIImage(cgImage: cgImage)
+        
+        let width = CGFloat(cgImage.width)
+        let height = CGFloat(cgImage.height)
+        
+        let leftRect = CIVector(x: 0, y: 0, z: width/2, w: height)
+        let rightRect = CIVector(x: width/2, y: 0, z: width/2, w: height)
+        
+        func averageColor(rect: CIVector) -> Color {
+            guard let filter = CIFilter(name: "CIAreaAverage", parameters: [kCIInputImageKey: ciImage, kCIInputExtentKey: rect]),
+                  let outputImage = filter.outputImage else { return .white }
+            
+            var bitmap = [UInt8](repeating: 0, count: 4)
+            let context = CIContext(options: [.workingColorSpace: kCFNull!])
+            context.render(outputImage, toBitmap: &bitmap, rowBytes: 4, bounds: CGRect(x: 0, y: 0, width: 1, height: 1), format: .RGBA8, colorSpace: nil)
+            
+            // CoreImage provides premultiplied ARGB or RGBA. Using RGBA8:
+            return Color(red: Double(bitmap[0]) / 255.0, green: Double(bitmap[1]) / 255.0, blue: Double(bitmap[2]) / 255.0)
+        }
+        
+        self.primaryColor = averageColor(rect: leftRect)
+        self.secondaryColor = averageColor(rect: rightRect)
     }
 
     // MARK: - Controls

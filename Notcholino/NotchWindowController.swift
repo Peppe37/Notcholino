@@ -295,7 +295,7 @@ struct NotchContentView: View {
             Spacer()
 
             // Right: Waveform
-            WaveformView(isPlaying: true, color: .green)
+            WaveformView(isPlaying: true, fill: AnyShapeStyle(music.primaryColor))
                 .frame(width: 24, height: 14)
                 .padding(.trailing, flare + 12)
         }
@@ -463,12 +463,26 @@ struct NowPlayingNotchView: View {
     @AppStorage("npLeftAccessory")  private var leftAccessory  = "shuffle"
     @AppStorage("npRightAccessory") private var rightAccessory = "repeat"
     @AppStorage("npLiveWaveform")   private var liveWaveform   = true
+    @AppStorage("npColorStyle")     private var colorStyle     = 2
 
     @ObservedObject private var spotify = SpotifyAuth.shared
 
     @State private var isDraggingSeek = false
     @State private var seekPreview:    Double = 0
     @State private var iconScale: CGFloat = 1.0
+
+    private var activeFill: AnyShapeStyle {
+        switch colorStyle {
+        case 0:
+            return AnyShapeStyle(Color.white.opacity(0.85))
+        case 1:
+            return AnyShapeStyle(music.primaryColor)
+        case 2:
+            return AnyShapeStyle(LinearGradient(colors: [music.primaryColor, music.secondaryColor], startPoint: .leading, endPoint: .trailing))
+        default:
+            return AnyShapeStyle(Color.white.opacity(0.85))
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -504,7 +518,7 @@ struct NowPlayingNotchView: View {
                 Spacer()
 
                 if music.isPlaying && liveWaveform {
-                    WaveformView(isPlaying: music.isPlaying, color: music.activePlayer == "Music" ? .pink : .green)
+                    WaveformView(isPlaying: music.isPlaying, fill: activeFill)
                         .frame(width: 24, height: 16)
                 }
             }
@@ -519,7 +533,7 @@ struct NowPlayingNotchView: View {
 
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.white.opacity(0.15)).frame(height: 6)
-                        Capsule().fill(Color.white.opacity(0.85))
+                        Capsule().fill(activeFill)
                             .frame(width: max(6, geo.size.width * pct), height: 6)
 
                         Circle().fill(.white)
@@ -651,7 +665,7 @@ struct NowPlayingNotchView: View {
 
 struct WaveformView: View {
     let isPlaying: Bool
-    var color: Color = .green
+    var fill: AnyShapeStyle = AnyShapeStyle(Color.green)
 
     @State private var heights: [CGFloat] = [0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.4]
     @State private var timer: Timer?
@@ -660,7 +674,7 @@ struct WaveformView: View {
         HStack(alignment: .bottom, spacing: 2) {
             ForEach(0..<heights.count, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 1.5)
-                    .fill(color.opacity(0.85))
+                    .fill(fill)
                     .frame(width: 3, height: max(4, heights[i] * 14))
                     .animation(
                         .easeInOut(duration: Double.random(in: 0.25...0.5))
