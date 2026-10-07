@@ -573,6 +573,10 @@ struct NowPlayingNotchView: View {
             }
             .padding(.horizontal, 24)
             .padding(.top, 14)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                openActivePlayer()
+            }
 
             VStack(spacing: 6) {
                 GeometryReader { geo in
@@ -694,6 +698,20 @@ struct NowPlayingNotchView: View {
             IconButton(icon: "airplayaudio", size: 15, opacity: 0.5, color: .white) { music.toggleAirPlay() }
         default:
             EmptyView()
+        }
+    }
+    private func openActivePlayer() {
+        let bundleID: String
+        if music.activePlayer == "Spotify" {
+            bundleID = "com.spotify.client"
+        } else if music.activePlayer == "Music" {
+            bundleID = "com.apple.Music"
+        } else {
+            return
+        }
+        
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
         }
     }
     
