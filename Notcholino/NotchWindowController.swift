@@ -19,11 +19,15 @@ final class NotchHostingView: NSHostingView<AnyView> {
 
 extension Notification.Name {
     static let notchScrollWheel = Notification.Name("notchScrollWheel")
+    static let notchLayoutChanged = Notification.Name("notchLayoutChanged")
 }
 
 // MARK: - Window Controller
 
 class NotchWindowController: NSWindowController {
+
+    private let expandedSize = NSSize(width: 520, height: 310)
+    private var shrinkWorkItem: DispatchWorkItem?
 
     init() {
         guard let screen = NSScreen.main else {
@@ -56,6 +60,39 @@ class NotchWindowController: NSWindowController {
         let hosting = NotchHostingView(rootView: root)
         hosting.layer?.backgroundColor = NSColor.clear.cgColor
         panel.contentView = hosting
+
+        NotificationCenter.default.addObserver(
+            forName: .notchLayoutChanged, object: nil, queue: .main
+        ) { [weak self] notif in
+            guard let info = notif.userInfo,
+                  let expanded = info["expanded"] as? Bool,
+                  let w = info["w"] as? CGFloat,
+                  let h = info["h"] as? CGFloat else { return }
+            self?.updateFrame(expanded: expanded, collapsedSize: NSSize(width: w, height: h))
+        }
+    }
+
+    /// Keeps the panel as small as the visible notch while collapsed, so the
+    /// transparent area around it doesn't swallow clicks meant for other apps.
+    private func updateFrame(expanded: Bool, collapsedSize: NSSize) {
+        shrinkWorkItem?.cancel()
+        if expanded {
+            applyFrame(expandedSize)
+        } else {
+            // Wait for the collapse animation to finish before shrinking the window
+            let item = DispatchWorkItem { [weak self] in self?.applyFrame(collapsedSize) }
+            shrinkWorkItem = item
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: item)
+        }
+    }
+
+    private func applyFrame(_ size: NSSize) {
+        guard let window, let screen = window.screen ?? NSScreen.main else { return }
+        let frame = NSRect(
+            x: screen.frame.midX - size.width / 2,
+            y: screen.frame.maxY - size.height,
+            width: size.width, height: size.height)
+        if window.frame != frame { window.setFrame(frame, display: true) }
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -170,6 +207,9 @@ struct NotchContentView: View {
             .animation(.spring(response: 0.38, dampingFraction: 0.74), value: curW)
             .animation(.spring(response: 0.3,  dampingFraction: 0.8),  value: sysEvt.currentMode)
             .animation(.spring(response: 0.3,  dampingFraction: 0.8),  value: isPlayingCompact)
+            .onAppear { publishLayout() }
+            .onChange(of: isExpanded)        { _ in publishLayout() }
+            .onChange(of: isPlayingCompact)  { _ in publishLayout() }
             .onHover { hovering in
                 collapseTask?.cancel()
                 if hovering {
@@ -209,6 +249,12 @@ struct NotchContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .environmentObject(calMgr)
+    }
+
+    private func publishLayout() {
+        NotificationCenter.default.post(
+            name: .notchLayoutChanged, object: nil,
+            userInfo: ["expanded": isExpanded, "w": pillW, "h": pillH])
     }
 
     private var isMusicMode: Bool {
