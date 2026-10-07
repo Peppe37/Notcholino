@@ -2,13 +2,25 @@ import EventKit
 import Foundation
 
 final class CalendarManager: ObservableObject {
+    static let shared = CalendarManager()
     @Published var upcomingEvent: EKEvent?
     @Published var hasAccess = false
     
     private let store = EKEventStore()
     private var timer: Timer?
 
+    @Published var availableCalendars: [EKCalendar] = []
+    @Published var selectedCalendarIDs: Set<String> = [] {
+        didSet {
+            UserDefaults.standard.set(Array(selectedCalendarIDs), forKey: "selectedCalendarIDs")
+            fetchEvents()
+        }
+    }
+
     init() {
+        if let saved = UserDefaults.standard.stringArray(forKey: "selectedCalendarIDs") {
+            self.selectedCalendarIDs = Set(saved)
+        }
         requestAccess()
         // Refresh every minute to keep "next event" accurate
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
@@ -25,16 +37,30 @@ final class CalendarManager: ObservableObject {
             store.requestFullAccessToEvents { [weak self] granted, _ in
                 DispatchQueue.main.async {
                     self?.hasAccess = granted
-                    if granted { self?.fetchEvents() }
+                    if granted {
+                        self?.fetchAvailableCalendars()
+                        self?.fetchEvents()
+                    }
                 }
             }
         } else {
             store.requestAccess(to: .event) { [weak self] granted, _ in
                 DispatchQueue.main.async {
                     self?.hasAccess = granted
-                    if granted { self?.fetchEvents() }
+                    if granted {
+                        self?.fetchAvailableCalendars()
+                        self?.fetchEvents()
+                    }
                 }
             }
+        }
+    }
+    
+    func fetchAvailableCalendars() {
+        let cals = store.calendars(for: .event)
+        self.availableCalendars = cals
+        if UserDefaults.standard.object(forKey: "selectedCalendarIDs") == nil {
+            self.selectedCalendarIDs = Set(cals.map { $0.calendarIdentifier })
         }
     }
 
@@ -44,7 +70,13 @@ final class CalendarManager: ObservableObject {
         let now = Date()
         guard let endOfDay = cal.date(bySettingHour: 23, minute: 59, second: 59, of: now) else { return }
         
-        let pred = store.predicateForEvents(withStart: now, end: endOfDay, calendars: nil)
+        let calsToSearch = store.calendars(for: .event).filter { selectedCalendarIDs.contains($0.calendarIdentifier) }
+        guard !calsToSearch.isEmpty else {
+            DispatchQueue.main.async { self.upcomingEvent = nil }
+            return
+        }
+        
+        let pred = store.predicateForEvents(withStart: now, end: endOfDay, calendars: calsToSearch)
         let events = store.events(matching: pred)
         
         // Find next non-all-day event that hasn't finished yet

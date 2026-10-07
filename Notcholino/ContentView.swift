@@ -1,4 +1,5 @@
 import SwiftUI
+import EventKit
 
 // MARK: - Sidebar Items
 enum SidebarItem: String, Hashable, CaseIterable {
@@ -129,7 +130,9 @@ struct SidebarLabel: View {
 // MARK: - General Settings
 
 struct GeneralSettingsView: View {
-    @AppStorage("launchAtLogin")        private var launchAtLogin = true
+    @ObservedObject private var launchMgr = LaunchAtLoginManager.shared
+    @AppStorage("displayScreens")       private var displayScreens = 0
+
     @AppStorage("hideInFullscreen")     private var hideInFullscreen = true
     @AppStorage("hideInMissionControl") private var hideInMissionControl = true
     @AppStorage("hideWhileGaming")      private var hideWhileGaming = false
@@ -139,10 +142,17 @@ struct GeneralSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Launch at login",            isOn: $launchAtLogin)
+                Toggle("Launch at login",            isOn: $launchMgr.isEnabled)
                 Toggle("Hide in fullscreen apps",    isOn: $hideInFullscreen)
                 Toggle("Hide in Mission Control",    isOn: $hideInMissionControl)
                 Toggle("Hide while gaming",          isOn: $hideWhileGaming)
+            }
+            
+            Section("Monitors") {
+                Picker("Show notch on", selection: $displayScreens) {
+                    Text("Main screen only").tag(0)
+                    Text("All screens").tag(1)
+                }
             }
 
             Section("Notch Size Tuning") {
@@ -365,6 +375,7 @@ struct NowPlayingSettingsView: View {
 struct CalendarSettingsView: View {
     @AppStorage("calendarEnabled") private var enabled = true
     @AppStorage("calDisplayMode")  private var displayMode = 0
+    @ObservedObject private var calMgr = CalendarManager.shared
 
     var body: some View {
         Form {
@@ -377,6 +388,29 @@ struct CalendarSettingsView: View {
                     Text("Today only").tag(1)
                 }
                 .pickerStyle(.segmented)
+            }
+            if calMgr.hasAccess && !calMgr.availableCalendars.isEmpty {
+                Section("Visible Calendars") {
+                    ForEach(calMgr.availableCalendars, id: \.calendarIdentifier) { cal in
+                        Toggle(isOn: Binding(
+                            get: { calMgr.selectedCalendarIDs.contains(cal.calendarIdentifier) },
+                            set: { isSelected in
+                                if isSelected {
+                                    calMgr.selectedCalendarIDs.insert(cal.calendarIdentifier)
+                                } else {
+                                    calMgr.selectedCalendarIDs.remove(cal.calendarIdentifier)
+                                }
+                            }
+                        )) {
+                            HStack {
+                                Circle()
+                                    .fill(Color(nsColor: NSColor(cgColor: cal.cgColor) ?? .red))
+                                    .frame(width: 10, height: 10)
+                                Text(cal.title)
+                            }
+                        }
+                    }
+                }
             }
         }
         .formStyle(.grouped)
@@ -474,5 +508,40 @@ func updateOSDSuppression() {
         OSDManager.shared.startSuppressing()
     } else {
         OSDManager.shared.stopSuppressing()
+    }
+}
+
+// MARK: - Launch at Login Manager
+import ServiceManagement
+
+final class LaunchAtLoginManager: ObservableObject {
+    static let shared = LaunchAtLoginManager()
+    
+    @Published var isEnabled: Bool = false {
+        didSet {
+            if isEnabled != oldValue {
+                toggleRegistration(enabled: isEnabled)
+            }
+        }
+    }
+    
+    init() {
+        self.isEnabled = SMAppService.mainApp.status == .enabled
+    }
+    
+    private func toggleRegistration(enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            print("Failed to toggle Launch at Login: \(error)")
+            // Revert state if it failed
+            DispatchQueue.main.async {
+                self.isEnabled = SMAppService.mainApp.status == .enabled
+            }
+        }
     }
 }

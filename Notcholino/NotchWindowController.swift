@@ -145,7 +145,7 @@ struct NotchContentView: View {
 
     @StateObject private var music   = MusicManager()
     @StateObject private var sysEvt  = SystemEventsManager()
-    @StateObject private var calMgr  = CalendarManager()
+    @ObservedObject private var calMgr = CalendarManager.shared
 
     @AppStorage("notchWidth")  private var tuningW: Double = 0
     @AppStorage("notchHeight") private var tuningH: Double = 0
@@ -170,7 +170,7 @@ struct NotchContentView: View {
         let base = baseW + CGFloat(tuningW) + flare * 2
         return isPlayingCompact ? base + 130 : base // Extra width to clear wide MacBook Pro hardware notches
     }
-    
+
     private var pillH: CGFloat { baseH + CGFloat(tuningH) }
 
     // Expanded size based on mode
@@ -178,7 +178,7 @@ struct NotchContentView: View {
         if isHovering { return 400 }
         return isSystemHudActive ? 340 : 400
     }
-    
+
     private var expandH: CGFloat {
         let baseH: CGFloat = (activeTab == 0) ? (180 + 24) : (200 + 24)
         if isHovering {
@@ -217,7 +217,7 @@ struct NotchContentView: View {
                                     CalendarNotchView()
                                 }
                             }
-                            
+
                             if isSystemHudActive {
                                 activeContent
                                     .frame(height: isHovering ? 46 : 54, alignment: .bottom)
@@ -355,7 +355,7 @@ struct NotchContentView: View {
             VStack(spacing: 0) {
                 // Hardware notch clearance spacer
                 Spacer().frame(height: 24)
-                
+
                 if isMusicMode {
                     HStack(spacing: 6) {
                         Circle().fill(activeTab == 0 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
@@ -410,7 +410,7 @@ struct SystemHUDView: View {
     private var textString: String {
         return "\(Int(value * 100))%"
     }
-    
+
     private var showText: Bool {
         return isVolume ? soundShowText : displayShowText
     }
@@ -629,13 +629,13 @@ struct NowPlayingNotchView: View {
                     accessoryButton(type: leftAccessory)
                     Spacer()
                 }
-                
+
                 // Center-aligned main controls
                 HStack(spacing: 28) {
                     IconButton(icon: "backward.fill", size: 22) {
                         music.previousTrack()
                     }
-                    
+
                     Button {
                         togglePlayWithAnimation()
                     } label: {
@@ -655,7 +655,7 @@ struct NowPlayingNotchView: View {
                         music.nextTrack()
                     }
                 }
-                
+
                 // Right-aligned accessories
                 HStack {
                     Spacer()
@@ -709,14 +709,14 @@ struct NowPlayingNotchView: View {
         } else {
             return
         }
-        
+
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
             let config = NSWorkspace.OpenConfiguration()
             config.activates = true
             NSWorkspace.shared.openApplication(at: url, configuration: config, completionHandler: nil)
         }
     }
-    
+
     private func togglePlayWithAnimation() {
         music.playPause()
         withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
@@ -840,9 +840,9 @@ struct CalendarNotchView: View {
                     .foregroundStyle(.white)
                     .padding(.top, -8)
                     .padding(.bottom, 4)
-                
+
                 Spacer()
-                
+
                 VStack(alignment: .leading, spacing: 2) {
                     if let event = calMgr.upcomingEvent {
                         HStack(alignment: .top, spacing: 6) {
@@ -850,23 +850,29 @@ struct CalendarNotchView: View {
                                 .fill(Color(nsColor: NSColor(cgColor: event.calendar.cgColor) ?? .red))
                                 .frame(width: 3)
                                 .cornerRadius(1.5)
-                                
+
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(event.title)
                                     .font(.system(size: 13, weight: .bold))
                                     .foregroundStyle(.white)
                                     .lineLimit(1)
-                                    
+
                                 if let location = event.location, !location.isEmpty {
                                     Text(location)
                                         .font(.system(size: 11))
                                         .foregroundStyle(.white.opacity(0.6))
                                         .lineLimit(1)
                                 }
-                                
+
                                 Text("\(calMgr.formatTime(event.startDate)) - \(calMgr.formatTime(event.endDate))")
                                     .font(.system(size: 12))
                                     .foregroundStyle(.white.opacity(0.5))
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if let url = URL(string: "ical://") {
+                                NSWorkspace.shared.open(url)
                             }
                         }
                     } else if calMgr.hasAccess {
@@ -923,7 +929,13 @@ struct CalendarNotchView: View {
                     }
                 }
                 .padding(.trailing, 28)
-                .padding(.top, 16)
+                .padding(.top, 24)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if let url = URL(string: "ical://") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
             }
         }
     }
