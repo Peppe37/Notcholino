@@ -275,8 +275,19 @@ final class MusicManager: NSObject, ObservableObject {
             let target = !isLiked   // the view flips isLiked right after this call
             guard !uri.isEmpty, SpotifyAuth.shared.isConnected else { return }
             Task {
-                let ok = await SpotifyAuth.shared.setSaved(target, trackURI: uri)
-                if !ok { await MainActor.run { if self.spotifyTrackURI == uri { self.isLiked = !target } } }
+                let auth = SpotifyAuth.shared
+                _ = await auth.setSaved(target, trackURI: uri)
+                // Trust the server, not the optimistic toggle: verify, retry once on legacy endpoints
+                try? await Task.sleep(nanoseconds: 400_000_000)
+                var actual = await auth.isSaved(trackURI: uri)
+                if actual != target {
+                    print("Spotify like mismatch (wanted \(target), got \(String(describing: actual))), retrying on legacy endpoint")
+                    _ = await auth.setSaved(target, trackURI: uri, legacy: true)
+                    try? await Task.sleep(nanoseconds: 400_000_000)
+                    actual = await auth.isSaved(trackURI: uri)
+                }
+                guard let actual else { return }
+                await MainActor.run { if self.spotifyTrackURI == uri { self.isLiked = actual } }
             }
             return
         }
