@@ -180,7 +180,7 @@ struct NotchContentView: View {
             return isSystemHudActive ? baseH + 46 : baseH
         } else {
             switch sysEvt.currentMode {
-            case .volume, .brightness: return 60
+            case .volume, .brightness: return 54 // scaled down from 60 to fit perfectly when closed
             default: return baseH
             }
         }
@@ -215,9 +215,9 @@ struct NotchContentView: View {
                             
                             if isSystemHudActive {
                                 activeContent
-                                    .frame(height: isHovering ? 46 : 60, alignment: .bottom)
-                                    .padding(.bottom, isHovering ? 0 : 12)
-                                    .scaleEffect(isHovering ? 0.7 : 1.0)
+                                    .frame(height: isHovering ? 46 : 54, alignment: .bottom)
+                                    .padding(.bottom, isHovering ? 0 : 8)
+                                    .scaleEffect(isHovering ? 0.7 : 0.85) // Scale down appropriately
                             }
                         }
                         .frame(width: expandW, height: expandH)
@@ -317,7 +317,7 @@ struct NotchContentView: View {
                         .foregroundStyle(.white)
                 }
             }
-            .padding(.leading, flare + 12)
+            .padding(.leading, flare + 4) // Move 8px right (away from center)
             .padding(.top, 4)
 
             Spacer()
@@ -325,7 +325,7 @@ struct NotchContentView: View {
             // Right: Waveform
             WaveformView(isPlaying: true, fill: AnyShapeStyle(music.primaryColor))
                 .frame(width: 24, height: 14)
-                .padding(.trailing, flare + 12)
+                .padding(.trailing, flare + 4) // Move 8px left (away from center)
                 .padding(.top, 4)
         }
     }
@@ -384,28 +384,41 @@ struct SystemHUDView: View {
     let value: CGFloat
     let isVolume: Bool
 
-    @AppStorage("sysHudTheme")    private var theme = 1
-    @AppStorage("sysHudShowText") private var showText = true
-    @AppStorage("sysHudUseDB")    private var useDB = false
+    @AppStorage("soundTheme")      private var soundTheme = 1
+    @AppStorage("soundShowText")   private var soundShowText = true
+    @AppStorage("soundTextMode")   private var soundTextMode = 0
+
+    @AppStorage("displayTheme")    private var displayTheme = 1
+    @AppStorage("displayShowText") private var displayShowText = true
 
     private var barColor: Color {
-        if theme == 0 { return .white }
-        if !isVolume { return .yellow }
-        
-        // Dynamic volume color
-        if value > 0.8 { return .red }
-        if value > 0.6 { return .yellow }
-        return .white
+        if isVolume {
+            if soundTheme == 0 { return .white }
+            if value > 0.8 { return .red }
+            if value > 0.6 { return .yellow }
+            return .white
+        } else {
+            if displayTheme == 0 { return .white }
+            return .yellow
+        }
     }
 
     private var textString: String {
-        if isVolume && useDB {
-            let db = -60.0 + (Double(value) * 60.0)
-            if value == 0 { return "-∞ dB" }
-            return String(format: "%.1f dB", db)
+        if isVolume {
+            if soundTextMode == 1 {
+                let db = -60.0 + (Double(value) * 60.0)
+                if value == 0 { return "-∞ dB" }
+                return String(format: "%.1f dB", db)
+            } else {
+                return "\(Int(value * 100))%"
+            }
         } else {
             return "\(Int(value * 100))%"
         }
+    }
+    
+    private var showText: Bool {
+        return isVolume ? soundShowText : displayShowText
     }
 
     var body: some View {

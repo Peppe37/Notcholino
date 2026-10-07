@@ -225,9 +225,9 @@ struct FocusSettingsView: View {
 // MARK: - Display Settings
 
 struct DisplaySettingsView: View {
-    @AppStorage("displayEnabled") private var enabled = true
-    @AppStorage("sysHudTheme")    private var theme = 1
-    @AppStorage("sysHudShowText") private var showText = true
+    @AppStorage("displayEnabled")  private var enabled = true
+    @AppStorage("displayTheme")    private var theme = 1
+    @AppStorage("displayShowText") private var showText = true
 
     var body: some View {
         Form {
@@ -237,7 +237,7 @@ struct DisplaySettingsView: View {
             Section("Appearance") {
                 Picker("Theme", selection: $theme) {
                     Text("Monochrome").tag(0)
-                    Text("Dynamic").tag(1)
+                    Text("Yellow").tag(1)
                 }
                 Toggle("Show percentage text", isOn: $showText)
             }
@@ -251,9 +251,9 @@ struct DisplaySettingsView: View {
 
 struct SoundSettingsView: View {
     @AppStorage("soundEnabled")   private var enabled = true
-    @AppStorage("sysHudTheme")    private var theme = 1
-    @AppStorage("sysHudShowText") private var showText = true
-    @AppStorage("sysHudUseDB")    private var useDB = false
+    @AppStorage("soundTheme")     private var theme = 1
+    @AppStorage("soundShowText")  private var showText = true
+    @AppStorage("soundTextMode")  private var textMode = 0
 
     var body: some View {
         Form {
@@ -263,11 +263,16 @@ struct SoundSettingsView: View {
             Section("Appearance") {
                 Picker("Theme", selection: $theme) {
                     Text("Monochrome").tag(0)
-                    Text("Dynamic").tag(1)
+                    Text("Dynamic (Colors)").tag(1)
                 }
                 Toggle("Show volume text", isOn: $showText)
-                Toggle("Use Decibels (dB)", isOn: $useDB)
-                    .disabled(!showText)
+                if showText {
+                    Picker("Text Format", selection: $textMode) {
+                        Text("Percentage").tag(0)
+                        Text("Decibels (dB)").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                }
             }
         }
         .formStyle(.grouped)
