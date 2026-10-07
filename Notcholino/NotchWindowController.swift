@@ -545,15 +545,24 @@ struct NowPlayingNotchView: View {
     private func accessoryButton(type: String) -> some View {
         switch type {
         case "shuffle":
-            IconButton(icon: "shuffle", size: 15, opacity: 0.5) { music.toggleShuffle() }
+            IconButton(icon: "shuffle", size: 15, opacity: music.isShuffleEnabled ? 1.0 : 0.5, color: music.isShuffleEnabled ? .green : .white) {
+                music.toggleShuffle()
+                music.isShuffleEnabled.toggle()
+            }
         case "repeat":
-            IconButton(icon: "repeat", size: 15, opacity: 0.5) { music.toggleRepeat() }
+            IconButton(icon: "repeat", size: 15, opacity: music.isRepeatEnabled ? 1.0 : 0.5, color: music.isRepeatEnabled ? .green : .white) {
+                music.toggleRepeat()
+                music.isRepeatEnabled.toggle()
+            }
         case "like":
-            IconButton(icon: "heart", size: 15, opacity: 0.5) { music.toggleLike() }
+            let isLiked = music.isLiked
+            IconButton(icon: isLiked ? "heart.fill" : "heart", size: 15, opacity: isLiked ? 1.0 : 0.5, color: isLiked ? .green : .white) {
+                music.toggleLike()
+                music.isLiked.toggle()
+            }
         case "devices":
-            IconButton(icon: "airplayaudio", size: 15, opacity: 0.5) { music.toggleAirPlay() }
+            IconButton(icon: "airplayaudio", size: 15, opacity: 0.5, color: .white) { music.toggleAirPlay() }
         default:
-            // "none" or unknown
             EmptyView()
         }
     }
@@ -625,13 +634,14 @@ struct IconButton: View {
     let icon:    String
     let size:    CGFloat
     var opacity: Double = 1.0
+    var color:   Color  = .white
     let action:  () -> Void
 
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: size, weight: .bold))
-                .foregroundStyle(.white.opacity(opacity))
+                .foregroundStyle(color.opacity(opacity))
                 .frame(width: 36, height: 36)
                 .contentShape(Rectangle())
         }

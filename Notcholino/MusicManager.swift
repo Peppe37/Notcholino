@@ -10,6 +10,9 @@ final class MusicManager: NSObject, ObservableObject {
     @Published var activePlayer: String   = "None"
     @Published var trackDuration: Double  = 0
     @Published var trackPosition: Double  = 0
+    @Published var isShuffleEnabled: Bool = false
+    @Published var isRepeatEnabled:  Bool = false
+    @Published var isLiked:          Bool = false
 
     private var pollTimer: Timer?
     private var tickTimer: Timer?
@@ -48,7 +51,9 @@ final class MusicManager: NSObject, ObservableObject {
                 if player state is playing then
                     set d to (duration of current track) / 1000
                     set artURL to artwork url of current track
-                    set out to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL
+                    set shuf to shuffling
+                    set rep to repeating
+                    set out to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL & "|||" & (shuf as string) & "|||" & (rep as string) & "|||false"
                 end if
             end tell
         end if
@@ -56,7 +61,10 @@ final class MusicManager: NSObject, ObservableObject {
             tell application "Music"
                 if player state is playing then
                     set d to duration of current track
-                    set out to "Music|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||"
+                    set shuf to shuffle enabled
+                    set rep to (song repeat as string)
+                    set lvd to loved of current track
+                    set out to "Music|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & "|||" & (shuf as string) & "|||" & rep & "|||" & (lvd as string)
                 end if
             end tell
         end if
@@ -85,12 +93,20 @@ final class MusicManager: NSObject, ObservableObject {
             let duration = Double(parts[3].replacingOccurrences(of: ",", with: ".")) ?? 0
             let position = Double(parts[4].replacingOccurrences(of: ",", with: ".")) ?? 0
             let artURL   = parts.count > 5 ? parts[5] : ""
+            
+            let isShuffling = (parts.count > 6) ? (parts[6] == "true") : false
+            let isRepeating = (parts.count > 7) ? (parts[7] == "true" || parts[7] == "all" || parts[7] == "one") : false
+            let isLoved     = (parts.count > 8) ? (parts[8] == "true") : false
 
             DispatchQueue.main.async {
                 self.activePlayer  = player
                 self.artistName    = aName
                 self.isPlaying     = true
                 self.trackDuration = duration
+                self.isShuffleEnabled = isShuffling
+                self.isRepeatEnabled  = isRepeating
+                self.isLiked          = isLoved
+                
                 // Only reset position if track changed
                 if self.trackName != tName {
                     self.trackPosition = position
