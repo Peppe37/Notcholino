@@ -11,6 +11,10 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
     static let shared = SpotifyAuth()
     static let redirectURI = "notcholino://callback"
 
+    /// Client ID of the app registered on developer.spotify.com/dashboard.
+    /// With PKCE it is public (not a secret), so it ships with the app and users never see it.
+    static let bundledClientID = ""
+
     private let scopes = "user-library-read user-library-modify"
     private let keychainService = "com.giuseppe.Notcholino.spotify"
 
@@ -26,9 +30,11 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
         isConnected = keychainRead() != nil
     }
 
+    /// Optional override from Settings > Advanced, otherwise the bundled one.
     var clientID: String {
-        (UserDefaults.standard.string(forKey: "spotifyClientID") ?? "")
+        let override = (UserDefaults.standard.string(forKey: "spotifyClientID") ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        return override.isEmpty ? Self.bundledClientID : override
     }
 
     // MARK: - Connect / disconnect

@@ -301,7 +301,6 @@ struct NowPlayingSettingsView: View {
             }
 
             Section {
-                TextField("Client ID", text: $spotifyClientID)
                 HStack {
                     Text(spotify.isConnected ? "Connected" : "Not connected")
                         .foregroundStyle(spotify.isConnected ? .green : .secondary)
@@ -310,16 +309,20 @@ struct NowPlayingSettingsView: View {
                         Button("Disconnect") { spotify.disconnect() }
                     } else {
                         Button("Connect") { spotify.connect() }
-                            .disabled(spotifyClientID.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
                 if let err = spotify.lastError {
                     Text(err).font(.caption).foregroundStyle(.red)
                 }
+                DisclosureGroup("Advanced") {
+                    TextField("Custom Client ID", text: $spotifyClientID)
+                    Text("Only needed to use your own Spotify app. Redirect URI: \(SpotifyAuth.redirectURI)")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             } header: {
                 Text("Spotify Likes")
             } footer: {
-                Text("Create an app at developer.spotify.com/dashboard, add the redirect URI \(SpotifyAuth.redirectURI), then paste its Client ID here.")
+                Text("Connect your Spotify account once to see and toggle liked songs.")
             }
 
             Section("Appearance") {
