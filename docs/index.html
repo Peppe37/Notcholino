@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notcholino – a living Notch for macOS</title>
+<meta name="description" content="Notcholino turns your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools. Free, open source, non-commercial.">
+<style>
+  :root { --bg:#fff; --fg:#1d1d1f; --muted:#6e6e73; --card:#f5f5f7; --accent:#0071e3; --line:#d2d2d7; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#000; --fg:#f5f5f7; --muted:#a1a1a6; --card:#1c1c1e; --accent:#2997ff; --line:#38383a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
+  main, footer { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+  .hero { text-align:center; padding: 72px 0 48px; }
+  .notch { width: 220px; height: 34px; margin: 0 auto 40px; background:#000; border-radius: 0 0 20px 20px; box-shadow: 0 0 0 1px var(--line); animation: grow 4s ease-in-out infinite; }
+  @keyframes grow { 0%,100% { width:220px; height:34px; } 50% { width:340px; height:90px; } }
+  @media (prefers-reduced-motion: reduce) { .notch { animation:none; } }
+  h1 { font-size: clamp(2.2rem, 7vw, 3.5rem); margin: 0 0 12px; letter-spacing: -.02em; }
+  .tag { color: var(--muted); font-size: 1.2rem; max-width: 560px; margin: 0 auto 28px; }
+  .btn { display:inline-block; background:var(--accent); color:#fff; text-decoration:none; padding: 12px 24px; border-radius: 980px; font-weight:600; }
+  .btn.sec { background:transparent; color:var(--accent); }
+  .meta { color:var(--muted); font-size:.9rem; margin-top:14px; }
+  .badge { display:inline-block; font-size:.75rem; font-weight:600; padding:2px 8px; border-radius:6px; background:var(--card); border:1px solid var(--line); vertical-align:middle; }
+  section { padding: 32px 0; }
+  h2 { font-size: 1.6rem; margin: 0 0 16px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .card { background:var(--card); border-radius: 16px; padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size:1.05rem; }
+  .card p { margin:0; color:var(--muted); font-size:.95rem; }
+  code { background:var(--card); padding:2px 6px; border-radius:6px; font-size:.9em; }
+  footer { padding: 32px 16px 48px; color:var(--muted); font-size:.9rem; border-top:1px solid var(--line); margin-top: 32px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <div class="notch" aria-hidden="true"></div>
+    <h1>Notcholino</h1>
+    <p class="tag">Turn your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools.</p>
+    <a class="btn" id="download" href="https://github.com/Peppe37/Notcholino/releases">Download</a>
+    <a class="btn sec" href="https://github.com/Peppe37/Notcholino">View on GitHub</a>
+    <p class="meta" id="release-meta">Latest release: <a href="https://github.com/Peppe37/Notcholino/releases">see all releases</a></p>
+  </div>
+
+  <section>
+    <h2>What is it?</h2>
+    <p>Notcholino is a free, open-source and non-commercial alternative to Alcove for macOS. It extends the hardware notch with a fluid overlay that expands on hover and shows what matters: now playing, upcoming events, volume and brightness, and more.</p>
+    <p><span class="badge">Alpha</span> Notcholino is in early development. Expect rough edges and breaking changes between versions.</p>
+  </section>
+
+  <section>
+    <h2>Features</h2>
+    <div class="grid">
+      <div class="card"><h3>Dynamic Notch</h3><p>A native overlay that blends with the hardware notch, with multi-monitor support.</p></div>
+      <div class="card"><h3>Now Playing</h3><p>Control music players right from the notch.</p></div>
+      <div class="card"><h3>Calendar</h3><p>See upcoming events and jump to them in Calendar.</p></div>
+      <div class="card"><h3>System HUD</h3><p>Volume and brightness feedback shown in the notch.</p></div>
+      <div class="card"><h3>Native Settings</h3><p>A System Settings–style preferences window built with SwiftUI.</p></div>
+      <div class="card"><h3>Plugins &amp; Raycast</h3><p>Plugin architecture and Raycast integration are in the works.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Install</h2>
+    <p>Requires macOS 14 or later. Download the latest build from the <a href="https://github.com/Peppe37/Notcholino/releases">Releases page</a>. Since the app is not notarized yet, on first launch right-click it and choose <b>Open</b>.</p>
+    <p>Prefer building it yourself? Install <code>xcodegen</code>, run <code>xcodegen generate</code> and open <code>Notcholino.xcodeproj</code>. See the <a href="https://github.com/Peppe37/Notcholino#building-from-source">README</a>.</p>
+  </section>
+</main>
+
+<footer>
+  Licensed under <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a> ·
+  <a href="https://github.com/Peppe37/Notcholino/releases">Changelog &amp; releases</a> ·
+  <a href="https://github.com/Peppe37/Notcholino/issues">Report an issue</a>
+</footer>
+
+<script>
+// Show the newest release (pre-releases included) and link straight to its first asset.
+fetch('https://api.github.com/repos/Peppe37/Notcholino/releases?per_page=1')
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(([rel]) => {
+    if (!rel) return;
+    const asset = (rel.assets || [])[0];
+    if (asset) document.getElementById('download').href = asset.browser_download_url;
+    document.getElementById('release-meta').innerHTML =
+      'Latest release: <a href="' + rel.html_url + '">' + rel.tag_name + '</a>' +
+      (rel.prerelease ? ' <span class="badge">pre-release</span>' : '');
+  })
+  .catch(() => {});
+</script>
+</body>
+</html>
