@@ -1,6 +1,6 @@
 # Notcholino 🖤
 
-Notcholino is a beautiful, open-source, and non-commercial alternative to the popular "Cove" (Alcove) app for macOS. It supercharges your MacBook's Notch by turning it into a dynamic hub for Live Activities, Notifications, and interactive tools.
+Notcholino is a beautiful, open-source, and non-commercial app for macOS. It supercharges your MacBook's Notch by turning it into a dynamic hub for Live Activities, Notifications, and interactive tools.
 
 ## Features (In Development)
 - **Settings:** Native macOS "System Settings" style UI built with SwiftUI.
