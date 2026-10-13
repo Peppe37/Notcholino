@@ -14,7 +14,8 @@
   body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
   main, footer { max-width: 880px; margin: 0 auto; padding: 0 16px; }
   .hero { text-align:center; padding: 72px 0 48px; }
-  .notch { width: 220px; height: 34px; margin: 0 auto 40px; background:#000; border-radius: 0 0 20px 20px; box-shadow: 0 0 0 1px var(--line); animation: grow 4s ease-in-out infinite; }
+  .notch-stage { height: 90px; margin: 0 auto 40px; }
+  .notch { width: 220px; height: 34px; margin: 0 auto; background:#000; border-radius: 0 0 20px 20px; box-shadow: 0 0 0 1px var(--line); animation: grow 4s ease-in-out infinite; }
   @keyframes grow { 0%,100% { width:220px; height:34px; } 50% { width:340px; height:90px; } }
   @media (prefers-reduced-motion: reduce) { .notch { animation:none; } }
   h1 { font-size: clamp(2.2rem, 7vw, 3.5rem); margin: 0 0 12px; letter-spacing: -.02em; }
@@ -37,7 +38,7 @@
 <body>
 <main>
   <div class="hero">
-    <div class="notch" aria-hidden="true"></div>
+    <div class="notch-stage" aria-hidden="true"><div class="notch"></div></div>
     <h1>Notcholino</h1>
     <p class="tag">Turn your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools.</p>
     <a class="btn" id="download" href="https://github.com/Peppe37/Notcholino/releases">Download</a>

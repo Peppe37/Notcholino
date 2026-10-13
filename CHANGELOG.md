@@ -1,0 +1,33 @@
+# Changelog
+
+All notable changes to Notcholino are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0-alpha] - 2026-10-13
+
+First public alpha. Expect rough edges and breaking changes.
+
+### Added
+- Dynamic notch overlay that extends the hardware notch, expands on hover and supports multiple displays.
+- Native System Settings–style preferences window built with SwiftUI.
+- Now Playing for Spotify and Apple Music: album art, scrubbable progress bar, seek, shuffle/repeat state, animated waveform and colors extracted from the artwork.
+- Spotify Like via the Web API (OAuth PKCE) and AirPlay button, with configurable left/right accessory buttons.
+- Compact music mode with album art and waveform.
+- Calendar tab using EventKit, with selectable calendars, color-coded events and locations; clicking an event opens it in Calendar.
+- System HUDs for volume, brightness, media and microphone, replacing the native macOS HUD, with theme, label and decibel options.
+- Scroll-wheel and swipe gestures to switch between tabs.
+- Foundation for a Swift `.bundle` plugin architecture and a Control Center tab.
+- Landing page on GitHub Pages and an automated release pipeline.
+
+### Fixed
+- Hover glitches: ghosting, the notch collapsing immediately when moved below 32px, and per-display hover state.
+- Crashes caused by a constraint loop in the hosting view and by AppleScript on music videos and local files.
+- Volume and brightness synchronization.
+- Content clipping behind the physical notch on wide MacBook Pro models.
+
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.1.0-alpha...HEAD
+[0.1.0-alpha]: https://github.com/Peppe37/Notcholino/releases/tag/v0.1.0-alpha

@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag matches project version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION="${TAG%%-*}"
+          PROJECT=$(grep MARKETING_VERSION project.yml | sed -E 's/.*"([^"]+)".*/\1/')
+          if [ "$VERSION" != "$PROJECT" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match MARKETING_VERSION $PROJECT in project.yml"
+            exit 1
+          fi
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Build
+        run: |
+          xcodebuild -project Notcholino.xcodeproj -scheme Notcholino \
+            -configuration Release -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - name: Ad-hoc sign
+        run: codesign --force --deep --sign - build/Build/Products/Release/Notcholino.app
+
+      - name: Create DMG
+        run: |
+          mkdir dmg
+          cp -R build/Build/Products/Release/Notcholino.app dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname Notcholino -srcfolder dmg -ov -format UDZO \
+            "Notcholino-${GITHUB_REF_NAME#v}.dmg"
+
+      - name: Extract release notes
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          awk -v t="$TAG" '
+            $0 ~ "^## \\[" t "\\]" { on=1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then echo "No CHANGELOG entry for $TAG"; exit 1; fi
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FLAGS=""
+          case "$GITHUB_REF_NAME" in *-*) FLAGS="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" "Notcholino-${GITHUB_REF_NAME#v}.dmg" \
+            --title "Notcholino ${GITHUB_REF_NAME#v}" --notes-file notes.md $FLAGS
