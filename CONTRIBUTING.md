@@ -42,7 +42,7 @@ The Xcode project is generated from `project.yml` and is not committed: change t
 3. Match the style of the surrounding code: naming, comment density, SwiftUI idioms.
 4. Add a line to `CHANGELOG.md` under **Unreleased** (what changed, for users).
 5. Say how you tested it, and include a screenshot or a short recording for anything visual.
-6. If you touch performance-sensitive code (timers, polling, the mouse and key monitors), run `scripts/benchmark.sh` before and after and mention the numbers.
+6. If you touch performance-sensitive code (timers, polling, the mouse and key monitors), run `scripts/benchmark.sh <app> 30 --playing` before and after and mention the numbers.
 
 Commit messages: a short imperative first line ("Fix hover collapsing the notch"), then a few lines of why if it is not obvious.
 

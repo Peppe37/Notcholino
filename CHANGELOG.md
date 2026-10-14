@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1-alpha] - 2026-10-14
+
+### Fixed
+- High and growing CPU use while music was playing (tens of percent after a while, and extra work for WindowServer). The music waveform stacked a new animation on top of the previous ones every 0.28 s; it is now drawn with Core Animation and uses almost no CPU.
+
+### Changed
+- `scripts/benchmark.sh --playing` also measures with music playing, using a stand-in for the system Now Playing.
+
 ### Documentation
 - README: badges, table of contents, FAQ, privacy, roadmap, and support and contributing sections.
 - Website: FAQ, support and community section, social preview image, structured data, `robots.txt` and `sitemap.xml`.
@@ -115,7 +123,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.5.0-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.5.1-alpha...HEAD
+[0.5.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.0-alpha...v0.5.1-alpha
 [0.5.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.4.1-alpha...v0.5.0-alpha
 [0.4.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.4.0-alpha...v0.4.1-alpha
 [0.4.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.3.0-alpha...v0.4.0-alpha

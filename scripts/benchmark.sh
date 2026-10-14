@@ -1,12 +1,17 @@
 #!/bin/bash
 # Measures what Notcholino costs: memory, CPU, energy, thread count, disk and how often it spawns osascript.
-# No sudo needed. Usage: scripts/benchmark.sh /path/to/Notcholino.app [seconds-per-scenario]
+# No sudo needed. Usage: scripts/benchmark.sh /path/to/Notcholino.app [seconds-per-scenario] [--playing]
+#
+# --playing also measures with music playing (compact notch with the waveform, and open). It runs a copy of the app
+# whose Now Playing helper is replaced by scripts/fake_now_playing.pl, which reports a song playing in a browser,
+# so nothing is played on your Mac.
 #
 # Notcholino must not already be running. A calendar permission prompt may appear for a new build;
 # the benchmark does not need it. Temperature and GPU per process need `sudo powermetrics`, see the README.
 set -u
 APP="${1:?usage: benchmark.sh /path/to/Notcholino.app [seconds]}"
 SECS="${2:-30}"
+PLAYING=0; for arg in "$@"; do [ "$arg" = "--playing" ] && PLAYING=1; done
 BIN="$APP/Contents/MacOS/Notcholino"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
@@ -16,10 +21,13 @@ if pgrep -x Notcholino >/dev/null; then echo "Quit Notcholino first."; exit 1; f
 HOVER="$(mktemp -d)/hover"
 swiftc -O -o "$HOVER" "$HERE/hover.swift" 2>/dev/null
 
-"$BIN" >/dev/null 2>&1 &
-PID=$!
+launch() {  # path to the executable
+  "$1" >/dev/null 2>&1 &
+  PID=$!
+  sleep 8   # let it settle
+}
 trap 'kill $PID 2>/dev/null' EXIT
-sleep 8   # let it settle
+launch "$BIN"
 
 measure() {  # label
   local label="$1" spawns=0 samples=0
@@ -55,5 +63,20 @@ measure "Idle (notch closed)"
 measure "Opening (first ${SECS}s after hover)"
 measure "Open (settled)"
 "$HOVER" out
+
+if [ "$PLAYING" = 1 ]; then
+  kill $PID 2>/dev/null; sleep 1
+  COPY="$(mktemp -d)/Notcholino.app"
+  cp -R "$APP" "$COPY"
+  cp "$HERE/fake_now_playing.pl" "$COPY/Contents/Resources/mediaremote-adapter.pl"
+  codesign --force --deep --sign - "$COPY" >/dev/null 2>&1
+  launch "$COPY/Contents/MacOS/Notcholino"
+  sleep 20   # a few seconds more: this is where growing costs show up
+  measure "Music playing (compact notch)"
+  "$HOVER" in; sleep 3
+  measure "Music playing (open)"
+  "$HOVER" out
+  rm -rf "$(dirname "$COPY")"
+fi
 echo
 echo "App bundle: $(du -sh "$APP" | awk '{print $1}')"

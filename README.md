@@ -148,7 +148,7 @@ Found a security problem? See [SECURITY.md](SECURITY.md).
 
 ## Performance
 
-Notcholino is meant to stay out of your way. These figures were measured on a MacBook Pro with an Apple M5 and macOS 26.6, with a Release build, averaged over 30 seconds per scenario, with no music player open.
+Notcholino is meant to stay out of your way. These figures were measured on a MacBook Pro with an Apple M5 and macOS 26.6, with a Release build, averaged over 30 seconds per scenario, with the mouse still. The first two scenarios have no music player open.
 
 | | Idle (notch closed) | Open (hovering) |
 | --- | --- | --- |
@@ -156,7 +156,10 @@ Notcholino is meant to stay out of your way. These figures were measured on a Ma
 | **CPU** | 0.00 % | 0.01 % |
 | **Energy impact** (Activity Monitor scale) | 0.00 | 0.02 |
 | **Idle wakeups per second** | 0.0 | 0.0 |
+| **CPU, music playing** | 1.4 % | 1.7 % |
+| **Energy impact, music playing** | 2.1 | 2.8 |
 
+- **Moving the mouse** costs about 1 % of a core while you move it: macOS has to tell Notcholino about every movement so it knows when the pointer reaches the notch. Nothing runs while the mouse is still.
 - **Peak memory** is about 90 MB, only while the app starts.
 - **Disk**: the app is 2.9 MB, the DMG about 2 MB. The [Espresso](plugins/espresso) plugin is 120 KB (a 21 KB download). Nothing else is stored except the plugins you install.
 - **Espresso** adds about 1.5 MB of memory while it is on and no measurable CPU or energy. It holds two power assertions so the Mac and its screen stay awake: the extra power comes from the screen staying on, not from the plugin.
@@ -164,13 +167,17 @@ Notcholino is meant to stay out of your way. These figures were measured on a Ma
 - **Any-app detection** runs one small helper process that is woken only when something changes: about 6 MB of memory and 0.00 % CPU. Turn it off in **Settings → Now Playing → Detect any app**.
 - **Temperature and GPU**: Notcholino only draws a small SwiftUI overlay, with no compute or Metal work of its own, and the thermal state stayed nominal. Per-process temperature and GPU time need root: run `sudo powermetrics --samplers cpu_power,gpu_power,thermal -i 1000 -n 10` to see them on your Mac.
 
-Version 0.4.0 cut this down: before, the app started an `osascript` process every 2 seconds even with no player open, and scanned every running process once a second to hide the system volume HUD. Measured the same way, 0.3.0 used 0.15 % CPU and energy impact 0.17 when idle, plus about 1.4 % of a core in short-lived `osascript` processes that do not show up in the app's own numbers.
+Version 0.5.1 fixed a bug in the music waveform: it stacked a new animation on top of the previous ones every fraction of a second, so the CPU use kept growing while music played (tens of percent after a while). It now runs in the system's render server and stays flat.
+
+Version 0.4.0 cut down the idle cost: before, the app started an `osascript` process every 2 seconds even with no player open, and scanned every running process once a second to hide the system volume HUD. Measured the same way, 0.3.0 used 0.15 % CPU and energy impact 0.17 when idle, plus about 1.4 % of a core in short-lived `osascript` processes that do not show up in the app's own numbers.
 
 To measure on your own Mac (no `sudo` needed):
 
 ```sh
-scripts/benchmark.sh /path/to/Notcholino.app 30
+scripts/benchmark.sh /path/to/Notcholino.app 30 --playing
 ```
+
+`--playing` also measures with music playing, using a stand-in for the system Now Playing, so nothing is played on your Mac.
 
 ## Roadmap
 

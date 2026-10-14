@@ -501,7 +501,7 @@ struct NotchContentView: View {
             Spacer()
 
             // Right: Waveform
-            WaveformView(isPlaying: true, fill: AnyShapeStyle(music.primaryColor))
+            WaveformView(isPlaying: true, color: music.primaryColor)
                 .frame(width: 24, height: 14)
                 .padding(.trailing, flare + 14)
         }
@@ -672,6 +672,9 @@ struct NowPlayingNotchView: View {
     /// A track is known (playing or paused)
     private var hasTrack: Bool { music.activePlayer != "None" && !music.trackName.isEmpty }
 
+    /// Color of the waveform for the chosen style: white, the artwork color, or the start of the gradient
+    private var waveColor: Color { colorStyle == 0 ? Color.white.opacity(0.85) : music.primaryColor }
+
     private var activeFill: AnyShapeStyle {
         switch colorStyle {
         case 0:
@@ -729,7 +732,7 @@ struct NowPlayingNotchView: View {
                 Spacer()
 
                 if music.isPlaying && liveWaveform {
-                    WaveformView(isPlaying: music.isPlaying, fill: activeFill)
+                    WaveformView(isPlaying: music.isPlaying, primary: waveColor, gradient: colorStyle == 2)
                         .frame(width: 24, height: 16)
                 }
             }
@@ -896,49 +899,116 @@ struct NowPlayingNotchView: View {
 
 // MARK: - Waveform
 
-struct WaveformView: View {
+/// The animated bars. They are Core Animation layers, so the animation runs in the system's render server:
+/// the app does no work per frame. (A SwiftUI version that re-randomized the heights every 0.28 s stacked a new
+/// animation on top of the previous ones, and the CPU use grew the longer the music played.)
+struct WaveformView: NSViewRepresentable {
     let isPlaying: Bool
-    var fill: AnyShapeStyle = AnyShapeStyle(Color.green)
+    /// One color, or two for a gradient from top-left to bottom-right
+    var colors: [Color]
 
-    @State private var heights: [CGFloat] = [0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.4]
-    @State private var timer: Timer?
+    init(isPlaying: Bool, color: Color) {
+        self.isPlaying = isPlaying
+        self.colors = [color]
+    }
 
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 2) {
-            ForEach(0..<heights.count, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(fill)
-                    .frame(width: 3, height: max(4, heights[i] * 14))
-                    .animation(
-                        .easeInOut(duration: Double.random(in: 0.25...0.5))
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(i) * 0.05),
-                        value: heights[i]
-                    )
+    /// For the styles the Now Playing view builds: a plain color, or the spectrogram gradient
+    init(isPlaying: Bool, primary: Color, gradient: Bool) {
+        self.isPlaying = isPlaying
+        self.colors = gradient ? [primary, Self.opposing(of: primary)] : [primary]
+    }
+
+    func makeNSView(context: Context) -> WaveformLayerView { WaveformLayerView() }
+
+    func updateNSView(_ view: WaveformLayerView, context: Context) {
+        view.update(colors: colors.map { NSColor($0).cgColor }, playing: isPlaying)
+    }
+
+    /// Same hue shift as `Color.spectrogramGradient()`
+    private static func opposing(of color: Color) -> Color {
+        let ns = NSColor(color).usingColorSpace(.sRGB) ?? .white
+        var h: CGFloat = 0, sat: CGFloat = 0, br: CGFloat = 0, al: CGFloat = 0
+        ns.getHue(&h, saturation: &sat, brightness: &br, alpha: &al)
+        return Color(hue: Double(fmod(h + 0.5, 1.0)), saturation: Double(sat), brightness: Double(br), opacity: Double(al))
+    }
+}
+
+final class WaveformLayerView: NSView {
+    private let gradient = CAGradientLayer()
+    private let mask = CALayer()
+    private var bars: [CALayer] = []
+    private var isAnimating = false
+
+    private static let barCount = 7
+    private static let barWidth: CGFloat = 3
+    private static let spacing: CGFloat = 2
+    private static let maxHeight: CGFloat = 14
+    private static let minScale: CGFloat = 0.28
+    /// Different speeds and phases so the bars don't move in step
+    private static let durations: [CFTimeInterval] = [0.42, 0.31, 0.5, 0.36, 0.46, 0.34, 0.4]
+
+    override var intrinsicContentSize: NSSize { NSSize(width: 24, height: 16) }
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        gradient.startPoint = CGPoint(x: 0, y: 1)
+        gradient.endPoint = CGPoint(x: 1, y: 0)
+        layer?.addSublayer(gradient)
+        gradient.mask = mask
+        for _ in 0..<Self.barCount {
+            let bar = CALayer()
+            bar.backgroundColor = NSColor.white.cgColor
+            bar.cornerRadius = 1.5
+            bar.anchorPoint = CGPoint(x: 0.5, y: 0)   // grow from the bottom
+            bar.transform = CATransform3DMakeScale(1, Self.minScale, 1)
+            mask.addSublayer(bar)
+            bars.append(bar)
+        }
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func layout() {
+        super.layout()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        gradient.frame = bounds
+        mask.frame = bounds
+        // Bars are centered, as the SwiftUI HStack was
+        let total = CGFloat(Self.barCount) * Self.barWidth + CGFloat(Self.barCount - 1) * Self.spacing
+        let x0 = (bounds.width - total) / 2
+        let y0 = (bounds.height - Self.maxHeight) / 2
+        for (i, bar) in bars.enumerated() {
+            bar.bounds = CGRect(x: 0, y: 0, width: Self.barWidth, height: Self.maxHeight)
+            bar.position = CGPoint(x: x0 + CGFloat(i) * (Self.barWidth + Self.spacing) + Self.barWidth / 2, y: y0)
+        }
+        CATransaction.commit()
+    }
+
+    func update(colors: [CGColor], playing: Bool) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        gradient.colors = colors.count > 1 ? colors : [colors.first ?? NSColor.white.cgColor, colors.first ?? NSColor.white.cgColor]
+        CATransaction.commit()
+        guard playing != isAnimating else { return }
+        isAnimating = playing
+        for (i, bar) in bars.enumerated() {
+            bar.removeAnimation(forKey: "wave")
+            guard playing else {
+                bar.transform = CATransform3DMakeScale(1, Self.minScale, 1)
+                continue
             }
+            let wave = CABasicAnimation(keyPath: "transform.scale.y")
+            wave.fromValue = Self.minScale
+            wave.toValue = 1.0
+            wave.duration = Self.durations[i]
+            wave.autoreverses = true
+            wave.repeatCount = .infinity
+            wave.timeOffset = Double(i) * 0.07
+            wave.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            bar.add(wave, forKey: "wave")
         }
-        .onAppear { startAnimating() }
-        .onDisappear { timer?.invalidate() }
-        .onChange(of: isPlaying) { playing in
-            if playing { startAnimating() } else { stopAnimating() }
-        }
-    }
-
-    private func startAnimating() {
-        guard isPlaying else { return }
-        randomizeHeights()
-        timer = Timer.scheduledTimer(withTimeInterval: 0.28, repeats: true) { _ in
-            randomizeHeights()
-        }
-    }
-
-    private func stopAnimating() {
-        timer?.invalidate()
-        withAnimation { heights = heights.map { _ in 0.2 } }
-    }
-
-    private func randomizeHeights() {
-        withAnimation { heights = heights.map { _ in CGFloat.random(in: 0.2...1.0) } }
     }
 }
 
