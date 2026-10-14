@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+- Ways to sponsor the project (GitHub Sponsors, Ko-fi, Buy Me a Coffee): `FUNDING.yml`, the README and the website.
+
 ## [0.5.1-alpha] - 2026-10-14
 
 ### Fixed

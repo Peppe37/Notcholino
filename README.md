@@ -19,6 +19,7 @@
   <a href="LICENSE"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-lightgrey"></a>
   <a href="https://github.com/Peppe37/Notcholino/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/Peppe37/Notcholino"></a>
   <a href="https://github.com/Peppe37/Notcholino/issues"><img alt="Issues" src="https://img.shields.io/github/issues/Peppe37/Notcholino"></a>
+  <a href="https://github.com/sponsors/Peppe37"><img alt="Sponsor" src="https://img.shields.io/badge/sponsor-%E2%9D%A4-ea4aaa"></a>
 </p>
 
 <p align="center">
@@ -27,7 +28,8 @@
   <a href="#faq">FAQ</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
   <a href="https://github.com/Peppe37/Notcholino/discussions">Discussions</a> ·
-  <a href="https://github.com/Peppe37/Notcholino/issues/new/choose">Report an issue</a>
+  <a href="https://github.com/Peppe37/Notcholino/issues/new/choose">Report an issue</a> ·
+  <a href="#support-the-project">Sponsor ❤️</a>
 </p>
 
 ---
@@ -195,6 +197,16 @@ No dates, just direction. Vote with 👍 or suggest more in [Discussions](https:
 - **Bugs and feature requests:** [open an issue](https://github.com/Peppe37/Notcholino/issues/new/choose).
 - **Contribute code, plugins or translations:** read [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Help it be found:** star the repository and tell a friend, it makes a real difference for an open source project.
+
+### Support the project
+
+Notcholino is free and made by one person, in the open. If it is useful to you, you can help keep it going:
+
+- ❤️ [**GitHub Sponsors**](https://github.com/sponsors/Peppe37)
+- ☕ [**Ko-fi**](https://ko-fi.com/giuseppelapietra)
+- ☕ [**Buy Me a Coffee**](https://www.buymeacoffee.com/giuseppelapietra)
+
+Funding goes to the time behind the project, and to the Apple Developer Program, which is what it takes to ship notarized builds with no warning at first launch. Starring the repository and telling a friend helps just as much.
 
 ## Building from source
 
