@@ -3,6 +3,8 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # Manual run: builds the DMG and uploads it as an artifact, without publishing a release
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -13,18 +15,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check tag matches project version
+      - name: Resolve version
+        id: v
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          VERSION="${TAG%%-*}"
           PROJECT=$(grep MARKETING_VERSION project.yml | sed -E 's/.*"([^"]+)".*/\1/')
-          if [ "$VERSION" != "$PROJECT" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match MARKETING_VERSION $PROJECT in project.yml"
-            exit 1
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME#v}"
+            if [ "${TAG%%-*}" != "$PROJECT" ]; then
+              echo "Tag $GITHUB_REF_NAME does not match MARKETING_VERSION $PROJECT in project.yml"
+              exit 1
+            fi
+            echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$PROJECT-dev" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Install xcodegen
-        run: brew install xcodegen
+      - name: Install tools
+        run: brew install xcodegen create-dmg
 
       - name: Generate project
         run: xcodegen generate
@@ -39,14 +46,50 @@ jobs:
         run: codesign --force --deep --sign - build/Build/Products/Release/Notcholino.app
 
       - name: Create DMG
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
         run: |
-          mkdir dmg
-          cp -R build/Build/Products/Release/Notcholino.app dmg/
-          ln -s /Applications dmg/Applications
-          hdiutil create -volname Notcholino -srcfolder dmg -ov -format UDZO \
-            "Notcholino-${GITHUB_REF_NAME#v}.dmg"
+          APP=build/Build/Products/Release/Notcholino.app
+          DMG="Notcholino-$VERSION.dmg"
+          rm -rf stage && mkdir stage && cp -R "$APP" stage/
+
+          # Styled install window (Finder-driven, so retry a few times on a busy runner)
+          ok=0
+          for attempt in 1 2 3; do
+            rm -f "$DMG"
+            if create-dmg --volname "Notcholino" \
+                 --volicon "$APP/Contents/Resources/AppIcon.icns" \
+                 --background dmg/background.tiff \
+                 --window-pos 200 120 --window-size 660 420 --icon-size 112 \
+                 --icon "Notcholino.app" 180 200 \
+                 --app-drop-link 480 200 \
+                 --hide-extension "Notcholino.app" \
+                 --no-internet-enable \
+                 "$DMG" stage; then
+              ok=1; break
+            fi
+            echo "create-dmg attempt $attempt failed"
+            hdiutil detach -force /Volumes/Notcholino >/dev/null 2>&1 || true
+            sleep 5
+          done
+
+          # Fall back to a plain DMG so a release is never blocked by cosmetics
+          if [ "$ok" != 1 ]; then
+            echo "::warning::Styled DMG failed, using a plain DMG"
+            ln -s /Applications stage/Applications
+            rm -f "$DMG"
+            hdiutil create -volname Notcholino -srcfolder stage -ov -format UDZO "$DMG"
+          fi
+
+      - name: Upload DMG (manual run)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Notcholino-dmg
+          path: Notcholino-*.dmg
 
       - name: Extract release notes
+        if: github.ref_type == 'tag'
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           awk -v t="$TAG" '
@@ -57,10 +100,12 @@ jobs:
           if [ ! -s notes.md ]; then echo "No CHANGELOG entry for $TAG"; exit 1; fi
 
       - name: Publish GitHub release
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
         run: |
           FLAGS=""
           case "$GITHUB_REF_NAME" in *-*) FLAGS="--prerelease" ;; esac
-          gh release create "$GITHUB_REF_NAME" "Notcholino-${GITHUB_REF_NAME#v}.dmg" \
-            --title "Notcholino ${GITHUB_REF_NAME#v}" --notes-file notes.md $FLAGS
+          gh release create "$GITHUB_REF_NAME" "Notcholino-$VERSION.dmg" \
+            --title "Notcholino $VERSION" --notes-file notes.md $FLAGS

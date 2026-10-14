@@ -1,0 +1,38 @@
+<!doctype html>
+<!-- DMG window background (660x420 points). Rendered by build_background.sh -->
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; width: 660px; height: 420px; overflow: hidden; }
+  body {
+    position: relative;
+    font-family: -apple-system, "SF Pro Rounded", "SF Pro Display", "Helvetica Neue", sans-serif;
+    background:
+      radial-gradient(70% 90% at 12% 6%,  rgba(120, 160, 255, .70), transparent 62%),
+      radial-gradient(75% 85% at 92% 104%, rgba(236, 104, 200, .62), transparent 62%),
+      linear-gradient(135deg, #2a3fb0 0%, #4733b8 55%, #6b3cc6 100%);
+  }
+  h1 { position: absolute; top: 30px; left: 0; right: 0; margin: 0; text-align: center;
+       font-size: 24px; font-weight: 650; letter-spacing: -.01em; color: #fff; }
+  p  { position: absolute; top: 66px; left: 0; right: 0; margin: 0; text-align: center;
+       font-size: 13.5px; font-weight: 500; color: rgba(255,255,255,.72); }
+  svg { position: absolute; left: 0; top: 0; }
+  /* Mid-tone plates behind the Finder labels: readable with black (light mode) and white (dark mode) text */
+  .plate { position: absolute; top: 266px; width: 104px; height: 24px; margin-left: -52px;
+           border-radius: 12px; background: rgba(124, 114, 182, .88);
+           box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 4px 10px rgba(20, 10, 70, .22); }
+</style>
+<h1>Install Notcholino</h1>
+<p>Drag the app onto the Applications folder</p>
+<div class="plate" style="left:180px"></div>
+<div class="plate" style="left:480px"></div>
+<svg width="660" height="420" viewBox="0 0 660 420">
+  <defs>
+    <filter id="s" x="-20%" y="-50%" width="140%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#14084a" flood-opacity=".35"/>
+    </filter>
+  </defs>
+  <g filter="url(#s)" fill="none" stroke="#fff" stroke-opacity=".92" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M286 200 H372"/>
+    <path d="M358 186 L373 200 L358 214"/>
+  </g>
+</svg>
