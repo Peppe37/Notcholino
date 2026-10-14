@@ -1,0 +1,11 @@
+{
+  "id": "devices",
+  "target": "Devices",
+  "name": "Devices",
+  "description": "The battery of your AirPods, mouse, keyboard and other Bluetooth devices.",
+  "author": "Giuseppe",
+  "icon": "airpodspro",
+  "version": "0.1.0-alpha",
+  "apiVersion": 1,
+  "minAppVersion": "0.8.0"
+}

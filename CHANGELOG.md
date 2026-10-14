@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0-alpha] - 2026-10-15
+
+### Added
+- **Shelf**: drag a screenshot, a recording or any file toward the notch and it opens on the Shelf, which keeps its own copy (nothing is saved on the Desktop). Drag the file out again whenever you like. The page sits between Control Center and Now Playing and only shows while it holds something. **Settings → Shelf** sets how long files stay: until you remove them (the default), 24 hours, or until restart.
+- **Device popups**: a small message under the closed notch when a Bluetooth device connects or disconnects (AirPods and others, with the battery when macOS says it), when the charger is plugged in or removed, and when a disk is connected or ejected. Each can be switched off in **Settings → Devices**. Bluetooth needs your permission, asked there.
+- **Do Not Disturb**: a moon beside the closed notch while a Focus is on (macOS says whether, not which). Needs a permission, asked in **Settings → Devices**.
+- **Join** button on calendar events that have a Zoom, Meet, Teams, Webex, Whereby or Jitsi link, green from ten minutes before the start.
+- Plugins can show a popup under the closed notch, draw an icon beside it, have no button at all, and have options that take a whole row: see `plugins/README.md`.
+- Eight new plugins, released on their own: **Clippy** (clipboard history), **Watcher** (microphone and camera in use), **Pinger** (connection latency), **Picker** (color picker), **Reader** (copy text from the screen), **Devices** (Bluetooth device batteries), **Quicky** (lock, display off, screen saver) and **Tidy** (hide Desktop icons).
+
 ## [0.10.1-alpha] - 2026-10-14
 
 ### Fixed

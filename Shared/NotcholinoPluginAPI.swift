@@ -14,6 +14,8 @@ public let notcholinoPluginAPIVersion = 1
 /// - `"title"`       (String)  text of the option
 /// - `"checked"`     (Bool)    optional, highlights the option as the current choice
 /// - `"destructive"` (Bool)    optional, draws the option in red (e.g. "Turn off")
+/// - `"wide"`        (Bool)    optional, the option takes a whole row instead of a small chip (for longer text;
+///                   Notcholino 0.11.0 and later, older apps show it as a chip)
 /// - `"header"`      (String)  alternatively, a non-clickable section title (no `"id"`)
 /// - `"info"`        (String)  alternatively, a read-only row: this is the label, with `"value"` (String) on the right
 /// - `"stepper"`     (String)  alternatively, a number the user can change: this is the label. Needs `"id"` and `"value"` (Int),

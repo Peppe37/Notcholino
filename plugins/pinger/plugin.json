@@ -1,0 +1,11 @@
+{
+  "id": "pinger",
+  "target": "Pinger",
+  "name": "Pinger",
+  "description": "How fast your connection answers, as a number and a graph, and whether a VPN is on.",
+  "author": "Giuseppe",
+  "icon": "network",
+  "version": "0.1.0-alpha",
+  "apiVersion": 1,
+  "minAppVersion": "0.8.0"
+}

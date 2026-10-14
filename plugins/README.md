@@ -11,6 +11,14 @@ Plugins are small compiled bundles (`.bundle`) that add buttons to the **Control
 | [BatLife](batlife) | Battery level as the button, with health, cycles, power and time left. |
 | [Tomato](tomato) | A Pomodoro timer with work and break minutes of your choice, a small clock under the notch and a sound. |
 | [Dusty](dusty) | Clean mode: black screen and a locked keyboard and trackpad for 5 to 60 seconds. ⌘⇧C ends it. |
+| [Clippy](clippy) | The last 10 things you copied, to copy again with a click. Kept in memory only. |
+| [Watcher](watcher) | No button: an icon beside the notch while the microphone or the camera is in use, and a popup when it starts. |
+| [Pinger](pinger) | The latency of your connection as the button, with a graph and the VPN state. |
+| [Picker](picker) | Pick a color from the screen and copy it as HEX, RGB or HSL. |
+| [Reader](reader) | Drag over any text on the screen and it is copied to the clipboard. |
+| [Devices](devices) | The battery of your AirPods, mouse, keyboard and other Bluetooth devices. |
+| [Quicky](quicky) | Lock the screen, turn the display off or start the screen saver. |
+| [Tidy](tidy) | Hide the icons on your Desktop with one click. |
 
 ## Installing a plugin
 
@@ -22,6 +30,13 @@ A plugin is a class that conforms to `NotcholinoPlugin`, defined in [`Shared/Not
 
 A plugin can also make its button richer (since Notcholino 0.8.0, set `minAppVersion` in `plugin.json` when you use these): `controlCenterLabel` draws a short text such as `42°` instead of the symbol, `controlCenterTintColor` sets the button's color, `controlCenterButtonTapped()` turns the button into a plain switch, a menu entry with a `graph` shows a small line graph, and (since Notcholino 0.10.0) a `stepper` entry is a number with minus and plus buttons that repeat while held; the new value comes back as `performMenuAction("<id>=<value>")`. [Hotter](hotter), [BatLife](batlife), [Scrolly](scrolly) and [Tomato](tomato) use them. Every button in the Control Center has the same size and a single label, its name: a plugin's state goes in `statusText`, shown when its options are open.
 A menu entry with `info` and `value` adds a read-only row.
+
+Since Notcholino 0.11.0 a plugin can also reach out of the Control Center (set `minAppVersion` to `0.11.0` when you use these):
+
+- `setPopupHandler(_:)` gives the plugin a function to call whenever it has something to say: it shows a small popup under the closed notch with a `title`, an optional `subtitle`, an SF Symbol `icon`, a `color` and the number of `seconds`. [Picker](picker) and [Reader](reader) use it to say what they copied.
+- `notchSideIcon` and `notchSideIconColor` draw an SF Symbol beside the closed notch while the name isn't empty. [Watcher](watcher) uses it while the microphone or the camera is on.
+- `controlCenterHidden` removes the plugin's button, for one that only uses popups and icons.
+- A menu entry can have `"wide": true` to take a whole row instead of a small chip, for longer text. [Clippy](clippy) uses it.
 
 To add one:
 

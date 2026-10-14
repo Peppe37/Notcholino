@@ -23,7 +23,7 @@ final class UpdateChecker: ObservableObject {
         static let latestURL = "updateLatestURL"
     }
     private static let interval: TimeInterval = 24 * 3600
-    private static let endpoint = URL(string: "https://api.github.com/repos/Peppe37/Notcholino/releases?per_page=10")!
+    private static let endpoint = URL(string: "https://api.github.com/repos/Peppe37/Notcholino/releases?per_page=30")!
     private var timer: Timer?
 
     var isEnabled: Bool { UserDefaults.standard.object(forKey: Key.enabled) as? Bool ?? true }

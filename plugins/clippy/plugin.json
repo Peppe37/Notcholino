@@ -1,0 +1,11 @@
+{
+  "id": "clippy",
+  "target": "Clippy",
+  "name": "Clippy",
+  "description": "The last things you copied, to copy again with a click. Kept in memory only, never on disk.",
+  "author": "Giuseppe",
+  "icon": "doc.on.clipboard",
+  "version": "0.1.0-alpha",
+  "apiVersion": 1,
+  "minAppVersion": "0.11.0"
+}

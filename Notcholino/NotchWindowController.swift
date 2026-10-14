@@ -1413,6 +1413,22 @@ struct CalendarNotchView: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
+            if !finished, let meeting = MeetingLink.find(in: event) {
+                // Green from a few minutes before the start until the end
+                let soon = event.startDate.timeIntervalSinceNow < 10 * 60
+                Button { NSWorkspace.shared.open(meeting.url) } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "video.fill").font(.system(size: 9, weight: .bold))
+                        Text("Join").font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundStyle(soon ? Color.black : Color.white)
+                    .padding(.horizontal, 9)
+                    .frame(height: 22)
+                    .background(Capsule().fill(soon ? Color.green : Color.white.opacity(0.15)))
+                }
+                .buttonStyle(.plain)
+                .help("Join the \(meeting.service) meeting")
+            }
         }
         .opacity(finished ? 0.4 : 1)
         .contentShape(Rectangle())
@@ -1751,8 +1767,12 @@ struct ControlCenterNotchView: View {
                             }
                             .font(.system(size: 12, weight: .medium))
                         }
+                        // Wide options take a whole row (for text that doesn't fit in a small chip)
+                        ForEach(group.items.filter { $0.wide }, id: \.id) { item in
+                            optionChip(item) { plugin.performMenuAction(item.id); refreshSoon() }
+                        }
                         LazyVGrid(columns: optionColumns, spacing: 6) {
-                            ForEach(group.items, id: \.id) { item in
+                            ForEach(group.items.filter { !$0.wide }, id: \.id) { item in
                                 optionChip(item) { plugin.performMenuAction(item.id); refreshSoon() }
                             }
                         }
@@ -1764,7 +1784,7 @@ struct ControlCenterNotchView: View {
         }
     }
 
-    private struct Option { let id: String; let title: String; let checked: Bool; let destructive: Bool }
+    private struct Option { let id: String; let title: String; let checked: Bool; let destructive: Bool; var wide = false }
     private struct Graph { var values: [Double]; var caption: String; var color: Color }
     private struct InfoRow { let label: String; let value: String }
     private struct StepperItem { let id: String; let label: String; let value: Int; let unit: String; let min: Int; let max: Int; let step: Int }
@@ -1803,7 +1823,8 @@ struct ControlCenterNotchView: View {
                 result[result.count - 1].items.append(Option(
                     id: id, title: title,
                     checked: entry["checked"] as? Bool ?? false,
-                    destructive: entry["destructive"] as? Bool ?? false))
+                    destructive: entry["destructive"] as? Bool ?? false,
+                    wide: entry["wide"] as? Bool ?? false))
             }
         }
         return result.filter { !$0.items.isEmpty || $0.graph != nil || !$0.infos.isEmpty || !$0.steppers.isEmpty }

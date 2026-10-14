@@ -1,0 +1,11 @@
+{
+  "id": "reader",
+  "target": "Reader",
+  "name": "Reader",
+  "description": "Copy the text out of any part of your screen: drag over it and it is in your clipboard.",
+  "author": "Giuseppe",
+  "icon": "text.viewfinder",
+  "version": "0.1.0-alpha",
+  "apiVersion": 1,
+  "minAppVersion": "0.11.0"
+}

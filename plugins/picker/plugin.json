@@ -1,0 +1,11 @@
+{
+  "id": "picker",
+  "target": "Picker",
+  "name": "Picker",
+  "description": "Pick a color from anywhere on your screen and copy it as HEX, RGB or HSL.",
+  "author": "Giuseppe",
+  "icon": "eyedropper",
+  "version": "0.1.0-alpha",
+  "apiVersion": 1,
+  "minAppVersion": "0.11.0"
+}

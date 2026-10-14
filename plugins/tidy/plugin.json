@@ -1,0 +1,11 @@
+{
+  "id": "tidy",
+  "target": "Tidy",
+  "name": "Tidy",
+  "description": "Hide the icons on your Desktop with one click, and show them again with another.",
+  "author": "Giuseppe",
+  "icon": "menubar.dock.rectangle",
+  "version": "0.1.0-alpha",
+  "apiVersion": 1,
+  "minAppVersion": "0.8.0"
+}

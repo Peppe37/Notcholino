@@ -23,8 +23,8 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
-        MARKETING_VERSION: "0.10.1"
-        CURRENT_PROJECT_VERSION: "20"
+        MARKETING_VERSION: "0.11.0"
+        CURRENT_PROJECT_VERSION: "21"
     info:
       path: Notcholino/Info.plist
       properties:
@@ -156,6 +156,142 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
   # --- Helper framework for the system Now Playing (vendored, BSD-3-Clause) ---
+  Clippy:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/clippy
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Clippy
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.clippy
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: ClippyPlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+  Watcher:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/watcher
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Watcher
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.watcher
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: WatcherPlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+  Pinger:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/pinger
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Pinger
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.pinger
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: PingerPlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+  Picker:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/picker
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Picker
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.picker
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: PickerPlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+  Reader:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/reader
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Reader
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.reader
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: ReaderPlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+  Devices:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/devices
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Devices
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.devices
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: DevicesPlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+  Quicky:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/quicky
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Quicky
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.quicky
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: QuickyPlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+  Tidy:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/tidy
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Tidy
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.tidy
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: TidyPlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
   MediaRemoteAdapter:
     type: framework
     platform: macOS

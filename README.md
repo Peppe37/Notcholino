@@ -50,7 +50,11 @@ Notcholino is a free, open-source and non-commercial app that extends the hardwa
 - **Compact music mode**: while music plays, the collapsed notch shows the album art and a live waveform.
 - **Spotify Like**: connect your account once (OAuth with PKCE) to like the current song from the notch.
 - **Calendar and Reminders**: today's date, the next event with its calendar color and location, a month view, and the reminders due today (click the circle to complete one). Pick which calendars to show, and click an event to open it in Calendar.
-- **Permission buttons**: wherever something needs a permission (Calendar, Reminders, controlling Spotify or Music, Accessibility, your Spotify account), the notch shows an **Authorize** button, and **Settings → General → Permissions** lists them all.
+- **Shelf**: drag a screenshot, a recording or any file toward the notch and it opens on the Shelf, which keeps its own copy: nothing lands on your Desktop. Drag the file out again whenever you like. The page sits between Control Center and Now Playing and only appears while the Shelf holds something. Keep files until you remove them (the default), for 24 hours or until restart.
+- **Device popups**: a small message under the closed notch when AirPods or another Bluetooth device connects (with the battery when macOS says it), when the charger is plugged in or removed, or when a disk is connected.
+- **Do Not Disturb**: a moon beside the closed notch while a Focus is on.
+- **Join meetings**: events with a Zoom, Meet, Teams or Webex link get a **Join** button in the Calendar panel, green from a few minutes before the start.
+- **Permission buttons**: wherever something needs a permission (Calendar, Reminders, controlling Spotify or Music, Accessibility, Bluetooth, Focus status, your Spotify account), the notch shows an **Authorize** button, and **Settings → General → Permissions** lists them all.
 - **System HUDs**: volume and brightness feedback in the notch, replacing the native macOS HUD, with theme, label and decibel options.
 - **Control Center and plugins**: a third panel in the notch holds plugin buttons, installed from a built-in store. See [Plugins](#plugins).
 - **Native settings**: a System Settings–style preferences window built with SwiftUI, plus launch at login.
@@ -102,6 +106,8 @@ Notcholino asks for what it needs, when it needs it:
 | **Automation** (Apple Events) | To read and control Spotify and Apple Music, asked when the app is open. Other apps need no permission. |
 | **Calendars** | To show your upcoming events. |
 | **Reminders** | To show the reminders due today. Optional. |
+| **Bluetooth** | To show a popup when a Bluetooth device connects. Optional, asked from **Settings → Devices**. |
+| **Focus status** | To show the moon beside the notch while Do Not Disturb is on. Optional, asked from **Settings → Devices**. macOS only says whether a Focus is on, not which one. |
 | **Accessibility** | To handle the volume and brightness keys itself, so macOS doesn't show its own HUD next to the one in the notch. Optional: without it the keys keep working and both HUDs appear. |
 
 From version 0.6.1 every release is signed with the same certificate, so macOS recognises each update as the same app and keeps these permissions, and the Spotify token in your Keychain, without asking again. Updating from an older version, macOS asks one last time (see [Releases](#releases-and-versioning)).
@@ -128,6 +134,21 @@ The Control Center panel holds plugin buttons. Tap one to open its options right
 | [**BatLife**](plugins/batlife) | The battery level as the button (blue while charging), with health, cycles, power in use and time left. |
 | [**Tomato**](plugins/tomato) | A Pomodoro timer: you set the minutes of work and of break, and it repeats until you stop it. A small clock hangs from the notch, and a sound plays at each switch. |
 | [**Dusty**](plugins/dusty) | Clean mode: black screen and a locked keyboard and trackpad for 5 to 60 seconds, so you can wipe them. ⌘⇧C ends it. Needs Accessibility. |
+
+Eight more plugins came with version 0.11.0:
+
+| Plugin | What it does |
+| --- | --- |
+| [**Clippy**](plugins/clippy) | The last 10 things you copied (text, images, files), to copy again with a click. Kept in memory only, never on disk; what password managers mark as secret is skipped. |
+| [**Watcher**](plugins/watcher) | No button: an icon beside the closed notch while the microphone or the camera is in use, and a popup when it starts, with the apps recording when macOS says which. |
+| [**Pinger**](plugins/pinger) | The latency of your connection as the button, green to red, with a graph, the packets lost and whether a VPN is on. |
+| [**Picker**](plugins/picker) | Pick a color from anywhere on the screen and copy it as HEX, RGB or HSL, with the last ones to copy again. |
+| [**Reader**](plugins/reader) | Drag over any text on the screen and it is copied to the clipboard (on-device text recognition). Needs Screen Recording. |
+| [**Devices**](plugins/devices) | The battery of your AirPods (each earbud and the case), mouse, keyboard and other Bluetooth devices. |
+| [**Quicky**](plugins/quicky) | Lock the screen, turn the display off or start the screen saver in one click. |
+| [**Tidy**](plugins/tidy) | Hide the icons on your Desktop with one click and show them again with another. Finder restarts to apply it. |
+
+Plugins can also show a popup under the closed notch, an icon beside it, and take a whole row for longer options: see [plugins/README.md](plugins/README.md).
 
 Want to write your own? See [plugins/README.md](plugins/README.md).
 

@@ -1,0 +1,11 @@
+{
+  "id": "quicky",
+  "target": "Quicky",
+  "name": "Quicky",
+  "description": "Lock the screen, turn the display off or start the screen saver, in one click.",
+  "author": "Giuseppe",
+  "icon": "lock.display",
+  "version": "0.1.0-alpha",
+  "apiVersion": 1,
+  "minAppVersion": "0.8.0"
+}
