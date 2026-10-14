@@ -92,5 +92,13 @@ struct PermissionsSection: View {
             Text("Notcholino only asks for what it needs. Controlling Spotify or Music can only be checked while that app is open.")
         }
         .onAppear { permissions.refresh() }
+        // The window can stay open while a permission is granted in System Settings: pick it up when coming back
+        // to the app, and every couple of seconds while this list is on screen
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            permissions.refresh()
+        }
+        .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in
+            permissions.refresh()
+        }
     }
 }

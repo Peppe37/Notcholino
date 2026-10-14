@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2-alpha] - 2026-10-14
+
+### Fixed
+- The Permissions list in the settings kept showing "Authorize" for permissions that had just been granted in System Settings. It now updates when you come back to the app, and every couple of seconds while it is on screen.
+
 ### Documentation
 - Ways to sponsor the project (GitHub Sponsors, Ko-fi, Buy Me a Coffee): `FUNDING.yml`, the README and the website.
 
@@ -126,7 +131,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.5.1-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.5.2-alpha...HEAD
+[0.5.2-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.1-alpha...v0.5.2-alpha
 [0.5.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.0-alpha...v0.5.1-alpha
 [0.5.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.4.1-alpha...v0.5.0-alpha
 [0.4.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.4.0-alpha...v0.4.1-alpha

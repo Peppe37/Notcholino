@@ -40,6 +40,8 @@ final class PermissionsManager: ObservableObject {
         let mu = Self.automationState(bundleID: Self.musicID, ask: false)
         let ax = AXIsProcessTrusted()
         DispatchQueue.main.async {
+            // Keep the calendar manager in step with what was just granted or revoked
+            CalendarManager.shared.refreshAccess()
             if self.calendar != c { self.calendar = c }
             if self.reminders != r { self.reminders = r }
             if self.spotify != sp { self.spotify = sp }
