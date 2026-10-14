@@ -17,7 +17,7 @@ NAME="Notcholino Self-Signed"
 mkdir -p "$DIR" && chmod 700 "$HOME/.notcholino" "$DIR"
 
 if [ ! -f "$DIR/$NAME.p12" ]; then
-  echo "Creating the certificate…"
+  echo "Creating the certificate..."
   cat > "$DIR/cs.cnf" <<CNF
 [req]
 distinguished_name = dn
@@ -44,7 +44,7 @@ else
   echo "Reusing the certificate in $DIR"
 fi
 
-echo "Saving the secrets in $REPO…"
+echo "Saving the secrets in ${REPO}..."
 base64 < "$DIR/$NAME.p12" | tr -d '\n' | gh secret set SIGNING_P12 --repo "$REPO"
 gh secret set SIGNING_P12_PASSWORD --repo "$REPO" < "$DIR/password.txt"
 
