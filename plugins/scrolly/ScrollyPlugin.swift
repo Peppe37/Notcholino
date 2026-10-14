@@ -33,11 +33,8 @@ final class ScrollyPlugin: NSObject, NotcholinoPlugin {
 
     var isActive: Bool { tap != nil }
     var controlCenterIcon: String { "arrow.up.arrow.down" }
-    var statusText: String {
-        if isActive { return "On" }
-        if needsAccess && !AXIsProcessTrusted() { return "Allow Accessibility" }
-        return "Off"
-    }
+    /// Only said when something is needed; the button's color already tells on from off
+    var statusText: String { (needsAccess && !AXIsProcessTrusted()) ? "Allow Notcholino in Accessibility, then tap again" : "" }
 
     // MARK: A simple switch
 
@@ -101,8 +98,12 @@ private func scrollyCallback(proxy: CGEventTapProxy, type: CGEventType, event: C
         return Unmanaged.passUnretained(event)
     }
     guard type == .scrollWheel else { return Unmanaged.passUnretained(event) }
-    // A wheel with notches reports "not continuous"; trackpads and Magic Mouse report continuous scrolling.
-    if event.getIntegerValueField(.scrollWheelEventIsContinuous) == 0 {
+    // A trackpad (and a Magic Mouse) scroll comes in gesture phases: fingers down, moving, lifted, then momentum.
+    // A mouse wheel has none. This also holds for mice whose software smooths the scroll (like Logitech's), which
+    // macOS sees as "continuous" scrolling and which a continuous-or-not check would mistake for a trackpad.
+    let phase = event.getIntegerValueField(.scrollWheelEventScrollPhase)
+    let momentum = event.getIntegerValueField(.scrollWheelEventMomentumPhase)
+    if phase == 0 && momentum == 0 {
         for field: CGEventField in [.scrollWheelEventDeltaAxis1, .scrollWheelEventPointDeltaAxis1] {
             event.setIntegerValueField(field, value: -event.getIntegerValueField(field))
         }

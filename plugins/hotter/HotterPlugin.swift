@@ -31,27 +31,36 @@ final class HotterPlugin: NSObject, NotcholinoPlugin {
     // MARK: Readings
 
     private let sensors = TemperatureSensors()
+    /// Reading the sensors takes a few tens of milliseconds, so it is done away from the main thread
+    private let queue = DispatchQueue(label: "hotter.sensors", qos: .utility)
     private var history: [Double] = []          // in °C, one reading every `interval`
     private var last: Reading?
     private var timer: Timer?
-    private static let interval: TimeInterval = 5
-    private static let maxSamples = 72          // six minutes
+    private static let interval: TimeInterval = 3
+    private static let maxSamples = 120         // six minutes
 
     struct Reading { var average: Double; var highest: Double }
 
     override init() {
         super.init()
-        sample()
+        // A few quick readings first, so the graph has something to show right away
+        for delay in [0.0, 0.5, 1.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in self?.sample() }
+        }
         let t = Timer(timeInterval: Self.interval, repeats: true) { [weak self] _ in self?.sample() }
         RunLoop.main.add(t, forMode: .common)
         timer = t
     }
 
     private func sample() {
-        guard let reading = sensors.read() else { return }
-        last = reading
-        history.append(value(of: reading))
-        if history.count > Self.maxSamples { history.removeFirst(history.count - Self.maxSamples) }
+        queue.async { [weak self] in
+            guard let self, let reading = self.sensors.read() else { return }
+            DispatchQueue.main.async {
+                self.last = reading
+                self.history.append(self.value(of: reading))
+                if self.history.count > Self.maxSamples { self.history.removeFirst(self.history.count - Self.maxSamples) }
+            }
+        }
     }
 
     /// The reading for the chosen mode, in °C
@@ -74,10 +83,7 @@ final class HotterPlugin: NSObject, NotcholinoPlugin {
         return Self.color(forCelsius: value(of: r))
     }
 
-    var statusText: String {
-        guard last != nil else { return sensors.isAvailable ? "Reading…" : "Not available" }
-        return mode == "highest" ? "Highest" : "Average"
-    }
+    var statusText: String { sensors.isAvailable ? "" : "Not available on this Mac" }
 
     func menuItems() -> [[String: Any]] {
         var items: [[String: Any]] = []
@@ -132,14 +138,21 @@ final class TemperatureSensors {
     private typealias Client = UnsafeMutableRawPointer
     private typealias Service = UnsafeMutableRawPointer
 
+    private struct Sensor { let service: AnyObject; let isDie: Bool }
+
     private let client: Client?
     private let setMatching: (@convention(c) (Client, CFDictionary) -> Int32)?
     private let copyServices: (@convention(c) (Client) -> Unmanaged<CFArray>?)?
     private let copyProperty: (@convention(c) (Service, CFString) -> Unmanaged<CFTypeRef>?)?
     private let copyEvent: (@convention(c) (Service, Int64, Int32, Int64) -> UnsafeMutableRawPointer?)?
     private let floatValue: (@convention(c) (UnsafeMutableRawPointer, Int32) -> Double)?
+    /// Looked up once they are found: the list of sensors doesn't change while the Mac runs.
+    /// Right after the app starts the system may not have them ready yet, so the lookup is retried until it finds some.
+    private var sensors: [Sensor] = []
+    private var failedLookups = 0
 
-    var isAvailable: Bool { client != nil }
+    /// False only once several lookups in a row found nothing, like on an Intel Mac
+    var isAvailable: Bool { !sensors.isEmpty || failedLookups < 5 }
 
     init() {
         let handle = dlopen("/System/Library/Frameworks/IOKit.framework/IOKit", RTLD_NOW)
@@ -154,27 +167,39 @@ final class TemperatureSensors {
         copyEvent = load("IOHIDServiceClientCopyEvent", (@convention(c) (Service, Int64, Int32, Int64) -> UnsafeMutableRawPointer?).self)
         floatValue = load("IOHIDEventGetFloatValue", (@convention(c) (UnsafeMutableRawPointer, Int32) -> Double).self)
         client = create?(kCFAllocatorDefault)
-        if let client, let setMatching {
-            // Usage page 0xff00, usage 5: temperature sensors
-            _ = setMatching(client, ["PrimaryUsagePage": 0xff00, "PrimaryUsage": 5] as CFDictionary)
-        }
+        discover()
     }
 
-    /// Average of the chip's die sensors and the hottest valid sensor, in °C
-    func read() -> HotterPlugin.Reading? {
-        guard let client, let copyServices, let copyProperty, let copyEvent, let floatValue,
-              let services = copyServices(client)?.takeRetainedValue() as [AnyObject]? else { return nil }
-        var dies: [Double] = [], all: [Double] = []
+    private func discover() {
+        guard let client, let setMatching, let copyServices, let copyProperty else { failedLookups += 1; return }
+        // Usage page 0xff00, usage 5: temperature sensors
+        _ = setMatching(client, ["PrimaryUsagePage": 0xff00, "PrimaryUsage": 5] as CFDictionary)
+        let services = (copyServices(client)?.takeRetainedValue() as [AnyObject]?) ?? []
+        var found: [Sensor] = []
         for service in services {
             let ref = Unmanaged.passUnretained(service).toOpaque()
             let name = (copyProperty(ref, "Product" as CFString)?.takeRetainedValue() as? String) ?? ""
             // "tcal" is a calibration value, not a temperature
-            guard !name.contains("tcal"), let event = copyEvent(ref, 15, 0, 0) else { continue }
+            if name.contains("tcal") { continue }
+            found.append(Sensor(service: service, isDie: name.contains("tdie")))
+        }
+        sensors = found
+        if found.isEmpty { failedLookups += 1 }
+    }
+
+    /// Average of the chip's die sensors and the hottest valid sensor, in °C
+    func read() -> HotterPlugin.Reading? {
+        guard let copyEvent, let floatValue else { return nil }
+        if sensors.isEmpty { discover() }
+        var dies: [Double] = [], all: [Double] = []
+        for sensor in sensors {
+            let ref = Unmanaged.passUnretained(sensor.service).toOpaque()
+            guard let event = copyEvent(ref, 15, 0, 0) else { continue }
             let value = floatValue(event, 15 << 16)
             Unmanaged<AnyObject>.fromOpaque(event).release()
             guard value > 0, value < 130 else { continue }   // some sensors report garbage when idle
             all.append(value)
-            if name.contains("tdie") { dies.append(value) }
+            if sensor.isDie { dies.append(value) }
         }
         guard let highest = all.max() else { return nil }
         let pool = dies.isEmpty ? all : dies

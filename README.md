@@ -112,8 +112,12 @@ The Control Center panel holds plugin buttons. Tap one to open its options right
 | [**Espresso**](plugins/espresso) | Keeps your Mac and its screen awake, indefinitely or for 10 minutes up to 12 hours, or until a time you pick. |
 | [**Scrolly**](plugins/scrolly) | A switch that reverses the vertical scroll of your mouse wheel, leaving the trackpad alone. Needs Accessibility. |
 | [**Hotter**](plugins/hotter) | Your Mac's temperature as the button itself, turning from green to red as it heats up. Click for average or highest, °C or °F, and a small graph. Apple silicon only. |
+| [**CloseMe**](plugins/closeme) | *Experimental.* Keeps the Mac running with the lid closed, and turns the screen brightness to zero so it doesn't overheat. Asks for your administrator password, switches itself off after at most 12 hours, when Notcholino quits, or when the battery is low. |
+| [**BatLife**](plugins/batlife) | The battery level as the button (blue while charging), with health, cycles, power in use and time left. |
+| [**Tomato**](plugins/tomato) | A focus timer: a small clock appears under the notch, a sound plays at the end, and your iPhone can be alerted through an iCloud Reminder. |
+| [**Dusty**](plugins/dusty) | Clean mode: black screen and a locked keyboard and trackpad for 5 to 60 seconds, so you can wipe them. ⌘⇧C ends it. Needs Accessibility. |
 
-More plugins are on the way: CloseMe (keep the Mac running with the lid closed) is written but waiting to be tested with a real closed lid. Want to write your own? See [plugins/README.md](plugins/README.md).
+Want to write your own? See [plugins/README.md](plugins/README.md).
 
 ## FAQ
 

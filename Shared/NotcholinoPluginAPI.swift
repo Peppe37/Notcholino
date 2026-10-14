@@ -15,6 +15,7 @@ public let notcholinoPluginAPIVersion = 1
 /// - `"checked"`     (Bool)    optional, highlights the option as the current choice
 /// - `"destructive"` (Bool)    optional, draws the option in red (e.g. "Turn off")
 /// - `"header"`      (String)  alternatively, a non-clickable section title (no `"id"`)
+/// - `"info"`        (String)  alternatively, a read-only row: this is the label, with `"value"` (String) on the right
 /// - `"graph"`       ([Double]) alternatively, a small line graph of these values, drawn across the panel.
 ///                   Optional with it: `"caption"` (String, shown under the graph) and `"color"` (String, "#RRGGBB").
 @objc(NotcholinoPlugin)
@@ -32,7 +33,8 @@ public protocol NotcholinoPlugin: NSObjectProtocol {
     var controlCenterIcon: String { get }
     /// Whether the plugin is currently doing something; the button is highlighted when true
     var isActive: Bool { get }
-    /// Short text shown under the button name (e.g. "1h 20m"), or an empty string
+    /// Short state text (e.g. "1h 20m left"). It is shown in the plugin's options, not under the button:
+    /// every button in the Control Center has the same size and a single label, its name.
     var statusText: String { get }
 
     /// Options shown when the button is clicked

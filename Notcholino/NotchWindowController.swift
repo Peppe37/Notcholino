@@ -201,6 +201,7 @@ struct NotchContentView: View {
     /// Reverses the direction of the two-finger swipe (and of the mouse wheel)
     @AppStorage("invertScroll")         private var invertScroll = false
     @AppStorage("calDisplayMode")       private var calDisplayMode = 0
+    @ObservedObject private var pluginManager = PluginManager.shared
 
     @StateObject private var music   = MusicManager()
     @StateObject private var sysEvt  = SystemEventsManager()
@@ -265,7 +266,9 @@ struct NotchContentView: View {
     private var expandH: CGFloat {
         // The month grid can have six weeks: give it room so it doesn't touch the bottom edge
         let monthExtra: CGFloat = (shownTab == .calendar && calDisplayMode == 0) ? 22 : 0
-        let baseH: CGFloat = ((shownTab == .music) ? (180 + 24) : (200 + 24)) + (topPad - 24) + (dotsRowH - 9) + monthExtra
+        // More than one row of plugin buttons (four fit on a row) needs a taller panel
+        let pluginRowsExtra: CGFloat = (shownTab == .controlCenter && pluginManager.loadedPlugins.count > 4) ? 36 : 0
+        let baseH: CGFloat = ((shownTab == .music) ? (180 + 24) : (200 + 24)) + (topPad - 24) + (dotsRowH - 9) + monthExtra + pluginRowsExtra
         if hoverExpands {
             return isSystemHudActive ? baseH + 46 : baseH
         } else {
@@ -1382,14 +1385,17 @@ struct CalendarNotchView: View {
 struct ControlCenterNotchView: View {
     @ObservedObject private var pluginManager = PluginManager.shared
     @State private var selectedID: String?
+    /// Bumped after every tap so the plugin's new state shows at once, not at the next one-second refresh
+    @State private var refresh = 0
 
-    private let tileColumns = [GridItem(.adaptive(minimum: 64, maximum: 84), spacing: 14)]
+    private let tileColumns = [GridItem(.adaptive(minimum: 64, maximum: 84), spacing: 14, alignment: .top)]
     private let optionColumns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 4)
 
     var body: some View {
         // Re-read plugin state every second (countdowns, active state)
         TimelineView(.periodic(from: .now, by: 1)) { _ in
             Group {
+                let _ = refresh
                 if let id = selectedID,
                    let plugin = pluginManager.loadedPlugins.first(where: { $0.pluginIdentifier == id }) {
                     detail(plugin)
@@ -1425,7 +1431,7 @@ struct ControlCenterNotchView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
-                    LazyVGrid(columns: tileColumns, spacing: 14) {
+                    LazyVGrid(columns: tileColumns, alignment: .center, spacing: 14) {
                         ForEach(pluginManager.loadedPlugins, id: \.pluginIdentifier) { plugin in
                             tile(plugin)
                         }
@@ -1436,6 +1442,8 @@ struct ControlCenterNotchView: View {
         }
     }
 
+    /// Every button is built the same: a 48 pt circle (symbol or a short text in the same font size for all)
+    /// and the plugin's name, one line, same font. Anything more (state, countdowns) goes in the options.
     private func tile(_ plugin: NotcholinoPlugin) -> some View {
         let active = plugin.isActive
         let label = plugin.controlCenterLabel ?? ""
@@ -1444,6 +1452,7 @@ struct ControlCenterNotchView: View {
             if plugin.responds(to: Selector(("controlCenterButtonTapped"))) {
                 // A simple switch: no options to open
                 plugin.controlCenterButtonTapped?()
+                refreshSoon()
             } else {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = plugin.pluginIdentifier }
             }
@@ -1455,30 +1464,32 @@ struct ControlCenterNotchView: View {
                         .frame(width: 48, height: 48)
                     if !label.isEmpty {
                         Text(label)
-                            .font(.system(size: label.count > 3 ? 14 : 17, weight: .bold, design: .rounded))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
                             .minimumScaleFactor(0.7)
+                            .lineLimit(1)
                             .foregroundStyle(.white)
+                            .frame(width: 44)
                     } else {
                         Image(systemName: plugin.controlCenterIcon.isEmpty ? "puzzlepiece.extension.fill" : plugin.controlCenterIcon)
                             .font(.system(size: 20))
                             .foregroundStyle(.white)
                     }
                 }
+                .frame(width: 48, height: 48)
                 Text(plugin.pluginName)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.white)
                     .lineLimit(1)
-                if !plugin.statusText.isEmpty {
-                    Text(plugin.statusText)
-                        .font(.system(size: 10))
-                        .foregroundStyle(tint ?? Color.orange)
-                        .lineLimit(1)
-                }
+                    .frame(height: 14)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .top)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    private func refreshSoon() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { refresh += 1 }
     }
 
     // MARK: Plugin options
@@ -1530,9 +1541,20 @@ struct ControlCenterNotchView: View {
                         if let graph = group.graph {
                             SparklineView(values: graph.values, caption: graph.caption, color: graph.color)
                         }
+                        ForEach(Array(group.infos.enumerated()), id: \.offset) { _, row in
+                            HStack {
+                                Text(row.label)
+                                    .foregroundStyle(.white.opacity(0.55))
+                                Spacer()
+                                Text(row.value)
+                                    .foregroundStyle(.white)
+                                    .monospacedDigit()
+                            }
+                            .font(.system(size: 12, weight: .medium))
+                        }
                         LazyVGrid(columns: optionColumns, spacing: 6) {
                             ForEach(group.items, id: \.id) { item in
-                                optionChip(item) { plugin.performMenuAction(item.id) }
+                                optionChip(item) { plugin.performMenuAction(item.id); refreshSoon() }
                             }
                         }
                     }
@@ -1545,13 +1567,20 @@ struct ControlCenterNotchView: View {
 
     private struct Option { let id: String; let title: String; let checked: Bool; let destructive: Bool }
     private struct Graph { var values: [Double]; var caption: String; var color: Color }
-    private struct OptionGroup { var header: String?; var items: [Option]; var graph: Graph? = nil }
+    private struct InfoRow { let label: String; let value: String }
+    private struct OptionGroup { var header: String?; var items: [Option]; var graph: Graph? = nil; var infos: [InfoRow] = [] }
 
     /// Turns the plugin's menu dictionaries into groups (a header starts a new group)
     private func groups(of raw: [[String: Any]]) -> [OptionGroup] {
         var result: [OptionGroup] = [OptionGroup(header: nil, items: [])]
         for entry in raw {
-            if let values = entry["graph"] as? [Double] {
+            if let label = entry["info"] as? String {
+                // Rows of "label  value" (consecutive ones share a group; chips come after them)
+                if !result[result.count - 1].items.isEmpty || result[result.count - 1].graph != nil {
+                    result.append(OptionGroup(header: nil, items: []))
+                }
+                result[result.count - 1].infos.append(InfoRow(label: label, value: entry["value"] as? String ?? ""))
+            } else if let values = entry["graph"] as? [Double] {
                 let color = Color(hex: entry["color"] as? String ?? "") ?? .white
                 result.append(OptionGroup(header: nil, items: [],
                                           graph: Graph(values: values, caption: entry["caption"] as? String ?? "", color: color)))
@@ -1565,7 +1594,7 @@ struct ControlCenterNotchView: View {
                     destructive: entry["destructive"] as? Bool ?? false))
             }
         }
-        return result.filter { !$0.items.isEmpty || $0.graph != nil }
+        return result.filter { !$0.items.isEmpty || $0.graph != nil || !$0.infos.isEmpty }
     }
 
     private func optionChip(_ item: Option, action: @escaping () -> Void) -> some View {

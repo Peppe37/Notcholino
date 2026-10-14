@@ -1,0 +1,11 @@
+{
+  "id": "tomato",
+  "target": "Tomato",
+  "name": "Tomato",
+  "description": "A focus timer with a small clock under the notch, a sound at the end and an optional iPhone alert.",
+  "author": "Giuseppe",
+  "icon": "timer",
+  "version": "0.1.0-alpha",
+  "apiVersion": 1,
+  "minAppVersion": "0.9.0"
+}

@@ -23,8 +23,8 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
-        MARKETING_VERSION: "0.8.0"
-        CURRENT_PROJECT_VERSION: "16"
+        MARKETING_VERSION: "0.9.0"
+        CURRENT_PROJECT_VERSION: "17"
     info:
       path: Notcholino/Info.plist
       properties:
@@ -64,7 +64,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.scrolly
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_NSPrincipalClass: ScrollyPlugin
-        MARKETING_VERSION: "0.1.0-alpha"
+        MARKETING_VERSION: "0.1.1-alpha"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
@@ -81,7 +81,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.hotter
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_NSPrincipalClass: HotterPlugin
-        MARKETING_VERSION: "0.1.0-alpha"
+        MARKETING_VERSION: "0.1.1-alpha"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
@@ -98,6 +98,57 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.closeme
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_NSPrincipalClass: CloseMePlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+  BatLife:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/batlife
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: BatLife
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.batlife
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: BatLifePlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+  Tomato:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/tomato
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Tomato
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.tomato
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: TomatoPlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+  Dusty:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/dusty
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Dusty
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.dusty
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: DustyPlugin
         MARKETING_VERSION: "0.1.0-alpha"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "-"

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0-alpha] - 2026-10-14
+
+### Changed
+- Control Center buttons are all the same size and aligned, with one label (the plugin's name): the state text that used to appear under some buttons now shows when the plugin's options are open. A button reflects a tap at once instead of at the next refresh.
+
+### Added
+- Plugin options can have read-only rows (a label and a value).
+- New plugins, released on their own: **BatLife** (battery level, health, cycles, power and time left), **Tomato** (focus timer with a clock under the notch, a sound, and an optional iPhone alert through iCloud Reminders), **Dusty** (clean mode: black screen and locked keyboard and trackpad for 5 to 60 seconds, ⌘⇧C to end it) and **CloseMe** (keep the Mac running with the lid closed, experimental).
+- Updated plugins: **Scrolly** now reverses smooth-scrolling mice such as the Logitech MX Master, and **Hotter** loads its graph faster.
+- `scripts/scroll-diagnose.swift` shows how your scroll events look to macOS.
+
 ## [0.8.0-alpha] - 2026-10-14
 
 ### Added
@@ -169,7 +180,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.8.0-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.9.0-alpha...HEAD
+[0.9.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.8.0-alpha...v0.9.0-alpha
 [0.8.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.7.1-alpha...v0.8.0-alpha
 [0.7.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.7.0-alpha...v0.7.1-alpha
 [0.7.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.6.1-alpha...v0.7.0-alpha

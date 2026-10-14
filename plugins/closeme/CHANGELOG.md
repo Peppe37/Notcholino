@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.0-alpha] - Unreleased
+## [0.1.0-alpha] - 2026-10-14
 
 ### Added
 - CloseMe keeps the Mac running with the lid closed (1, 2, 4, 8 or 12 hours), and turns the screen brightness to zero when the lid closes, restoring it when it opens.

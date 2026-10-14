@@ -5,7 +5,7 @@
   "description": "The temperature of your Mac in the Control Center, with a color that turns red as it heats up.",
   "author": "Giuseppe",
   "icon": "thermometer.medium",
-  "version": "0.1.0-alpha",
+  "version": "0.1.1-alpha",
   "apiVersion": 1,
   "minAppVersion": "0.8.0"
 }
