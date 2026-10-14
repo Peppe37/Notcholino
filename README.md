@@ -53,7 +53,7 @@ Notcholino is a free, open-source and non-commercial app that extends the hardwa
 - **Shelf**: drag a screenshot, a recording or any file toward the notch and it opens on the Shelf, which keeps its own copy: nothing lands on your Desktop. Drag the file out again whenever you like. The page sits between Control Center and Now Playing and only appears while the Shelf holds something. Keep files until you remove them (the default), for 24 hours or until restart.
 - **Device popups**: a small message under the closed notch when AirPods or another Bluetooth device connects (with the battery when macOS says it), when the charger is plugged in or removed, or when a disk is connected.
 - **Do Not Disturb**: a moon beside the closed notch while a Focus is on.
-- **Join meetings**: events with a Zoom, Meet, Teams or Webex link get a **Join** button in the Calendar panel, green from a few minutes before the start.
+- **Join meetings**: events with a Zoom, Meet, Teams or Webex link get a **Join** button in the Calendar panel, green from ten minutes before the start.
 - **Permission buttons**: wherever something needs a permission (Calendar, Reminders, controlling Spotify or Music, Accessibility, Bluetooth, Focus status, your Spotify account), the notch shows an **Authorize** button, and **Settings → General → Permissions** lists them all.
 - **System HUDs**: volume and brightness feedback in the notch, replacing the native macOS HUD, with theme, label and decibel options.
 - **Control Center and plugins**: a third panel in the notch holds plugin buttons, installed from a built-in store. See [Plugins](#plugins).
@@ -189,20 +189,20 @@ Found a security problem? See [SECURITY.md](SECURITY.md).
 
 ## Performance
 
-Notcholino is meant to stay out of your way. These figures were measured with version 0.10.0 on a MacBook Pro with an Apple M5 and macOS 26.6, with a Release build, averaged over 30 seconds per scenario, with the mouse still. The first two scenarios have no music player open.
+Notcholino is meant to stay out of your way. These figures were measured with version 0.11.0, with seven plugins installed (Hotter and BatLife read sensors every few seconds), on a MacBook Pro with an Apple M5 and macOS 26.6, with a Release build, averaged over 30 seconds per scenario, with the mouse still. The first two scenarios have no music player open.
 
 | | Idle (notch closed) | Open (hovering) |
 | --- | --- | --- |
-| **Memory** (physical footprint) | 44 MB | 45 MB |
-| **CPU** | 0.04 % | 0.00 % |
-| **Energy impact** (Activity Monitor scale) | 0.11 | 0.00 |
-| **Idle wakeups per second** | 0.7 | 0.4 |
-| **CPU, music playing** | 0.01 % | 0.17 % |
-| **Energy impact, music playing** | 0.06 | 0.21 |
+| **Memory** (physical footprint) | 46 MB | 47 MB |
+| **CPU** | 0.06 % | 0.05 % |
+| **Energy impact** (Activity Monitor scale) | 0.08 | 0.08 |
+| **Idle wakeups per second** | 0.7 | 0.6 |
+| **CPU, music playing** | 0.16 % | 0.36 % |
+| **Energy impact, music playing** | 0.22 | 0.42 |
 
 - **Moving the mouse** costs about 1 % of a core while you move it: macOS has to tell Notcholino about every movement so it knows when the pointer reaches the notch. Nothing runs while the mouse is still.
 - **Peak memory** is about 90 MB, only while the app starts.
-- **Disk**: the app is 3.1 MB, the DMG about 2 MB. The [Espresso](plugins/espresso) plugin is 120 KB (a 21 KB download). Nothing else is stored except the plugins you install.
+- **Disk**: the app is 3.8 MB, the DMG about 2 MB. The [Espresso](plugins/espresso) plugin is 120 KB (a 21 KB download). Nothing else is stored except the plugins you install.
 - **Espresso** adds about 1.5 MB of memory while it is on and no measurable CPU or energy. It holds two power assertions so the Mac and its screen stay awake: the extra power comes from the screen staying on, not from the plugin.
 - **Music playing** is measured with a stand-in for the system Now Playing (so nothing plays on your Mac): it shows the cost of the notch and its waveform, not of reading a real player.
 - **With a player open**, Notcholino reads Spotify or Music with a short AppleScript (about 28 ms of CPU each): every 3 seconds while playing, every 8 seconds while paused, plus right away when the player reports a change. With no player open it asks nothing.

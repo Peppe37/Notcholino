@@ -129,7 +129,8 @@
   .pane.cc { padding: 40px 12px 0; }
   .notch.open.big { --h: 252px; }
   .cc-title { font-size:14px; font-weight:700; color:rgba(255,255,255,.8); padding: 6px 12px 10px; }
-  .cc-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px 0; padding:0 4px; }
+  .cc-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px 0; padding:0 4px; max-height:168px; overflow-y:auto; scrollbar-width:none; }
+  .cc-grid::-webkit-scrollbar { display:none; }
   .cc-tile { display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:0; color:#fff; cursor:pointer; padding:0; font-family:inherit; }
   .cc-circle { width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,.12); display:grid; place-items:center; transition: background .25s; font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; }
   .cc-circle svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
@@ -145,6 +146,7 @@
   .cc-opts { display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; padding: 0 12px; }
   .cc-opts button { height:28px; border:0; border-radius:14px; background:rgba(255,255,255,.12); color:#fff; font:600 11px/1 inherit; font-family:inherit; cursor:pointer; padding:0 4px; white-space:nowrap; }
   .cc-opts button.sel { background:#fff; color:#000; }
+  .cc-opts button.wide { grid-column:1/-1; text-align:left; padding:0 14px; overflow:hidden; text-overflow:ellipsis; }
   .cc-opts button.off { background:rgba(255,69,58,.2); color:#ff453a; }
   .cc-hdr { grid-column:1/-1; font-size:11px; color:rgba(255,255,255,.55); padding:2px 2px 0; }
   .cc-info { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; font-size:12px; padding:2px 4px; }
@@ -297,6 +299,9 @@
       <div class="card"><h3 data-i18n="f4h">System HUD</h3><p data-i18n="f4p">Volume and brightness feedback shown in the notch.</p></div>
       <div class="card"><h3 data-i18n="f5h">Native Settings</h3><p data-i18n="f5p">A System Settings–style preferences window built with SwiftUI.</p></div>
       <div class="card"><h3 data-i18n="f6h">Control Center &amp; plugins</h3><p data-i18n="f6p">Add buttons to the notch with plugins, installed from a built-in store.</p></div>
+      <div class="card"><h3 data-i18n="f8h">Shelf</h3><p data-i18n="f8p">Drag a screenshot, a recording or any file toward the notch: it keeps it for you, without saving it on the Desktop, until you drag it somewhere.</p></div>
+      <div class="card"><h3 data-i18n="f9h">Popups &amp; Do Not Disturb</h3><p data-i18n="f9p">A small message under the notch when AirPods, the charger or a disk connect, and a moon beside it while a Focus is on.</p></div>
+      <div class="card"><h3 data-i18n="f10h">Join meetings</h3><p data-i18n="f10p">Calendar events with a Zoom, Meet or Teams link get a Join button.</p></div>
       <div class="card"><h3 data-i18n="f7h">Raycast</h3><p data-i18n="f7p">Raycast integration is in the works.</p></div>
     </div>
   </section>
@@ -305,13 +310,13 @@
     <h2 data-i18n="perfH">Light on your Mac</h2>
     <p data-i18n="perfP">Notcholino stays out of the way. Measured on a MacBook Pro (Apple M5, macOS 26.6), with the notch closed, the mouse still and no music player open:</p>
     <div class="stats">
-      <div class="stat"><b>44 MB</b><span data-i18n="perfMem">memory</span></div>
-      <div class="stat"><b>0.04 %</b><span data-i18n="perfCpu">CPU when idle</span></div>
-      <div class="stat"><b>0.00</b><span data-i18n="perfEnergy">energy impact</span></div>
-      <div class="stat"><b>2.5 MB</b><span data-i18n="perfDisk">on disk</span></div>
+      <div class="stat"><b>46 MB</b><span data-i18n="perfMem">memory</span></div>
+      <div class="stat"><b>0.06 %</b><span data-i18n="perfCpu">CPU when idle</span></div>
+      <div class="stat"><b>0.08</b><span data-i18n="perfEnergy">energy impact</span></div>
+      <div class="stat"><b>3.8 MB</b><span data-i18n="perfDisk">on disk</span></div>
       <div class="stat"><b>120 KB</b><span data-i18n="perfEsp">Espresso plugin</span></div>
     </div>
-    <p class="small" data-i18n="perfNote">Opening the notch takes 45 MB and 0.00 % CPU. Espresso adds about 1.5 MB while it is on. You can measure it on your own Mac with <code>scripts/benchmark.sh</code>; the details are in the <a href="https://github.com/Peppe37/Notcholino#performance">README</a>.</p>
+    <p class="small" data-i18n="perfNote">Opening the notch takes 47 MB and 0.05 % CPU. Espresso adds about 1.5 MB while it is on. You can measure it on your own Mac with <code>scripts/benchmark.sh</code>; the details are in the <a href="https://github.com/Peppe37/Notcholino#performance">README</a>.</p>
   </section>
 
   <section id="plugins">
@@ -325,6 +330,14 @@
       <div class="card"><h3 data-i18n="plugDh">✨ Dusty</h3><p data-i18n="plugDp">Clean mode: black screen and a locked keyboard and trackpad for 5 to 60 seconds. ⌘⇧C ends it.</p></div>
       <div class="card"><h3 data-i18n="plugCh">💻 CloseMe</h3><p data-i18n="plugCp">Experimental. Keep the Mac running with the lid closed, with the screen off.</p></div>
       <div class="card"><h3 data-i18n="plugEh">☕ Espresso</h3><p data-i18n="plugEp">Keeps your Mac and its screen awake, indefinitely or for 10 minutes up to 12 hours, or until a time you pick. Try it in the preview above.</p></div>
+      <div class="card"><h3 data-i18n="plugClh">📋 Clippy</h3><p data-i18n="plugClp">The last 10 things you copied, to copy again with a click. Kept in memory only, never on disk.</p></div>
+      <div class="card"><h3 data-i18n="plugWah">👁️ Watcher</h3><p data-i18n="plugWap">An icon beside the notch while the microphone or the camera is in use, and a popup when it starts.</p></div>
+      <div class="card"><h3 data-i18n="plugPih">📡 Pinger</h3><p data-i18n="plugPip">How fast your connection answers, as a number and a graph, and whether a VPN is on.</p></div>
+      <div class="card"><h3 data-i18n="plugPkh">🎨 Picker</h3><p data-i18n="plugPkp">Pick a color from anywhere on your screen and copy it as HEX, RGB or HSL.</p></div>
+      <div class="card"><h3 data-i18n="plugReh">🔠 Reader</h3><p data-i18n="plugRep">Drag over any text on the screen and it is copied to your clipboard.</p></div>
+      <div class="card"><h3 data-i18n="plugDeh">🎧 Devices</h3><p data-i18n="plugDep">The battery of your AirPods, mouse, keyboard and other Bluetooth devices.</p></div>
+      <div class="card"><h3 data-i18n="plugQuh">🔒 Quicky</h3><p data-i18n="plugQup">Lock the screen, turn the display off or start the screen saver, in one click.</p></div>
+      <div class="card"><h3 data-i18n="plugTih">🧹 Tidy</h3><p data-i18n="plugTip">Hide the icons on your Desktop with one click, and show them again with another.</p></div>
     </div>
     <p data-i18n="plugDev">Want to write your own? See the <a href="https://github.com/Peppe37/Notcholino/tree/main/plugins">plugins folder</a> on GitHub.</p>
   </section>
@@ -414,6 +427,17 @@
       f4h: 'System HUD', f4p: 'Volume and brightness feedback shown in the notch.',
       f5h: 'Native Settings', f5p: 'A System Settings–style preferences window built with SwiftUI.',
       f6h: 'Control Center & plugins', f6p: 'Add buttons to the notch with plugins, installed from a built-in store.',
+      plugClh: '📋 Clippy', plugClp: 'The last 10 things you copied, to copy again with a click. Kept in memory only, never on disk.',
+      plugWah: '👁️ Watcher', plugWap: 'An icon beside the notch while the microphone or the camera is in use, and a popup when it starts.',
+      plugPih: '📡 Pinger', plugPip: 'How fast your connection answers, as a number and a graph, and whether a VPN is on.',
+      plugPkh: '🎨 Picker', plugPkp: 'Pick a color from anywhere on your screen and copy it as HEX, RGB or HSL.',
+      plugReh: '🔠 Reader', plugRep: 'Drag over any text on the screen and it is copied to your clipboard.',
+      plugDeh: '🎧 Devices', plugDep: 'The battery of your AirPods, mouse, keyboard and other Bluetooth devices.',
+      plugQuh: '🔒 Quicky', plugQup: 'Lock the screen, turn the display off or start the screen saver, in one click.',
+      plugTih: '🧹 Tidy', plugTip: 'Hide the icons on your Desktop with one click, and show them again with another.',
+      f8h: 'Shelf', f8p: 'Drag a screenshot, a recording or any file toward the notch: it keeps it for you, without saving it on the Desktop, until you drag it somewhere.',
+      f9h: 'Popups & Do Not Disturb', f9p: 'A small message under the notch when AirPods, the charger or a disk connect, and a moon beside it while a Focus is on.',
+      f10h: 'Join meetings', f10p: 'Calendar events with a Zoom, Meet or Teams link get a Join button.',
       f7h: 'Raycast', f7p: 'Raycast integration is in the works.',
       plugH: 'Plugins',
       plugP: 'The Control Center panel of the notch holds plugin buttons. Open <b>Settings → Control Center</b> to install plugins from the built-in store: they are downloaded from the releases of this repository, at their latest version, after you confirm and a checksum check.',
@@ -483,6 +507,17 @@
       f4h: 'HUD di sistema', f4p: 'Volume e luminosità mostrati nel notch.',
       f5h: 'Impostazioni native', f5p: 'Una finestra di preferenze in stile Impostazioni di Sistema, fatta con SwiftUI.',
       f6h: 'Control Center e plugin', f6p: 'Aggiungi pulsanti al notch con i plugin, che installi da uno store integrato.',
+      plugClh: '📋 Clippy', plugClp: 'Le ultime 10 cose che hai copiato, da ricopiare con un clic. Solo in memoria, mai su disco.',
+      plugWah: '👁️ Watcher', plugWap: 'Un\'icona accanto al notch mentre microfono o fotocamera sono in uso, e un popup quando partono.',
+      plugPih: '📡 Pinger', plugPip: 'Quanto risponde veloce la connessione, come numero e grafico, e se una VPN è attiva.',
+      plugPkh: '🎨 Picker', plugPkp: 'Scegli un colore da qualsiasi punto dello schermo e copialo come HEX, RGB o HSL.',
+      plugReh: '🔠 Reader', plugRep: 'Trascina su qualsiasi testo sullo schermo e viene copiato negli appunti.',
+      plugDeh: '🎧 Devices', plugDep: 'La batteria di AirPods, mouse, tastiera e altri dispositivi Bluetooth.',
+      plugQuh: '🔒 Quicky', plugQup: 'Blocca lo schermo, spegni il display o avvia il salvaschermo, con un clic.',
+      plugTih: '🧹 Tidy', plugTip: 'Nascondi le icone della scrivania con un clic e rimostrale con un altro.',
+      f8h: 'Shelf', f8p: 'Trascina uno screenshot, una registrazione o un file verso il notch: lo tiene da parte, senza salvarlo sulla scrivania, finché non lo trascini altrove.',
+      f9h: 'Popup e Non disturbare', f9p: 'Un piccolo messaggio sotto il notch quando si collegano AirPods, caricatore o dischi, e una luna accanto al notch quando un Focus è attivo.',
+      f10h: 'Entra nelle riunioni', f10p: 'Gli eventi del calendario con un link Zoom, Meet o Teams hanno un pulsante Entra.',
       f7h: 'Raycast', f7p: "L'integrazione con Raycast è in arrivo.",
       plugH: 'Plugin',
       plugP: "Il pannello Control Center del notch contiene i pulsanti dei plugin. Apri <b>Impostazioni → Control Center</b> per installare i plugin dallo store integrato: vengono scaricati dalle release di questo repository, sempre all'ultima versione, dopo la tua conferma e un controllo del checksum.",
@@ -498,7 +533,7 @@
       perfH: 'Leggero sul tuo Mac',
       perfP: 'Notcholino non ti ingombra. Misurato su un MacBook Pro (Apple M5, macOS 26.6), con il notch chiuso, il mouse fermo e nessun lettore musicale aperto:',
       perfMem: 'di memoria', perfCpu: 'CPU a riposo', perfEnergy: 'impatto energetico', perfDisk: 'su disco', perfEsp: 'plugin Espresso',
-      perfNote: 'Con il notch aperto usa 45 MB e lo 0,00 % di CPU. Espresso aggiunge circa 1,5 MB mentre è acceso. Puoi misurarlo sul tuo Mac con <code>scripts/benchmark.sh</code>; i dettagli sono nel <a href=\"' + REPO + '#performance\">README</a>.',
+      perfNote: 'Con il notch aperto usa 47 MB e lo 0,05 % di CPU. Espresso aggiunge circa 1,5 MB mentre è acceso. Puoi misurarlo sul tuo Mac con <code>scripts/benchmark.sh</code>; i dettagli sono nel <a href=\"' + REPO + '#performance\">README</a>.',
       ccTitle: 'Control Center',
       esAlways: 'Sempre attivo', esLeft: 'rimasti',
       esO: ['A tempo indefinito', '10 min', '30 min', '1 ora', '2 ore', '4 ore', '8 ore', '12 ore', 'Fino alle…', 'Disattiva'],
@@ -713,6 +748,12 @@
     scroll: '<rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 7v3"/>',
     timer: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 3h5"/>',
     spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
+    clip: '<rect x="6" y="5" width="12" height="16" rx="2"/><path d="M9 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 15h4"/>',
+    net: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>',
+    drop: '<path d="M16 4a2.1 2.1 0 0 1 3 3l-2 2-3-3z"/><path d="M13.5 8.5L5 17l-1 3 3-1 8.5-8.5"/>',
+    scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 9h8M8 12h8M8 15h5"/>',
+    lockd: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    desk: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M3 14h18M8 20h8"/>',
     laptop: '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/>'
   };
   function secOpts(list, unit) { return list.map(function (n) { return { id: String(n), title: n + ' ' + unit }; }); }
@@ -725,6 +766,15 @@
       flags: [['sound', 'Sound', true]] },
     { id: 'dusty', name: 'Dusty', icon: 'spark', tint: '#64d2ff', kind: 'menu', flash: true,
       header: 'Lock keyboard, trackpad and screen for', items: secOpts([5, 10, 15, 20, 30, 45, 60], 's') },
+    { id: 'clippy', name: 'Clippy', icon: 'clip', tint: '#ff9f0a', kind: 'menu', flash: true, lights: false,
+      header: 'Click to copy again', items: [{ id: 'a', title: 'Notes for Thursday: ship the shelf…', wide: true }, { id: 'b', title: 'https://github.com/Peppe37/Notcholino', wide: true }, { id: 'c', title: '🖼  Image 1440×900', wide: true }, { id: 'd', title: '📄  Invoice-0912.pdf', wide: true }] },
+    { id: 'pinger', name: 'Pinger', kind: 'pinger', target: '1.1.1.1' },
+    { id: 'picker', name: 'Picker', icon: 'drop', tint: '#ff9f0a', kind: 'picker', fmt: 'hex', lights: false },
+    { id: 'reader', name: 'Reader', icon: 'scan', tint: '#30d158', kind: 'toggle', on: false, auto: 1800 },
+    { id: 'devices', name: 'Devices', kind: 'devices' },
+    { id: 'quicky', name: 'Quicky', icon: 'lockd', tint: '#0a84ff', kind: 'menu', flash: true, lights: false,
+      header: 'Do it now', items: [{ id: 'lock', title: 'Lock' }, { id: 'display', title: 'Display off' }, { id: 'saver', title: 'Screen saver' }] },
+    { id: 'tidy', name: 'Tidy', icon: 'desk', tint: '#64d2ff', kind: 'toggle', on: false },
     { id: 'closeme', name: 'CloseMe', icon: 'laptop', tint: '#bf5af2', kind: 'menu',
       header: 'Keep running with the lid closed for', items: [{ id: '1', title: '1 hour' }, { id: '2', title: '2 hours' }, { id: '4', title: '4 hours' }, { id: '8', title: '8 hours' }, { id: '12', title: '12 hours' }] }
   ];
@@ -734,6 +784,21 @@
   var hot = { vals: [], f: false, mode: 'avg', graph: true };
   for (var i = 0; i < 40; i++) hot.vals.push(30 + Math.sin(i / 5) * 2.5 + Math.random() * 1.5);
   var bat = { pct: 53 };
+  var ping = { vals: [] };
+  for (var k = 0; k < 30; k++) ping.vals.push(22 + Math.random() * 14);
+  function pingColor(ms) { return ms < 60 ? '#30d158' : ms < 150 ? '#ffd60a' : ms < 300 ? '#ff9f0a' : '#ff453a'; }
+  var devLow = 62;
+  var RECENT = ['FF8800', '336699', '1F9D55'];
+  function colorText(hex, fmt) {
+    var v = parseInt(hex, 16), r = (v >> 16) & 255, g = (v >> 8) & 255, b = v & 255;
+    if (fmt === 'rgb') return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+    if (fmt === 'hsl') {
+      var rn = r / 255, gn = g / 255, bn = b / 255, mx = Math.max(rn, gn, bn), mn = Math.min(rn, gn, bn), d = mx - mn, l = (mx + mn) / 2, h = 0, s = 0;
+      if (d > 0) { s = d / (1 - Math.abs(2 * l - 1)); h = mx === rn ? 60 * (((gn - bn) / d) % 6) : mx === gn ? 60 * ((bn - rn) / d + 2) : 60 * ((rn - gn) / d + 4); if (h < 0) h += 360; }
+      return 'hsl(' + Math.round(h) + ', ' + Math.round(s * 100) + '%, ' + Math.round(l * 100) + '%)';
+    }
+    return '#' + hex;
+  }
 
   function svg(path) { return '<svg viewBox="0 0 24 24">' + path + '</svg>'; }
   function tempColor(c) { return c < 45 ? '#30d158' : c < 60 ? '#ffd60a' : c < 75 ? '#ff9f0a' : '#ff453a'; }
@@ -743,8 +808,10 @@
   }
   function tileInfo(p) {
     if (p.kind === 'hotter') { var h = hotLabel(); return { label: h.text, color: tempColor(h.c), on: true }; }
+    if (p.kind === 'pinger') { var ms = ping.vals[ping.vals.length - 1]; return { label: Math.round(ms) + 'ms', color: pingColor(ms), on: true }; }
+    if (p.kind === 'devices') return { label: devLow + '%', color: devLow <= 20 ? '#ff453a' : devLow <= 40 ? '#ff9f0a' : '#30d158', on: true };
     if (p.kind === 'batlife') return { label: bat.pct + '%', color: bat.pct <= 20 ? '#ff453a' : bat.pct <= 40 ? '#ff9f0a' : '#30d158', on: true };
-    var on = p.kind === 'toggle' ? p.on : p.id === 'espresso' ? !!es.id : !!p.sel || !!p.flashing;
+    var on = p.kind === 'toggle' ? p.on : p.id === 'espresso' ? !!es.id : p.lights === false ? false : (!!p.sel || !!p.flashing);
     return { icon: p.icon, color: p.tint, on: on };
   }
   function renderGrid() {
@@ -755,11 +822,15 @@
     }).join('');
     notch.classList.toggle('big', tab === 0);
   }
-  function opt(id, title, cls) { return '<button type="button" data-o="' + id + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + title + '</button>'; }
-  function graphSvg() {
-    var v = hot.vals, mn = Math.min.apply(null, v) - 1, mx = Math.max.apply(null, v) + 1, w = 340, h = 34;
+  function opt(id, title, cls, wide) {
+    var c = [cls, wide ? 'wide' : ''].filter(Boolean).join(' ');
+    return '<button type="button" data-o="' + id + '"' + (c ? ' class="' + c + '"' : '') + '>' + title + '</button>';
+  }
+  function graphSvg(v, col) {
+    v = v || hot.vals;
+    var mn = Math.min.apply(null, v) - 1, mx = Math.max.apply(null, v) + 1, w = 340, h = 34;
     var pts = v.map(function (y, i) { return (i * w / (v.length - 1)).toFixed(1) + ',' + (h - (y - mn) / (mx - mn) * h).toFixed(1); }).join(' ');
-    var col = tempColor(v[v.length - 1]);
+    col = col || tempColor(v[v.length - 1]);
     return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>';
   }
   function renderDetail() {
@@ -780,7 +851,7 @@
       if (p.sel) status = 'Work ' + p.work + ':00';
     } else if (p.kind === 'menu') {
       html += '<div class="cc-hdr">' + p.header + '</div>';
-      p.items.forEach(function (it) { html += opt(it.id, it.title, p.sel === it.id ? 'sel' : ''); });
+      p.items.forEach(function (it) { html += opt(it.id, it.title, p.sel === it.id ? 'sel' : '', it.wide); });
       (p.flags || []).forEach(function (f) { html += opt('flag:' + f[0], f[1], p.flag[f[0]] ? 'sel' : ''); });
       if (p.sel) html += opt('off', p.id === 'tomato' ? 'Stop' : 'Turn off', 'off');
     } else if (p.kind === 'hotter') {
@@ -788,6 +859,23 @@
       if (hot.graph) html += '<div class="cc-graph">' + graphSvg() + '</div>';
       html += opt('avg', 'Average', hot.mode === 'avg' ? 'sel' : '') + opt('max', 'Highest', hot.mode === 'max' ? 'sel' : '') +
               opt('graph', 'Graph', hot.graph ? 'sel' : '') + opt('f', '°F', hot.f ? 'sel' : '');
+    } else if (p.kind === 'pinger') {
+      var last = ping.vals[ping.vals.length - 1]; color = pingColor(last); status = 'to ' + p.target;
+      html += '<div class="cc-graph">' + graphSvg(ping.vals, color) + '</div>';
+      var avg = ping.vals.reduce(function (a, b) { return a + b; }, 0) / ping.vals.length;
+      html += '<div class="cc-info"><span>Average</span><span>' + Math.round(avg) + ' ms</span></div><div class="cc-info"><span>Lost</span><span>0 of ' + ping.vals.length + '</span></div><div class="cc-info"><span>VPN</span><span>Off</span></div>';
+      ['1.1.1.1', '8.8.8.8', 'apple.com'].forEach(function (t) { html += opt('t:' + t, t, p.target === t ? 'sel' : ''); });
+    } else if (p.kind === 'devices') {
+      color = tileInfo(p).color; status = devLow + '%';
+      [['AirPods Pro', 'L 80% · R 75% · Case 60%'], ['Magic Mouse', '62%'], ['Keyboard K380', '45%']].forEach(function (r) {
+        html += '<div class="cc-info"><span>' + r[0] + '</span><span>' + r[1] + '</span></div>';
+      });
+    } else if (p.kind === 'picker') {
+      html += opt('pick', 'Pick a color', '', true);
+      html += '<div class="cc-hdr">Copy as</div>';
+      ['hex', 'rgb', 'hsl'].forEach(function (f) { html += opt('fmt:' + f, f.toUpperCase(), p.fmt === f ? 'sel' : ''); });
+      html += '<div class="cc-hdr">Recent: click to copy again</div>';
+      RECENT.forEach(function (h) { html += opt('again:' + h, '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#' + h + ';margin-right:8px;vertical-align:-1px"></span>' + colorText(h, p.fmt), p.sel === h ? 'sel' : '', true); });
     } else if (p.kind === 'batlife') {
       status = bat.pct + '%'; color = tileInfo(p).color;
       [['Health', '91 %'], ['Cycles', '214'], ['Power', '−8.4 W'], ['Time left', '5h 12m'], ['Temperature', '31°'], ['Charger', 'Not connected']].forEach(function (r) {
@@ -816,7 +904,10 @@
   $('cc-grid').addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-p]'); if (!b) return;
     var p = byId[b.getAttribute('data-p')];
-    if (p.kind === 'toggle') { p.on = !p.on; renderGrid(); } else showDetail(p.id);
+    if (p.kind === 'toggle') {
+      p.on = !p.on; renderGrid();
+      if (p.on && p.auto) setTimeout(function () { p.on = false; renderGrid(); }, p.auto);   // Reader is over once it has copied
+    } else showDetail(p.id);
   });
   $('cc-opts').addEventListener('click', function (e) {
     var id = e.target.getAttribute && e.target.getAttribute('data-o'); if (!id) return;
@@ -825,6 +916,11 @@
       es = id === 'off' ? { id: null, end: null } : { id: id, end: ES_SECS[id] ? Date.now() + ES_SECS[id] * 1000 : null };
     } else if (p.kind === 'hotter') {
       if (id === 'avg' || id === 'max') hot.mode = id; else if (id === 'graph') hot.graph = !hot.graph; else hot.f = !hot.f;
+    } else if (p.kind === 'pinger') {
+      if (id.indexOf('t:') === 0) p.target = id.slice(2);
+    } else if (p.kind === 'picker') {
+      if (id.indexOf('fmt:') === 0) p.fmt = id.slice(4);
+      else { p.sel = id === 'pick' ? null : id.slice(6); if (p.sel) setTimeout(function () { p.sel = null; if (open === 'picker') renderDetail(); }, 1200); }
     } else if (p.kind === 'tomato' && /^(work|rest)[+-]$/.test(id)) {
       var key = id.slice(0, -1), lim = key === 'work' ? [1, 180] : [1, 60];
       p[key] = Math.min(lim[1], Math.max(lim[0], p[key] + (id.slice(-1) === '+' ? 1 : -1)));
@@ -845,7 +941,8 @@
   setInterval(function () {
     var v = hot.vals; v.push(Math.max(27, Math.min(46, v[v.length - 1] + (Math.random() - 0.5) * 2.2))); v.shift();
     bat.pct = Math.max(20, bat.pct - (Math.random() < 0.1 ? 1 : 0));
-    renderGrid(); if (open === 'hotter' || open === 'batlife') renderDetail();
+    ping.vals.push(Math.max(15, Math.min(60, ping.vals[ping.vals.length - 1] + (Math.random() - 0.5) * 12))); ping.vals.shift();
+    renderGrid(); if (open === 'hotter' || open === 'batlife' || open === 'pinger') renderDetail();
   }, 3000);
   setInterval(function () {
     if (open === 'espresso') $('cc-status2').textContent = esStatus();
