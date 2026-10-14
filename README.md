@@ -34,7 +34,7 @@ Notcholino is a free, open-source and non-commercial app that extends the hardwa
 
 ## Features
 
-**Available now (0.1.0-alpha)**
+**Available now**
 
 - **Dynamic notch**: a native overlay that blends with the hardware notch and expands on hover. Works on the main display or on all displays.
 - **Now Playing**: control Spotify and Apple Music from the notch. Album art, scrubbable progress bar, seek, shuffle and repeat, an animated waveform, and colors extracted from the artwork. Click the song to bring the player to the front.
@@ -42,13 +42,15 @@ Notcholino is a free, open-source and non-commercial app that extends the hardwa
 - **Spotify Like**: connect your account once (OAuth with PKCE) to like the current song from the notch.
 - **Calendar**: today's date, the next event with its calendar color and location, and a month view. Pick which calendars to show, and click an event to open it in Calendar.
 - **System HUDs**: volume and brightness feedback in the notch, replacing the native macOS HUD, with theme, label and decibel options.
+- **Control Center and plugins**: a third panel in the notch holds plugin buttons. Tap one to open its options right inside the notch. Install, update and remove plugins from **Settings → Control Center → Plugin Store**: they are downloaded from this repository's releases, always at their latest version, after you confirm and a SHA-256 check.
+- **Espresso** (first plugin): keeps your Mac and its screen awake, indefinitely or for 10 minutes up to 12 hours, or until a time you pick. See [plugins](plugins).
 - **Native settings**: a System Settings–style preferences window built with SwiftUI, plus launch at login.
 - **Gestures**: scroll or swipe horizontally to switch between tabs.
 
 **Coming soon**
 
 - Battery, connectivity, Focus and lock-screen notifications (the settings exist, the live activities are not wired yet).
-- Plugin system based on Swift `.bundle` files, with a plugin store (the foundation is in place).
+- More plugins, and a guide for writing your own (see [plugins](plugins)).
 - Raycast integration.
 - Signed and notarized builds.
 
@@ -91,7 +93,7 @@ Spotify Like uses your Spotify account through the official Web API, and only if
 ## Usage
 
 - **Hover** the notch to expand it, move away to collapse it.
-- **Scroll or swipe** horizontally to switch between Now Playing and Calendar.
+- **Scroll or swipe** horizontally to switch between Control Center, Now Playing and Calendar, or click the dots at the top.
 - **Click the song info** to open the active music player. **Click an event or a day** to open it in Calendar.
 - Use the **menu bar icon → Preferences…** (or <kbd>⌘</kbd><kbd>,</kbd>) to open the settings and quit the app.
 
@@ -114,6 +116,8 @@ The Xcode project is generated from `project.yml` and is not committed. Build an
 Notcholino follows [Semantic Versioning](https://semver.org/) and keeps a [Keep a Changelog](https://keepachangelog.com/) style [CHANGELOG](CHANGELOG.md).
 
 Pushing a tag like `v0.1.0-alpha` triggers the release workflow: it checks the tag against the version in `project.yml`, builds the app, packages a DMG and publishes a GitHub release (marked as pre-release when the tag has a suffix) using the changelog entry as notes. The website is deployed to GitHub Pages from the `docs/` folder.
+
+Plugins are versioned and released on their own, from tags named `<plugin>-v<version>` (for example `espresso-v0.1.0-alpha`). The plugin release workflow publishes the release and refreshes the plugin store manifest. See [plugins](plugins) for details.
 
 ## License
 

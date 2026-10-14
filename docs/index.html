@@ -115,6 +115,26 @@
   .grid7 span { height:20px; display:grid; place-items:center; font-size:11px; font-weight:500; color:rgba(255,255,255,.6); }
   .grid7 .wd { font-weight:700; color:rgba(255,255,255,.5); } .grid7 .wd.we { color:rgba(255,255,255,.3); }
   .grid7 .today { background:#ff453a; color:#fff; font-weight:700; border-radius:50%; width:20px; margin: 0 auto; }
+  /* Control Center (Espresso) */
+  .pane.cc { padding: 40px 12px 0; }
+  .cc-title { font-size:14px; font-weight:700; color:rgba(255,255,255,.8); padding: 6px 12px 12px; }
+  .cc-tile { display:flex; flex-direction:column; align-items:center; gap:6px; width:84px; margin-left:12px; background:none; border:0; color:#fff; cursor:pointer; padding:0; font-family:inherit; }
+  .cc-circle { width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,.12); display:grid; place-items:center; transition: background .25s; }
+  .cc-circle svg { width:22px; height:22px; }
+  .cc-tile.on .cc-circle, .cc-icon.on { background:#ff9f0a; }
+  .cc-name { font-size:11px; font-weight:500; }
+  .cc-status { font-size:10px; color:#ff9f0a; min-height:12px; }
+  .cc-head { display:flex; align-items:center; gap:10px; padding: 4px 8px 10px; }
+  .cc-head b { font-size:14px; }
+  .cc-head .st { margin-left:auto; font-size:12px; font-weight:600; color:#ff9f0a; }
+  .cc-back { width:28px; height:28px; border:0; background:none; color:rgba(255,255,255,.8); cursor:pointer; display:grid; place-items:center; padding:0; }
+  .cc-back svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+  .cc-icon { width:18px; height:18px; color:#fff; } .cc-icon svg { width:18px; height:18px; }
+  .cc-icon.on { background:none; color:#ff9f0a; }
+  .cc-opts { display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; padding: 0 12px; }
+  .cc-opts button { height:28px; border:0; border-radius:14px; background:rgba(255,255,255,.12); color:#fff; font:600 11px/1 inherit; font-family:inherit; cursor:pointer; padding:0 4px; white-space:nowrap; }
+  .cc-opts button.sel { background:#fff; color:#000; }
+  .cc-opts button.off { background:rgba(255,69,58,.2); color:#ff453a; }
   .hint { text-align:center; color:var(--muted); font-size:.85rem; margin: 14px 0 0; }
 
   section { padding: 32px 0; }
@@ -166,8 +186,23 @@
             <div class="body">
               <div class="tabs" id="tabs">
                 <div class="dots" id="dots">
-                  <button type="button" data-tab="0" aria-label="Now Playing" aria-current="true"></button>
-                  <button type="button" data-tab="1" aria-label="Calendar" aria-current="false"></button>
+                  <button type="button" data-tab="0" aria-label="Control Center" aria-current="false"></button>
+                  <button type="button" data-tab="1" aria-label="Now Playing" aria-current="true"></button>
+                  <button type="button" data-tab="2" aria-label="Calendar" aria-current="false"></button>
+                </div>
+
+                <div class="pane cc hidden-left" id="pane-cc">
+                  <div id="cc-overview">
+                    <div class="cc-title" data-i18n="ccTitle">Control Center</div>
+                    <button type="button" class="cc-tile" id="cc-tile"><span class="cc-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10h11v4a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4v-4z"/><path d="M16 11h1.5a2 2 0 0 1 0 4H16"/><path d="M3.5 21h14"/><path d="M8.5 3.5c0 1.4 1.5 1.6 1.5 3M12 3.5c0 1.4 1.5 1.6 1.5 3"/></svg></span><span class="cc-name">Espresso</span><span class="cc-status" id="cc-status"></span></button>
+                  </div>
+                  <div id="cc-detail" hidden>
+                    <div class="cc-head">
+                      <button type="button" class="cc-back" id="cc-back" aria-label="Back"><svg viewBox="0 0 24 24"><polyline points="15 4 7 12 15 20"/></svg></button>
+                      <span class="cc-icon" id="cc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10h11v4a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4v-4z"/><path d="M16 11h1.5a2 2 0 0 1 0 4H16"/><path d="M3.5 21h14"/><path d="M8.5 3.5c0 1.4 1.5 1.6 1.5 3M12 3.5c0 1.4 1.5 1.6 1.5 3"/></svg></span><b>Espresso</b><span class="st" id="cc-status2"></span>
+                    </div>
+                    <div class="cc-opts" id="cc-opts"></div>
+                  </div>
                 </div>
 
                 <div class="pane music" id="pane-music">
@@ -230,8 +265,18 @@
       <div class="card"><h3 data-i18n="f3h">Calendar</h3><p data-i18n="f3p">See upcoming events and jump to them in Calendar.</p></div>
       <div class="card"><h3 data-i18n="f4h">System HUD</h3><p data-i18n="f4p">Volume and brightness feedback shown in the notch.</p></div>
       <div class="card"><h3 data-i18n="f5h">Native Settings</h3><p data-i18n="f5p">A System Settings–style preferences window built with SwiftUI.</p></div>
-      <div class="card"><h3 data-i18n="f6h">Plugins &amp; Raycast</h3><p data-i18n="f6p">Plugin architecture and Raycast integration are in the works.</p></div>
+      <div class="card"><h3 data-i18n="f6h">Control Center &amp; plugins</h3><p data-i18n="f6p">Add buttons to the notch with plugins, installed from a built-in store.</p></div>
+      <div class="card"><h3 data-i18n="f7h">Raycast</h3><p data-i18n="f7p">Raycast integration is in the works.</p></div>
     </div>
+  </section>
+
+  <section id="plugins">
+    <h2 data-i18n="plugH">Plugins</h2>
+    <p data-i18n="plugP">The Control Center panel of the notch holds plugin buttons. Open <b>Settings → Control Center</b> to install plugins from the built-in store: they are downloaded from the releases of this repository, at their latest version, after you confirm and a checksum check.</p>
+    <div class="grid">
+      <div class="card"><h3 data-i18n="plugEh">☕ Espresso</h3><p data-i18n="plugEp">Keeps your Mac and its screen awake, indefinitely or for 10 minutes up to 12 hours, or until a time you pick. Try it in the preview above.</p></div>
+    </div>
+    <p data-i18n="plugDev">Want to write your own? See the <a href="https://github.com/Peppe37/Notcholino/tree/main/plugins">plugins folder</a> on GitHub.</p>
   </section>
 
   <section>
@@ -274,7 +319,7 @@
       tagline: "Turn your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools.",
       download: 'Download', github: 'View on GitHub',
       latest: 'Latest release', prerelease: 'pre-release', allReleases: 'see all releases',
-      hint: 'Interactive preview: hit skip, tap the dots, swipe. Nothing actually plays.',
+      hint: 'Interactive preview: hit skip, brew an Espresso in the Control Center, tap the dots or swipe. Nothing actually plays.',
       allDay: 'All day',
       whatH: 'What is it?',
       whatP: 'Notcholino is a free, open-source and non-commercial notch app for macOS. It extends the hardware notch with a fluid overlay that expands on hover and shows what matters: now playing, upcoming events, volume and brightness, and more.',
@@ -285,7 +330,16 @@
       f3h: 'Calendar', f3p: 'See upcoming events and jump to them in Calendar.',
       f4h: 'System HUD', f4p: 'Volume and brightness feedback shown in the notch.',
       f5h: 'Native Settings', f5p: 'A System Settings–style preferences window built with SwiftUI.',
-      f6h: 'Plugins & Raycast', f6p: 'Plugin architecture and Raycast integration are in the works.',
+      f6h: 'Control Center & plugins', f6p: 'Add buttons to the notch with plugins, installed from a built-in store.',
+      f7h: 'Raycast', f7p: 'Raycast integration is in the works.',
+      plugH: 'Plugins',
+      plugP: 'The Control Center panel of the notch holds plugin buttons. Open <b>Settings → Control Center</b> to install plugins from the built-in store: they are downloaded from the releases of this repository, at their latest version, after you confirm and a checksum check.',
+      plugEh: '☕ Espresso',
+      plugEp: 'Keeps your Mac and its screen awake, indefinitely or for 10 minutes up to 12 hours, or until a time you pick. Try it in the preview above.',
+      plugDev: 'Want to write your own? See the <a href="' + REPO + '/tree/main/plugins">plugins folder</a> on GitHub.',
+      ccTitle: 'Control Center',
+      esAlways: 'Always on', esLeft: 'left',
+      esO: ['Indefinitely', '10 min', '30 min', '1 hour', '2 hours', '4 hours', '8 hours', '12 hours', 'Until…', 'Turn off'],
       instH: 'Install',
       instP1: 'Requires macOS 14 or later. Download the latest build from the <a href="' + REPO + '/releases">Releases page</a>, open the DMG and drag Notcholino to Applications. Then follow the <a href="#first-launch">first launch guide</a> below: macOS will block the app the first time.',
       instP2: 'Prefer building it yourself? Install <code>xcodegen</code>, run <code>xcodegen generate</code> and open <code>Notcholino.xcodeproj</code>. See the <a href="' + REPO + '#building-from-source">README</a>.',
@@ -307,7 +361,7 @@
       tagline: 'Trasforma il Notch del tuo MacBook in un hub dinamico per Live Activities, notifiche e strumenti interattivi.',
       download: 'Scarica', github: 'Vedi su GitHub',
       latest: 'Ultima release', prerelease: 'pre-release', allReleases: 'vedi tutte le release',
-      hint: 'Anteprima interattiva: prova lo skip, tocca i puntini, scorri. Non suona niente per davvero.',
+      hint: "Anteprima interattiva: prova lo skip, prepara un Espresso nel Control Center, tocca i puntini o scorri. Non suona niente per davvero.",
       allDay: 'Tutto il giorno',
       whatH: "Cos'è?",
       whatP: "Notcholino è un'app per il notch di macOS gratuita, open source e non commerciale. Estende il notch hardware con un overlay fluido che si espande al passaggio del mouse e mostra ciò che conta: la musica in riproduzione, i prossimi eventi, volume e luminosità, e altro ancora.",
@@ -318,7 +372,16 @@
       f3h: 'Calendario', f3p: 'Guarda i prossimi eventi e aprili in Calendario.',
       f4h: 'HUD di sistema', f4p: 'Volume e luminosità mostrati nel notch.',
       f5h: 'Impostazioni native', f5p: 'Una finestra di preferenze in stile Impostazioni di Sistema, fatta con SwiftUI.',
-      f6h: 'Plugin e Raycast', f6p: "Architettura a plugin e integrazione con Raycast sono in arrivo.",
+      f6h: 'Control Center e plugin', f6p: 'Aggiungi pulsanti al notch con i plugin, che installi da uno store integrato.',
+      f7h: 'Raycast', f7p: "L'integrazione con Raycast è in arrivo.",
+      plugH: 'Plugin',
+      plugP: "Il pannello Control Center del notch contiene i pulsanti dei plugin. Apri <b>Impostazioni → Control Center</b> per installare i plugin dallo store integrato: vengono scaricati dalle release di questo repository, sempre all'ultima versione, dopo la tua conferma e un controllo del checksum.",
+      plugEh: '☕ Espresso',
+      plugEp: "Tiene il Mac e lo schermo accesi, a tempo indefinito o da 10 minuti fino a 12 ore, oppure fino a un'ora a tua scelta. Provalo nell'anteprima qui sopra.",
+      plugDev: 'Vuoi scriverne uno tuo? Guarda la <a href="' + REPO + '/tree/main/plugins">cartella dei plugin</a> su GitHub.',
+      ccTitle: 'Control Center',
+      esAlways: 'Sempre attivo', esLeft: 'rimasti',
+      esO: ['A tempo indefinito', '10 min', '30 min', '1 ora', '2 ore', '4 ore', '8 ore', '12 ore', 'Fino alle…', 'Disattiva'],
       instH: 'Installazione',
       instP1: "Richiede macOS 14 o successivo. Scarica l'ultima build dalla <a href=\"" + REPO + "/releases\">pagina delle Release</a>, apri il DMG e trascina Notcholino in Applicazioni. Poi segui la <a href=\"#first-launch\">guida al primo avvio</a> qui sotto: macOS bloccherà l'app la prima volta.",
       instP2: 'Preferisci compilarla tu? Installa <code>xcodegen</code>, esegui <code>xcodegen generate</code> e apri <code>Notcholino.xcodeproj</code>. Vedi il <a href="' + REPO + '#building-from-source">README</a>.',
@@ -368,6 +431,7 @@
     renderRelease();
     renderCalendar();
     renderClock();
+    if (window.__renderEspresso) window.__renderEspresso();
   }
 
   /* ---------- Release info ---------- */
@@ -385,11 +449,12 @@
     document.getElementById('download').href = url;
     document.getElementById('event').href = url;
   }
-  fetch('https://api.github.com/repos/Peppe37/Notcholino/releases?per_page=1')
+  fetch('https://api.github.com/repos/Peppe37/Notcholino/releases?per_page=30')
     .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
     .then(function (list) {
-      if (!list || !list[0]) return;
-      release = list[0];
+      // App releases are tagged v<version>; plugin releases (e.g. espresso-v0.1.0) are skipped
+      release = (list || []).filter(function (r) { return /^v\d/.test(r.tag_name); })[0];
+      if (!release) return;
       var asset = (release.assets || [])[0];
       if (asset) setDownload(asset.browser_download_url);
       renderRelease();
@@ -442,7 +507,7 @@
   var pos = 0, playing = true, shuffle = false, repeat = false, dragging = false;
 
   var $ = function (id) { return document.getElementById(id); };
-  var notch = $('notch'), pane0 = $('pane-music'), pane1 = $('pane-cal'), tabs = $('tabs');
+  var notch = $('notch'), pane0 = $('pane-music'), pane1 = $('pane-cal'), paneCC = $('pane-cc'), tabs = $('tabs');
 
   function fmt(s) { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
 
@@ -502,13 +567,60 @@
     renderProgress();
   }, 1000);
 
+  /* ---------- Control Center: Espresso (fake) ---------- */
+  var ES_IDS = ['indefinite', '10m', '30m', '1h', '2h', '4h', '8h', '12h', 'until'];
+  var ES_SECS = { '10m': 600, '30m': 1800, '1h': 3600, '2h': 7200, '4h': 14400, '8h': 28800, '12h': 43200, until: 5400 };
+  var es = { id: null, end: null };
+
+  function esStatus() {
+    if (!es.id) return '';
+    if (!es.end) return t('esAlways');
+    var left = Math.max(0, Math.ceil((es.end - Date.now()) / 1000));
+    var txt = left >= 3600 ? Math.floor(left / 3600) + 'h ' + Math.floor((left % 3600) / 60) + 'm'
+            : left >= 60 ? Math.floor(left / 60) + 'm' : left + 's';
+    return txt + ' ' + t('esLeft');
+  }
+  function renderEspresso() {
+    var st = esStatus();
+    $('cc-status').textContent = st;
+    $('cc-status2').textContent = st;
+    $('cc-tile').classList.toggle('on', !!es.id);
+    $('cc-icon').classList.toggle('on', !!es.id);
+    var labels = (I18N[lang] || I18N.en).esO, html = '';
+    ES_IDS.forEach(function (id, i) {
+      html += '<button type="button" data-es="' + id + '"' + (es.id === id ? ' class="sel"' : '') + '>' + labels[i] + '</button>';
+    });
+    if (es.id) html += '<button type="button" class="off" data-es="off">' + labels[9] + '</button>';
+    $('cc-opts').innerHTML = html;
+  }
+  $('cc-opts').addEventListener('click', function (e) {
+    var id = e.target.getAttribute && e.target.getAttribute('data-es');
+    if (!id) return;
+    if (id === 'off') es = { id: null, end: null };
+    else es = { id: id, end: ES_SECS[id] ? Date.now() + ES_SECS[id] * 1000 : null };
+    renderEspresso();
+  });
+  $('cc-tile').onclick = function () { $('cc-overview').hidden = true; $('cc-detail').hidden = false; };
+  $('cc-back').onclick = function () { $('cc-detail').hidden = true; $('cc-overview').hidden = false; };
+  setInterval(function () {
+    var st = esStatus();
+    $('cc-status').textContent = st;
+    $('cc-status2').textContent = st;
+    if (es.end && Date.now() >= es.end) { es = { id: null, end: null }; renderEspresso(); }
+  }, 1000);
+
+  window.__renderEspresso = renderEspresso;
+  renderEspresso();
+
   /* ---------- Tabs ---------- */
-  var tab = 0;
+  var tab = 1;  // 0 = Control Center, 1 = Now Playing, 2 = Calendar
   function setTab(n) {
     tab = n;
-    pane0.classList.toggle('hidden-left', n === 1);
-    pane1.classList.toggle('hidden-right', n === 0);
-    notch.classList.toggle('cal', n === 1);
+    [paneCC, pane0, pane1].forEach(function (pane, i) {
+      pane.classList.toggle('hidden-left', i < n);
+      pane.classList.toggle('hidden-right', i > n);
+    });
+    notch.classList.toggle('cal', n !== 1);
     document.querySelectorAll('#dots button').forEach(function (b) { b.setAttribute('aria-current', String(Number(b.dataset.tab) === n)); });
   }
   document.querySelectorAll('#dots button').forEach(function (b) { b.onclick = function () { setTab(Number(b.dataset.tab)); }; });
@@ -518,7 +630,7 @@
   tabs.addEventListener('pointerup', function (e) {
     if (sx === null) return;
     var dx = e.clientX - sx; sx = null;
-    if (dx < -40) setTab(1); else if (dx > 40) setTab(0);
+    if (dx < -40) setTab(Math.min(2, tab + 1)); else if (dx > 40) setTab(Math.max(0, tab - 1));
   });
 
   /* ---------- Fit to narrow screens ---------- */
@@ -532,7 +644,7 @@
   document.querySelectorAll('.lang button').forEach(function (b) {
     b.onclick = function () { lang = b.dataset.lang; safeSet('notcholino-lang', lang); applyLang(); };
   });
-  setTab(0);
+  setTab(1);
   renderTrack();
   renderPlaying();
   applyLang();

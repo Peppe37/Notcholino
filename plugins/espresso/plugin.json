@@ -1,0 +1,10 @@
+{
+  "id": "espresso",
+  "target": "Espresso",
+  "name": "Espresso",
+  "description": "Keep your Mac and its screen awake, indefinitely or for a set time.",
+  "author": "Giuseppe",
+  "icon": "cup.and.saucer.fill",
+  "version": "0.1.0-alpha",
+  "apiVersion": 1
+}

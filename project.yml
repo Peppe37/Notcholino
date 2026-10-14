@@ -8,6 +8,7 @@ targets:
     deploymentTarget: "14.0"
     sources:
       - Notcholino
+      - Shared
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -15,8 +16,8 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
-        MARKETING_VERSION: "0.2.1"
-        CURRENT_PROJECT_VERSION: "4"
+        MARKETING_VERSION: "0.3.0"
+        CURRENT_PROJECT_VERSION: "5"
     info:
       path: Notcholino/Info.plist
       properties:
@@ -24,3 +25,21 @@ targets:
         NSAppleEventsUsageDescription: "Notcholino needs Apple Events access to control music players."
         NSAppleScriptEnabled: true
         NSCalendarsFullAccessUsageDescription: "Notcholino needs access to display your upcoming events."
+  # --- Plugins (compiled as .bundle and loaded by the app at runtime) ---
+  Espresso:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - plugins/espresso
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: Espresso
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.espresso
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: EspressoPlugin
+        MARKETING_VERSION: "0.1.0-alpha"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""

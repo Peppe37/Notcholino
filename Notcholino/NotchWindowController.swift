@@ -1192,68 +1192,184 @@ struct CalendarNotchView: View {
         }
     }
 }
-import SwiftUI
+// MARK: - Control Center
 
+/// Plugin buttons. Tapping one opens its options (the plugin's declarative menu) right inside the notch.
 struct ControlCenterNotchView: View {
     @ObservedObject private var pluginManager = PluginManager.shared
-    
-    // Grid layout for plugin buttons (4 columns)
-    let columns = [
-        GridItem(.adaptive(minimum: 60, maximum: 80), spacing: 16)
-    ]
-    
+    @State private var selectedID: String?
+
+    private let tileColumns = [GridItem(.adaptive(minimum: 64, maximum: 84), spacing: 14)]
+    private let optionColumns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 4)
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        // Re-read plugin state every second (countdowns, active state)
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            Group {
+                if let id = selectedID,
+                   let plugin = pluginManager.loadedPlugins.first(where: { $0.pluginIdentifier == id }) {
+                    detail(plugin)
+                } else {
+                    overview
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    // MARK: Overview
+
+    private var overview: some View {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Control Center")
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(.white.opacity(0.8))
                 .padding(.horizontal, 24)
-                .padding(.top, 16)
-            
+                .padding(.top, 14)
+
             if pluginManager.loadedPlugins.isEmpty {
-                VStack {
+                VStack(spacing: 3) {
                     Spacer()
                     Text("No plugins installed")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.white.opacity(0.5))
-                    Text("Download plugins from Settings")
+                    Text("Get plugins from Settings → Control Center")
                         .font(.system(size: 11))
                         .foregroundStyle(.white.opacity(0.3))
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(pluginManager.loadedPlugins, id: \.pluginName) { plugin in
-                            Button {
-                                plugin.onControlCenterButtonClick()
-                            } label: {
-                                VStack(spacing: 8) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(Color.white.opacity(0.1))
-                                            .frame(width: 48, height: 48)
-                                        
-                                        Image(systemName: plugin.controlCenterIcon.isEmpty ? "puzzlepiece.extension.fill" : plugin.controlCenterIcon)
-                                            .font(.system(size: 20))
-                                            .foregroundStyle(.white)
-                                    }
-                                    
-                                    Text(plugin.pluginName)
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundStyle(.white)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .contentShape(Rectangle())
+                ScrollView(.vertical, showsIndicators: false) {
+                    LazyVGrid(columns: tileColumns, spacing: 14) {
+                        ForEach(pluginManager.loadedPlugins, id: \.pluginIdentifier) { plugin in
+                            tile(plugin)
                         }
                     }
                     .padding(.horizontal, 24)
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func tile(_ plugin: NotcholinoPlugin) -> some View {
+        let active = plugin.isActive
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = plugin.pluginIdentifier }
+        } label: {
+            VStack(spacing: 6) {
+                ZStack {
+                    Circle()
+                        .fill(active ? Color.orange : Color.white.opacity(0.12))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: plugin.controlCenterIcon.isEmpty ? "puzzlepiece.extension.fill" : plugin.controlCenterIcon)
+                        .font(.system(size: 20))
+                        .foregroundStyle(.white)
+                }
+                Text(plugin.pluginName)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                if !plugin.statusText.isEmpty {
+                    Text(plugin.statusText)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.orange)
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Plugin options
+
+    private func detail(_ plugin: NotcholinoPlugin) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = nil }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Image(systemName: plugin.controlCenterIcon)
+                    .font(.system(size: 16))
+                    .foregroundStyle(plugin.isActive ? .orange : .white)
+                Text(plugin.pluginName)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white)
+                Spacer()
+                if !plugin.statusText.isEmpty {
+                    Text(plugin.statusText)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.orange)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(Array(groups(of: plugin.menuItems()).enumerated()), id: \.offset) { _, group in
+                        if let header = group.header {
+                            Text(header)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.5))
+                        }
+                        LazyVGrid(columns: optionColumns, spacing: 6) {
+                            ForEach(group.items, id: \.id) { item in
+                                optionChip(item) { plugin.performMenuAction(item.id) }
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 12)
+            }
+        }
+    }
+
+    private struct Option { let id: String; let title: String; let checked: Bool; let destructive: Bool }
+    private struct OptionGroup { var header: String?; var items: [Option] }
+
+    /// Turns the plugin's menu dictionaries into groups (a header starts a new group)
+    private func groups(of raw: [[String: Any]]) -> [OptionGroup] {
+        var result: [OptionGroup] = [OptionGroup(header: nil, items: [])]
+        for entry in raw {
+            if let header = entry["header"] as? String {
+                result.append(OptionGroup(header: header, items: []))
+            } else if let id = entry["id"] as? String, let title = entry["title"] as? String {
+                result[result.count - 1].items.append(Option(
+                    id: id, title: title,
+                    checked: entry["checked"] as? Bool ?? false,
+                    destructive: entry["destructive"] as? Bool ?? false))
+            }
+        }
+        return result.filter { !$0.items.isEmpty }
+    }
+
+    private func optionChip(_ item: Option, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(item.title)
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .foregroundStyle(item.checked ? Color.black : (item.destructive ? Color.red : Color.white))
+                .frame(maxWidth: .infinity)
+                .frame(height: 28)
+                .background(
+                    Capsule().fill(item.checked ? Color.white
+                                   : (item.destructive ? Color.red.opacity(0.18) : Color.white.opacity(0.12)))
+                )
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }

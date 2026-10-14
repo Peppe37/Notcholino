@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-alpha] - 2026-10-14
+
+### Added
+- Plugin system: the Control Center panel shows plugin buttons, and each plugin provides a declarative menu that Notcholino draws inside the notch.
+- Plugin Store in Settings → Control Center: install, update and remove plugins from this repository's releases, with a confirmation and a SHA-256 check.
+- Plugins are released on their own (tags `<plugin>-v<version>`), and the website publishes a manifest that always points to each plugin's latest release.
+- Website: the interactive preview has a Control Center tab with a working Espresso demo, plus a plugins section.
+- Documentation for writing and releasing plugins (`plugins/README.md`).
+
+### Changed
+- Plugin API version 1 replaces the earlier experimental protocol.
+
 ## [0.2.1-alpha] - 2026-10-14
 
 ### Changed
@@ -58,7 +70,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.2.1-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.3.0-alpha...HEAD
+[0.3.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.2.1-alpha...v0.3.0-alpha
 [0.2.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.2.0-alpha...v0.2.1-alpha
 [0.2.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.1.1-alpha...v0.2.0-alpha
 [0.1.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.1.0-alpha...v0.1.1-alpha

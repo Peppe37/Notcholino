@@ -442,7 +442,8 @@ struct LockScreenSettingsView: View {
 struct ControlCenterSettingsView: View {
     @AppStorage("controlCenterEnabled") private var enabled = true
     @ObservedObject private var pluginManager = PluginManager.shared
-    
+    @ObservedObject private var store = PluginStore.shared
+
     var body: some View {
         Form {
             Section {
@@ -451,41 +452,88 @@ struct ControlCenterSettingsView: View {
                 Text("The Control Center is the notch panel that holds your plugin buttons. Turn it off if you don't use plugins and you won't see it in the notch.")
             }
 
-            Section {
-                Text("Notcholino supports external compiled Swift `.bundle` plugins to extend its functionality.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            }
-            
             Section("Installed Plugins") {
                 if pluginManager.loadedPlugins.isEmpty {
                     Text("No plugins installed.")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(pluginManager.loadedPlugins, id: \.pluginName) { plugin in
-                        VStack(alignment: .leading) {
-                            Text(plugin.pluginName)
-                                .font(.headline)
-                            Text("v\(plugin.pluginVersion) by \(plugin.pluginAuthor)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text(plugin.pluginDescription)
-                                .font(.footnote)
-                                .padding(.top, 2)
+                    ForEach(pluginManager.loadedPlugins, id: \.pluginIdentifier) { plugin in
+                        HStack(spacing: 12) {
+                            Image(systemName: plugin.controlCenterIcon)
+                                .frame(width: 24)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(plugin.pluginName).font(.headline)
+                                Text("v\(plugin.pluginVersion) by \(plugin.pluginAuthor)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(plugin.pluginDescription)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button("Remove", role: .destructive) { store.remove(identifier: plugin.pluginIdentifier) }
                         }
                         .padding(.vertical, 4)
                     }
                 }
+                ForEach(pluginManager.loadErrors, id: \.self) { error in
+                    Text(error).font(.caption).foregroundStyle(.red)
+                }
             }
-            
-            Section("Plugin Store") {
-                Text("Store loading functionality will be connected to your GitHub pipeline manifest.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+
+            Section {
+                if store.isLoading && store.available.isEmpty {
+                    HStack { ProgressView().controlSize(.small); Text("Loading…").foregroundStyle(.secondary) }
+                }
+                ForEach(store.available) { plugin in
+                    storeRow(plugin)
+                }
+                if let message = store.message {
+                    Text(message).font(.caption).foregroundStyle(.orange)
+                }
+                HStack {
+                    Spacer()
+                    Button("Refresh") { Task { await store.refresh() } }
+                        .disabled(store.isLoading)
+                }
+            } header: {
+                Text("Plugin Store")
+            } footer: {
+                Text("Plugins are downloaded from the Notcholino releases on GitHub, always at their latest version.")
             }
         }
         .formStyle(.grouped)
         .navigationTitle("Control Center")
+        .task { await store.refresh() }
+    }
+
+    @ViewBuilder
+    private func storeRow(_ plugin: RemotePlugin) -> some View {
+        let installed = store.installedVersion(of: plugin.id)
+        HStack(spacing: 12) {
+            Image(systemName: plugin.icon)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(plugin.name).font(.headline)
+                Text("v\(plugin.version) by \(plugin.author)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(plugin.description)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            if store.busyID == plugin.id {
+                ProgressView().controlSize(.small)
+            } else if installed == nil {
+                Button("Install") { Task { await store.install(plugin) } }
+            } else if installed != plugin.version {
+                Button("Update") { Task { await store.install(plugin) } }
+            } else {
+                Text("Installed").foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 

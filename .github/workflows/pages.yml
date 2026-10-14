@@ -3,7 +3,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main]
-    paths: [docs/**, .github/workflows/pages.yml]
+    paths: [docs/**, plugins/**/plugin.json, scripts/gen_plugins_manifest.py, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
@@ -23,6 +23,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Generate plugin manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/gen_plugins_manifest.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -75,65 +75,69 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 import SwiftUI
 import Combine
 
-/// Protocol that compiled plugins (.bundle) must implement and export as their Principal Class.
-@objc(NotcholinoPlugin)
-public protocol NotcholinoPlugin: NSObjectProtocol {
-    var pluginName: String { get }
-    var pluginVersion: String { get }
-    var pluginAuthor: String { get }
-    var pluginDescription: String { get }
-    
-    /// Called when the button in the Control Center is clicked
-    func onControlCenterButtonClick()
-    
-    /// Optional: Return the name of an SF Symbol for the Control Center button
-    var controlCenterIcon: String { get }
-}
-
-/// Manages downloading, loading, and interacting with plugins.
+/// Manages loading and removing plugins (the protocol lives in Shared/NotcholinoPluginAPI.swift).
 final class PluginManager: ObservableObject {
     static let shared = PluginManager()
-    
+
     @Published var loadedPlugins: [NotcholinoPlugin] = []
-    
-    private let pluginsDirectory: URL
-    
+    @Published var loadErrors: [String] = []
+
+    let pluginsDirectory: URL
+    private var pluginsByPath: [String: NotcholinoPlugin] = [:]
+
     init() {
-        // Define the plugins directory in Application Support
+        // Plugins live in Application Support
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         pluginsDirectory = appSupport.appendingPathComponent("Notcholino/Plugins")
-        
-        createPluginsDirectoryIfNeeded()
+
+        try? FileManager.default.createDirectory(at: pluginsDirectory, withIntermediateDirectories: true)
         loadPlugins()
     }
-    
-    private func createPluginsDirectoryIfNeeded() {
-        if !FileManager.default.fileExists(atPath: pluginsDirectory.path) {
-            try? FileManager.default.createDirectory(at: pluginsDirectory, withIntermediateDirectories: true, attributes: nil)
+
+    /// Loads every .bundle in the Plugins directory that is not loaded yet.
+    /// Plugins already loaded keep their instance (and state).
+    func loadPlugins() {
+        guard let urls = try? FileManager.default.contentsOfDirectory(at: pluginsDirectory, includingPropertiesForKeys: nil) else { return }
+        for url in urls where url.pathExtension == "bundle" && pluginsByPath[url.path] == nil {
+            _ = load(bundleAt: url)
         }
     }
-    
-    /// Loads all .bundle files from the Plugins directory
-    func loadPlugins() {
-        loadedPlugins.removeAll()
-        
-        guard let urls = try? FileManager.default.contentsOfDirectory(at: pluginsDirectory, includingPropertiesForKeys: nil) else {
-            return
+
+    /// Loads a single plugin bundle. Returns nil (and records the reason) if it can't be used.
+    @discardableResult
+    func load(bundleAt url: URL) -> NotcholinoPlugin? {
+        guard let bundle = Bundle(url: url),
+              let principalClass = bundle.principalClass as? NSObject.Type,
+              let plugin = principalClass.init() as? NotcholinoPlugin else {
+            return fail("\(url.lastPathComponent): no NotcholinoPlugin principal class")
         }
-        
-        let bundleURLs = urls.filter { $0.pathExtension == "bundle" }
-        
-        for url in bundleURLs {
-            guard let bundle = Bundle(url: url) else { continue }
-            
-            // Try to load the principal class
-            if let principalClass = bundle.principalClass as? NSObject.Type,
-               let pluginInstance = principalClass.init() as? NotcholinoPlugin {
-                loadedPlugins.append(pluginInstance)
-                print("Successfully loaded plugin: \(pluginInstance.pluginName)")
-            } else {
-                print("Failed to find NotcholinoPlugin principal class in bundle: \(url.lastPathComponent)")
-            }
+        guard plugin.apiVersion == notcholinoPluginAPIVersion else {
+            return fail("\(plugin.pluginName): needs plugin API \(plugin.apiVersion), this app has \(notcholinoPluginAPIVersion)")
         }
+        guard !loadedPlugins.contains(where: { $0.pluginIdentifier == plugin.pluginIdentifier }) else {
+            return fail("\(plugin.pluginName): already loaded")
+        }
+        pluginsByPath[url.path] = plugin
+        loadedPlugins.append(plugin)
+        return plugin
+    }
+
+    /// Unloads the plugin and deletes its bundle. Its code stays in memory until the app restarts.
+    func remove(identifier: String) {
+        guard let entry = pluginsByPath.first(where: { $0.value.pluginIdentifier == identifier }) else { return }
+        entry.value.pluginWillUnload?()
+        pluginsByPath[entry.key] = nil
+        loadedPlugins.removeAll { $0.pluginIdentifier == identifier }
+        try? FileManager.default.removeItem(atPath: entry.key)
+    }
+
+    func bundleURL(forIdentifier identifier: String) -> URL {
+        pluginsDirectory.appendingPathComponent("\(identifier).bundle")
+    }
+
+    private func fail(_ message: String) -> NotcholinoPlugin? {
+        print("Plugin not loaded: \(message)")
+        DispatchQueue.main.async { self.loadErrors.append(message) }
+        return nil
     }
 }

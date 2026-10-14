@@ -1,0 +1,89 @@
+name: Plugin release
+
+# Plugins are released from their own tags: <plugin id>-v<version>, e.g. espresso-v0.1.0-alpha
+on:
+  push:
+    tags: ["*-v*"]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read plugin and check the tag
+        id: p
+        run: |
+          ID="${GITHUB_REF_NAME%%-v*}"
+          VERSION="${GITHUB_REF_NAME#*-v}"
+          META="plugins/$ID/plugin.json"
+          if [ ! -f "$META" ]; then echo "No plugin '$ID' (missing $META)"; exit 1; fi
+          if [ "$(jq -r .version "$META")" != "$VERSION" ]; then
+            echo "Tag version $VERSION does not match version in $META"; exit 1
+          fi
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "target=$(jq -r .target "$META")" >> "$GITHUB_OUTPUT"
+          echo "name=$(jq -r .name "$META")" >> "$GITHUB_OUTPUT"
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Build
+        env:
+          TARGET: ${{ steps.p.outputs.target }}
+        run: |
+          xcodebuild -project Notcholino.xcodeproj -scheme "$TARGET" \
+            -configuration Release -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - name: Sign and package
+        env:
+          TARGET: ${{ steps.p.outputs.target }}
+          ID: ${{ steps.p.outputs.id }}
+          VERSION: ${{ steps.p.outputs.version }}
+        run: |
+          BUNDLE="build/Build/Products/Release/$TARGET.bundle"
+          BUILT=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$BUNDLE/Contents/Info.plist")
+          if [ "$BUILT" != "$VERSION" ]; then
+            echo "Built bundle is version $BUILT, expected $VERSION"; exit 1
+          fi
+          codesign --force --sign - "$BUNDLE"
+          ditto -c -k --keepParent "$BUNDLE" "$ID-$VERSION.zip"
+
+      - name: Release notes
+        env:
+          ID: ${{ steps.p.outputs.id }}
+          VERSION: ${{ steps.p.outputs.version }}
+        run: |
+          awk -v t="$VERSION" '
+            $0 ~ "^## \\[" t "\\]" { on=1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' "plugins/$ID/CHANGELOG.md" > notes.md
+          if [ ! -s notes.md ]; then echo "No CHANGELOG entry for $VERSION in plugins/$ID/CHANGELOG.md"; exit 1; fi
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ID: ${{ steps.p.outputs.id }}
+          VERSION: ${{ steps.p.outputs.version }}
+          NAME: ${{ steps.p.outputs.name }}
+        run: |
+          FLAGS=""
+          case "$VERSION" in *-*) FLAGS="--prerelease" ;; esac
+          # --latest=false: a plugin release must never become the app's "latest" release
+          gh release create "$GITHUB_REF_NAME" "$ID-$VERSION.zip" \
+            --title "$NAME $VERSION (plugin)" --notes-file notes.md --latest=false $FLAGS
+
+      - name: Update the plugin store manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
