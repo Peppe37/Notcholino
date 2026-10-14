@@ -123,6 +123,9 @@
   .card { background:var(--card); border-radius: 16px; padding: 20px; }
   .card h3 { margin: 0 0 6px; font-size:1.05rem; }
   .card p { margin:0; color:var(--muted); font-size:.95rem; }
+  ol.steps { padding-left: 1.3em; } ol.steps li { margin: 8px 0; }
+  .note { background:var(--card); border-radius:16px; padding:16px 20px; color:var(--muted); font-size:.95rem; }
+  pre { background:var(--card); border-radius:12px; padding:12px 16px; overflow-x:auto; font-size:.85rem; }
   code { background:var(--card); padding:2px 6px; border-radius:6px; font-size:.9em; }
   footer { padding-top: 32px; padding-bottom: 48px; color:var(--muted); font-size:.9rem; border-top:1px solid var(--line); margin-top: 32px; }
 
@@ -147,6 +150,7 @@
     <a class="btn" id="download" href="https://github.com/Peppe37/Notcholino/releases" data-i18n="download">Download</a>
     <a class="btn sec" href="https://github.com/Peppe37/Notcholino" data-i18n="github">View on GitHub</a>
     <p class="meta" id="release-meta"></p>
+    <p class="meta"><a href="#first-launch" data-i18n="helpLink">Can't open the app? See how to allow it.</a></p>
   </div>
 
   <div class="preview">
@@ -232,8 +236,22 @@
 
   <section>
     <h2 data-i18n="instH">Install</h2>
-    <p data-i18n="instP1">Requires macOS 14 or later. Download the latest build from the <a href="https://github.com/Peppe37/Notcholino/releases">Releases page</a>. The app is not notarized yet, so macOS will block it the first time: click <b>Done</b>, then open <b>System Settings → Privacy &amp; Security</b>, scroll to <b>Security</b> and click <b>Open Anyway</b>. Or run <code>xattr -dr com.apple.quarantine /Applications/Notcholino.app</code> in Terminal.</p>
+    <p data-i18n="instP1">Requires macOS 14 or later. Download the latest build from the <a href="https://github.com/Peppe37/Notcholino/releases">Releases page</a>, open the DMG and drag Notcholino to Applications. Then follow the <a href="#first-launch">first launch guide</a> below: macOS will block the app the first time.</p>
     <p data-i18n="instP2">Prefer building it yourself? Install <code>xcodegen</code>, run <code>xcodegen generate</code> and open <code>Notcholino.xcodeproj</code>. See the <a href="https://github.com/Peppe37/Notcholino#building-from-source">README</a>.</p>
+  </section>
+
+  <section id="first-launch">
+    <h2 data-i18n="glH">First launch: allowing the app</h2>
+    <p data-i18n="glIntro">Notcholino is not notarized by Apple yet (that requires a paid developer account), so macOS shows a warning saying it cannot verify the app. This is expected. Here is how to open it:</p>
+    <ol class="steps">
+      <li data-i18n="gl1">Open <b>Notcholino</b> from Applications. A message says it could not be opened. Click <b>Done</b> (do <b>not</b> click “Move to Trash”).</li>
+      <li data-i18n="gl2">Open <b>System Settings → Privacy &amp; Security</b>.</li>
+      <li data-i18n="gl3">Scroll down to the <b>Security</b> section. You will see “Notcholino.app was blocked”. Click <b>Open Anyway</b>.</li>
+      <li data-i18n="gl4">Confirm with your password or Touch ID, then click <b>Open</b>. You only need to do this once.</li>
+    </ol>
+    <p data-i18n="glTerm">Prefer the Terminal? This removes the quarantine flag and does the same thing:</p>
+    <pre><code>xattr -dr com.apple.quarantine /Applications/Notcholino.app</code></pre>
+    <p class="note" data-i18n="glTrust">Why trust it? Notcholino is fully open source: you can read every line of code in the <a href="https://github.com/Peppe37/Notcholino">repository</a>, or build the app yourself with Xcode and skip this warning altogether. The release is built automatically by GitHub Actions from the tagged source.</p>
   </section>
 </main>
 
@@ -269,10 +287,19 @@
       f5h: 'Native Settings', f5p: 'A System Settings–style preferences window built with SwiftUI.',
       f6h: 'Plugins & Raycast', f6p: 'Plugin architecture and Raycast integration are in the works.',
       instH: 'Install',
-      instP1: 'Requires macOS 14 or later. Download the latest build from the <a href="' + REPO + '/releases">Releases page</a>. The app is not notarized yet, so macOS will block it the first time: click <b>Done</b>, then open <b>System Settings → Privacy &amp; Security</b>, scroll to <b>Security</b> and click <b>Open Anyway</b>. Or run <code>xattr -dr com.apple.quarantine /Applications/Notcholino.app</code> in Terminal.',
+      instP1: 'Requires macOS 14 or later. Download the latest build from the <a href="' + REPO + '/releases">Releases page</a>, open the DMG and drag Notcholino to Applications. Then follow the <a href="#first-launch">first launch guide</a> below: macOS will block the app the first time.',
       instP2: 'Prefer building it yourself? Install <code>xcodegen</code>, run <code>xcodegen generate</code> and open <code>Notcholino.xcodeproj</code>. See the <a href="' + REPO + '#building-from-source">README</a>.',
       license: 'Licensed under <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a>',
-      changelog: 'Changelog', releases: 'Releases', issues: 'Report an issue'
+      changelog: 'Changelog', releases: 'Releases', issues: 'Report an issue',
+      helpLink: "Can't open the app? See how to allow it.",
+      glH: 'First launch: allowing the app',
+      glIntro: 'Notcholino is not notarized by Apple yet (that requires a paid developer account), so macOS shows a warning saying it cannot verify the app. This is expected. Here is how to open it:',
+      gl1: 'Open <b>Notcholino</b> from Applications. A message says it could not be opened. Click <b>Done</b> (do <b>not</b> click “Move to Trash”).',
+      gl2: 'Open <b>System Settings → Privacy &amp; Security</b>.',
+      gl3: 'Scroll down to the <b>Security</b> section. You will see “Notcholino.app was blocked”. Click <b>Open Anyway</b>.',
+      gl4: 'Confirm with your password or Touch ID, then click <b>Open</b>. You only need to do this once.',
+      glTerm: 'Prefer the Terminal? This removes the quarantine flag and does the same thing:',
+      glTrust: 'Why trust it? Notcholino is fully open source: you can read every line of code in the <a href="' + REPO + '">repository</a>, or build the app yourself with Xcode and skip this warning altogether. The release is built automatically by GitHub Actions from the tagged source.'
     },
     it: {
       title: 'Notcholino – un Notch vivo per macOS',
@@ -293,10 +320,19 @@
       f5h: 'Impostazioni native', f5p: 'Una finestra di preferenze in stile Impostazioni di Sistema, fatta con SwiftUI.',
       f6h: 'Plugin e Raycast', f6p: "Architettura a plugin e integrazione con Raycast sono in arrivo.",
       instH: 'Installazione',
-      instP1: "Richiede macOS 14 o successivo. Scarica l'ultima build dalla <a href=\"" + REPO + "/releases\">pagina delle Release</a>. L'app non è ancora notarizzata, quindi macOS la blocca al primo avvio: clicca <b>Fine</b>, apri <b>Impostazioni di Sistema → Privacy e sicurezza</b>, scorri fino a <b>Sicurezza</b> e clicca <b>Apri comunque</b>. Oppure esegui <code>xattr -dr com.apple.quarantine /Applications/Notcholino.app</code> nel Terminale.",
+      instP1: "Richiede macOS 14 o successivo. Scarica l'ultima build dalla <a href=\"" + REPO + "/releases\">pagina delle Release</a>, apri il DMG e trascina Notcholino in Applicazioni. Poi segui la <a href=\"#first-launch\">guida al primo avvio</a> qui sotto: macOS bloccherà l'app la prima volta.",
       instP2: 'Preferisci compilarla tu? Installa <code>xcodegen</code>, esegui <code>xcodegen generate</code> e apri <code>Notcholino.xcodeproj</code>. Vedi il <a href="' + REPO + '#building-from-source">README</a>.',
       license: 'Licenza <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a>',
-      changelog: 'Changelog', releases: 'Release', issues: 'Segnala un problema'
+      changelog: 'Changelog', releases: 'Release', issues: 'Segnala un problema',
+      helpLink: "Non riesci ad aprire l'app? Guarda come autorizzarla.",
+      glH: "Primo avvio: autorizzare l'app",
+      glIntro: "Notcholino non è ancora notarizzata da Apple (serve un account sviluppatore a pagamento), quindi macOS mostra un avviso che dice di non poter verificare l'app. È normale. Ecco come aprirla:",
+      gl1: "Apri <b>Notcholino</b> da Applicazioni. Un messaggio dice che non è stata aperta. Clicca <b>Fine</b> (<b>non</b> cliccare “Sposta nel Cestino”).",
+      gl2: 'Apri <b>Impostazioni di Sistema → Privacy e sicurezza</b>.',
+      gl3: 'Scorri fino alla sezione <b>Sicurezza</b>. Vedrai “Notcholino.app è stata bloccata”. Clicca <b>Apri comunque</b>.',
+      gl4: 'Conferma con la password o Touch ID, poi clicca <b>Apri</b>. Lo devi fare una volta sola.',
+      glTerm: 'Preferisci il Terminale? Questo comando rimuove il flag di quarantena e fa la stessa cosa:',
+      glTrust: "Perché fidarsi? Notcholino è completamente open source: puoi leggere ogni riga di codice nel <a href=\"" + REPO + "\">repository</a>, oppure compilare l'app da solo con Xcode ed evitare del tutto questo avviso. La release è costruita automaticamente da GitHub Actions a partire dal codice taggato."
     }
   };
 
