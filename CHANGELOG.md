@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0-alpha] - 2026-10-14
+
+### Added
+- Plugin options can have a number with minus and plus buttons (hold to repeat): the `stepper` entry, documented in `plugins/README.md`. The Tomato plugin uses it.
+
 ## [0.9.1-alpha] - 2026-10-14
 
 ### Changed

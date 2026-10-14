@@ -1566,6 +1566,13 @@ struct ControlCenterNotchView: View {
                         if let graph = group.graph {
                             SparklineView(values: graph.values, caption: graph.caption, color: graph.color)
                         }
+                        ForEach(group.steppers, id: \.id) { stepper in
+                            StepperRow(label: stepper.label, value: stepper.value, unit: stepper.unit,
+                                       range: stepper.min...stepper.max, step: stepper.step) { newValue in
+                                plugin.performMenuAction("\(stepper.id)=\(newValue)")
+                                refreshSoon()
+                            }
+                        }
                         ForEach(Array(group.infos.enumerated()), id: \.offset) { _, row in
                             HStack {
                                 Text(row.label)
@@ -1593,13 +1600,26 @@ struct ControlCenterNotchView: View {
     private struct Option { let id: String; let title: String; let checked: Bool; let destructive: Bool }
     private struct Graph { var values: [Double]; var caption: String; var color: Color }
     private struct InfoRow { let label: String; let value: String }
-    private struct OptionGroup { var header: String?; var items: [Option]; var graph: Graph? = nil; var infos: [InfoRow] = [] }
+    private struct StepperItem { let id: String; let label: String; let value: Int; let unit: String; let min: Int; let max: Int; let step: Int }
+    private struct OptionGroup {
+        var header: String?; var items: [Option]; var graph: Graph? = nil
+        var infos: [InfoRow] = []; var steppers: [StepperItem] = []
+    }
 
     /// Turns the plugin's menu dictionaries into groups (a header starts a new group)
     private func groups(of raw: [[String: Any]]) -> [OptionGroup] {
         var result: [OptionGroup] = [OptionGroup(header: nil, items: [])]
         for entry in raw {
-            if let label = entry["info"] as? String {
+            if let label = entry["stepper"] as? String, let id = entry["id"] as? String {
+                // Number rows, like the read-only ones, come before any chips of their group
+                if !result[result.count - 1].items.isEmpty || result[result.count - 1].graph != nil {
+                    result.append(OptionGroup(header: nil, items: []))
+                }
+                let lo = entry["min"] as? Int ?? 0
+                result[result.count - 1].steppers.append(StepperItem(
+                    id: id, label: label, value: entry["value"] as? Int ?? lo, unit: entry["unit"] as? String ?? "",
+                    min: lo, max: max(lo, entry["max"] as? Int ?? 999), step: max(1, entry["step"] as? Int ?? 1)))
+            } else if let label = entry["info"] as? String {
                 // Rows of "label  value" (consecutive ones share a group; chips come after them)
                 if !result[result.count - 1].items.isEmpty || result[result.count - 1].graph != nil {
                     result.append(OptionGroup(header: nil, items: []))
@@ -1619,7 +1639,7 @@ struct ControlCenterNotchView: View {
                     destructive: entry["destructive"] as? Bool ?? false))
             }
         }
-        return result.filter { !$0.items.isEmpty || $0.graph != nil || !$0.infos.isEmpty }
+        return result.filter { !$0.items.isEmpty || $0.graph != nil || !$0.infos.isEmpty || !$0.steppers.isEmpty }
     }
 
     private func optionChip(_ item: Option, action: @escaping () -> Void) -> some View {
@@ -1638,6 +1658,82 @@ struct ControlCenterNotchView: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Number rows for plugins
+
+/// "Label   (−) 25 min (+)". A tap changes the number by one step, holding repeats.
+private struct StepperRow: View {
+    let label: String
+    let value: Int
+    let unit: String
+    let range: ClosedRange<Int>
+    let step: Int
+    let onChange: (Int) -> Void
+
+    @State private var current: Int
+
+    init(label: String, value: Int, unit: String, range: ClosedRange<Int>, step: Int, onChange: @escaping (Int) -> Void) {
+        self.label = label; self.value = value; self.unit = unit; self.range = range; self.step = step; self.onChange = onChange
+        _current = State(initialValue: value)
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white.opacity(0.55))
+            Spacer()
+            HoldButton(symbol: "minus", enabled: current > range.lowerBound) { move(-step) }
+            Text(unit.isEmpty ? "\(current)" : "\(current) \(unit)")
+                .font(.system(size: 13, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(.white)
+                .frame(width: 66)
+            HoldButton(symbol: "plus", enabled: current < range.upperBound) { move(step) }
+        }
+        .onChange(of: value) { current = $0 }
+    }
+
+    private func move(_ delta: Int) {
+        let next = min(max(current + delta, range.lowerBound), range.upperBound)
+        guard next != current else { return }
+        current = next
+        onChange(next)
+    }
+}
+
+/// A round button that acts once when pressed and keeps acting, faster and faster, while it is held
+private struct HoldButton: View {
+    let symbol: String
+    let enabled: Bool
+    let action: () -> Void
+    @State private var task: Task<Void, Never>?
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(.white.opacity(enabled ? 1 : 0.3))
+            .frame(width: 26, height: 26)
+            .background(Circle().fill(Color.white.opacity(0.12)))
+            .contentShape(Circle())
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard task == nil, enabled else { return }
+                    task = Task {
+                        action()
+                        try? await Task.sleep(nanoseconds: 400_000_000)
+                        var delay: UInt64 = 110_000_000
+                        while !Task.isCancelled {
+                            action()
+                            try? await Task.sleep(nanoseconds: delay)
+                            delay = max(40_000_000, delay - 6_000_000)
+                        }
+                    }
+                }
+                .onEnded { _ in task?.cancel(); task = nil })
+            .onDisappear { task?.cancel(); task = nil }
     }
 }
 

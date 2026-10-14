@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0-alpha] - 2026-10-14
+
+### Changed
+- It is now a Pomodoro timer: you set how many minutes of work and of break, with minus and plus buttons (hold to go faster), and it repeats, work then break then work again, until you press Stop. It rings at each switch.
+- The clock shows the break in green, with a cup.
+- The iPhone alert is a Reminder due when the current stretch ends, made for the next switch only and removed shortly after, so the list doesn't fill up. It stays a notification: macOS has no way to set an alarm on an iPhone.
+- Needs Notcholino 0.10.0 or later (the number rows).
+
 ## [0.1.2-alpha] - 2026-10-14
 
 ### Changed

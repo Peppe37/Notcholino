@@ -9,7 +9,7 @@ Plugins are small compiled bundles (`.bundle`) that add buttons to the **Control
 | [Hotter](hotter) | The temperature of your Mac as the button itself, from green to red, with a small graph. Apple silicon only. |
 | [CloseMe](closeme) | *Experimental.* Keeps the Mac running with the lid closed, with the screen off. Asks for your administrator password. |
 | [BatLife](batlife) | Battery level as the button, with health, cycles, power and time left. |
-| [Tomato](tomato) | A focus timer with a small clock under the notch, a sound at the end and an optional iPhone alert. |
+| [Tomato](tomato) | A Pomodoro timer with work and break minutes of your choice, a small clock under the notch and a sound. |
 | [Dusty](dusty) | Clean mode: black screen and a locked keyboard and trackpad for 5 to 60 seconds. ⌘⇧C ends it. |
 
 ## Installing a plugin
@@ -20,7 +20,7 @@ Open **Settings → Control Center → Plugin Store**, pick a plugin and click *
 
 A plugin is a class that conforms to `NotcholinoPlugin`, defined in [`Shared/NotcholinoPluginAPI.swift`](../Shared/NotcholinoPluginAPI.swift). That file is compiled into the app and into every plugin. The plugin describes itself (name, icon, state) and returns a **declarative menu**: Notcholino draws it in the notch, the plugin only reacts to `performMenuAction(_:)`. See [`espresso/EspressoPlugin.swift`](espresso/EspressoPlugin.swift) for a complete example.
 
-A plugin can also make its button richer (since Notcholino 0.8.0, set `minAppVersion` in `plugin.json` when you use these): `controlCenterLabel` draws a short text such as `42°` instead of the symbol, `controlCenterTintColor` sets the button's color, `controlCenterButtonTapped()` turns the button into a plain switch, and a menu entry with a `graph` shows a small line graph. [Hotter](hotter), [BatLife](batlife) and [Scrolly](scrolly) use them. Every button in the Control Center has the same size and a single label, its name: a plugin's state goes in `statusText`, shown when its options are open.
+A plugin can also make its button richer (since Notcholino 0.8.0, set `minAppVersion` in `plugin.json` when you use these): `controlCenterLabel` draws a short text such as `42°` instead of the symbol, `controlCenterTintColor` sets the button's color, `controlCenterButtonTapped()` turns the button into a plain switch, a menu entry with a `graph` shows a small line graph, and (since Notcholino 0.10.0) a `stepper` entry is a number with minus and plus buttons that repeat while held; the new value comes back as `performMenuAction("<id>=<value>")`. [Hotter](hotter), [BatLife](batlife), [Scrolly](scrolly) and [Tomato](tomato) use them. Every button in the Control Center has the same size and a single label, its name: a plugin's state goes in `statusText`, shown when its options are open.
 A menu entry with `info` and `value` adds a read-only row.
 
 To add one:

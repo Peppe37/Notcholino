@@ -2,12 +2,14 @@ import AppKit
 import EventKit
 import Foundation
 
-/// Tomato is a focus timer. Pick a length and a small clock appears just under the notch. When time is up it plays a sound
-/// and, if you allow it, your iPhone alerts too.
+/// Tomato is a Pomodoro timer: a stretch of work, a break, and again, until you stop it. You choose how many minutes each
+/// lasts. A small clock hangs under the notch, a sound plays when each stretch ends, and, if you allow it, your iPhone is
+/// alerted too.
 ///
-/// There is no public way to make an iPhone ring from a Mac, so the iPhone alert uses what iCloud does share: a Reminder with
-/// an alarm at the end time. Your iPhone shows it as a notification with the usual sound, a few seconds late at most. It needs
-/// Reminders access, and the default Reminders list to be an iCloud one.
+/// An iPhone can't be rung from a Mac: no public API sets an alarm on it. What iCloud does share is a Reminder with an alarm,
+/// so the iPhone alert is a notification from a Reminder due when the current stretch ends. It is created for the next switch
+/// only, and removed again shortly after, so the list doesn't fill up. It needs Reminders access, and the default Reminders
+/// list to be an iCloud one.
 @objc(TomatoPlugin)
 final class TomatoPlugin: NSObject, NotcholinoPlugin {
 
@@ -20,26 +22,34 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
         Bundle(for: TomatoPlugin.self).infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
     }
     var pluginAuthor: String { "Giuseppe" }
-    var pluginDescription: String { "A focus timer with a small clock under the notch, a sound at the end and an optional iPhone alert." }
+    var pluginDescription: String { "A Pomodoro timer: work and break minutes of your choice, repeating, with a clock under the notch and a sound." }
 
     // MARK: Settings and state
 
     private enum Key {
+        static let work = "plugin.tomato.workMinutes"
+        static let rest = "plugin.tomato.breakMinutes"
         static let sound = "plugin.tomato.sound"
         static let iphone = "plugin.tomato.iphone"
         static let leftoverReminder = "plugin.tomato.reminderID"
     }
+    private static let workRange = 1...180
+    private static let breakRange = 1...60
+
+    private var workMinutes: Int {
+        let v = UserDefaults.standard.integer(forKey: Key.work)
+        return Self.workRange.contains(v) ? v : 25
+    }
+    private var breakMinutes: Int {
+        let v = UserDefaults.standard.integer(forKey: Key.rest)
+        return Self.breakRange.contains(v) ? v : 5
+    }
     private var soundOn: Bool { UserDefaults.standard.object(forKey: Key.sound) as? Bool ?? true }
     private var iphoneOn: Bool { UserDefaults.standard.bool(forKey: Key.iphone) }
 
-    private static let lengths: [(id: String, title: String, minutes: Int)] = [
-        ("5", "5 min", 5), ("10", "10 min", 10), ("15", "15 min", 15),
-        ("25", "25 min", 25), ("45", "45 min", 45), ("60", "60 min", 60)
-    ]
-
+    private enum Phase { case work, rest }
+    private var phase = Phase.work
     private var endDate: Date?
-    private var selected: String?
-    private var finishedAt: Date?
     private var timer: Timer?
     private var pill: ClockPill?
     private var reminders: RemindersBridge?
@@ -63,23 +73,29 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
     var statusText: String {
         if let message { return message }
         guard let end = endDate else { return "" }
-        return Self.clock(end.timeIntervalSinceNow) + " left"
+        return (phase == .work ? "Work " : "Break ") + Self.clock(end.timeIntervalSinceNow)
     }
 
     func menuItems() -> [[String: Any]] {
-        var items: [[String: Any]] = [["header": isActive ? "Running" : "Start a timer"]]
-        for l in Self.lengths { items.append(["id": l.id, "title": l.title, "checked": selected == l.id]) }
-        items.append(["id": "sound", "title": "Sound", "checked": soundOn])
-        items.append(["id": "iphone", "title": "iPhone", "checked": iphoneOn])
-        if isActive { items.append(["id": "off", "title": "Stop", "destructive": true]) }
+        var items: [[String: Any]] = [
+            ["stepper": "Work", "id": "work", "value": workMinutes, "unit": "min", "min": Self.workRange.lowerBound, "max": Self.workRange.upperBound],
+            ["stepper": "Break", "id": "break", "value": breakMinutes, "unit": "min", "min": Self.breakRange.lowerBound, "max": Self.breakRange.upperBound],
+            isActive ? ["id": "stop", "title": "Stop", "destructive": true] : ["id": "start", "title": "Start"],
+            ["id": "sound", "title": "Sound", "checked": soundOn],
+            ["id": "iphone", "title": "iPhone", "checked": iphoneOn]
+        ]
+        if isActive { items.insert(["header": "A new stretch starts by itself after each one"], at: 0) }
         return items
     }
 
     func performMenuAction(_ id: String) {
         message = nil
         let d = UserDefaults.standard
+        if id.hasPrefix("work="), let v = Int(id.dropFirst(5)) { d.set(min(max(v, Self.workRange.lowerBound), Self.workRange.upperBound), forKey: Key.work); return }
+        if id.hasPrefix("break="), let v = Int(id.dropFirst(6)) { d.set(min(max(v, Self.breakRange.lowerBound), Self.breakRange.upperBound), forKey: Key.rest); return }
         switch id {
-        case "off": stop()
+        case "start": start()
+        case "stop": stop()
         case "sound": d.set(!soundOn, forKey: Key.sound)
         case "iphone":
             let turningOn = !iphoneOn
@@ -94,8 +110,7 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
                     }
                 }
             }
-        default:
-            if let l = Self.lengths.first(where: { $0.id == id }) { start(minutes: l.minutes, id: id) }
+        default: break
         }
     }
 
@@ -103,64 +118,59 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
 
     // MARK: Running
 
-    private func start(minutes: Int, id: String) {
-        cancelTimerOnly()
-        let end = Date().addingTimeInterval(TimeInterval(minutes * 60))
-        endDate = end
-        selected = id
-        finishedAt = nil
-
-        if pill == nil { pill = ClockPill() }
-        pill?.show(text: Self.clock(end.timeIntervalSinceNow))
-
-        if iphoneOn, RemindersBridge.isAuthorized, RemindersBridge.usesICloud {
-            reminders = RemindersBridge()
-            if let id = reminders?.schedule(at: end) { UserDefaults.standard.set(id, forKey: Key.leftoverReminder) }
-        }
-
+    private func start() {
+        guard !isActive else { return }
+        begin(.work)
         let t = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in self?.tick() }
         RunLoop.main.add(t, forMode: .common)
         timer = t
     }
 
+    /// Starts a stretch of work or of break, and gets the iPhone alert ready for its end
+    private func begin(_ next: Phase) {
+        phase = next
+        let end = Date().addingTimeInterval(TimeInterval((next == .work ? workMinutes : breakMinutes) * 60))
+        endDate = end
+        if pill == nil { pill = ClockPill() }
+        pill?.show(text: Self.pillText(phase, end.timeIntervalSinceNow), color: Self.pillColor(phase))
+
+        reminders?.removeScheduled(after: 60)
+        reminders = nil
+        if iphoneOn, RemindersBridge.isAuthorized, RemindersBridge.usesICloud {
+            let bridge = RemindersBridge()
+            let title = next == .work ? "🍅 Break over: back to work" : "🍅 Time for a break"
+            if let id = bridge.schedule(at: end, title: title) { UserDefaults.standard.set(id, forKey: Key.leftoverReminder) }
+            reminders = bridge
+        }
+    }
+
     private func tick() {
         guard let end = endDate else { return }
         let left = end.timeIntervalSinceNow
-        if left <= 0 { finish(); return }
-        pill?.update(text: Self.clock(left))
-    }
-
-    private func finish() {
-        cancelTimerOnly()
-        endDate = nil
-        selected = nil
-        pill?.update(text: "Done", done: true)
-        if soundOn { Self.ring() }
-        // The iPhone gets its alert from the reminder at this very moment: complete it a bit later
-        if let reminders {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 120) {
-                reminders.removeScheduled()
-                UserDefaults.standard.removeObject(forKey: Key.leftoverReminder)
-            }
+        if left <= 0 {
+            if soundOn { Self.ring() }
+            begin(phase == .work ? .rest : .work)
+            return
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
-            if self?.endDate == nil { self?.pill?.hide() }
-        }
+        pill?.update(text: Self.pillText(phase, left), color: Self.pillColor(phase))
     }
 
     private func stop() {
-        cancelTimerOnly()
+        timer?.invalidate()
+        timer = nil
         endDate = nil
-        selected = nil
         pill?.hide()
-        reminders?.removeScheduled()
+        reminders?.removeScheduled(after: 0)
         reminders = nil
         UserDefaults.standard.removeObject(forKey: Key.leftoverReminder)
     }
 
-    private func cancelTimerOnly() {
-        timer?.invalidate()
-        timer = nil
+    private static func pillText(_ phase: Phase, _ seconds: TimeInterval) -> String {
+        (phase == .rest ? "☕ " : "") + clock(seconds)
+    }
+
+    private static func pillColor(_ phase: Phase) -> NSColor {
+        phase == .rest ? NSColor(red: 0.19, green: 0.82, blue: 0.35, alpha: 1) : .white
     }
 
     /// "24:31", or "1:05:00" for an hour or more
@@ -196,16 +206,16 @@ final class ClockPill {
     private let bottomPadding: CGFloat = 4
     private var panelHeight: CGFloat { gap + clockHeight + bottomPadding }
 
-    func show(text: String) {
+    func show(text: String, color: NSColor = .white) {
         if window == nil { build() }
-        update(text: text)
+        update(text: text, color: color)
         position()
         window?.orderFrontRegardless()
     }
 
-    func update(text: String, done: Bool = false) {
-        label.stringValue = done ? "✓ Done" : text
-        label.textColor = done ? NSColor(red: 0.19, green: 0.82, blue: 0.35, alpha: 1) : .white
+    func update(text: String, color: NSColor = .white) {
+        label.stringValue = text
+        label.textColor = color
         position()
     }
 
@@ -292,11 +302,11 @@ final class RemindersBridge {
     }
 
     /// Creates a reminder due at `date`, with an alarm at that moment. Returns its identifier.
-    func schedule(at date: Date) -> String? {
+    func schedule(at date: Date, title: String) -> String? {
         guard let calendar = Self.store.defaultCalendarForNewReminders() else { return nil }
         let reminder = EKReminder(eventStore: Self.store)
         reminder.calendar = calendar
-        reminder.title = "🍅 Tomato: time's up!"
+        reminder.title = title
         reminder.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
         reminder.addAlarm(EKAlarm(absoluteDate: date))
         do {
@@ -308,10 +318,12 @@ final class RemindersBridge {
         }
     }
 
-    func removeScheduled() {
+    /// Removes the reminder after a delay (the iPhone needs the alarm to fire first)
+    func removeScheduled(after seconds: TimeInterval) {
         guard let identifier else { return }
-        Self.remove(identifier: identifier)
         self.identifier = nil
+        if seconds <= 0 { Self.remove(identifier: identifier); return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { Self.remove(identifier: identifier) }
     }
 
     static func remove(identifier: String) {

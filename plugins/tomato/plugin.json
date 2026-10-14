@@ -2,10 +2,10 @@
   "id": "tomato",
   "target": "Tomato",
   "name": "Tomato",
-  "description": "A focus timer with a small clock under the notch, a sound at the end and an optional iPhone alert.",
+  "description": "A Pomodoro timer: work and break minutes of your choice, repeating, with a clock under the notch and a sound.",
   "author": "Giuseppe",
   "icon": "stopwatch",
-  "version": "0.1.2-alpha",
+  "version": "0.2.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.9.0"
+  "minAppVersion": "0.10.0"
 }

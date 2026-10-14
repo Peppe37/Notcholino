@@ -16,6 +16,9 @@ public let notcholinoPluginAPIVersion = 1
 /// - `"destructive"` (Bool)    optional, draws the option in red (e.g. "Turn off")
 /// - `"header"`      (String)  alternatively, a non-clickable section title (no `"id"`)
 /// - `"info"`        (String)  alternatively, a read-only row: this is the label, with `"value"` (String) on the right
+/// - `"stepper"`     (String)  alternatively, a number the user can change: this is the label. Needs `"id"` and `"value"` (Int),
+///                   optional `"unit"` (String), `"min"`, `"max"` and `"step"` (Int, default 1). Minus and plus buttons repeat
+///                   while held. Each change calls `performMenuAction("<id>=<new value>")`. (Notcholino 0.10.0 and later.)
 /// - `"graph"`       ([Double]) alternatively, a small line graph of these values, drawn across the panel.
 ///                   Optional with it: `"caption"` (String, shown under the graph) and `"color"` (String, "#RRGGBB").
 @objc(NotcholinoPlugin)
