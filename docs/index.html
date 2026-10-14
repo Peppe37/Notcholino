@@ -68,11 +68,13 @@
   .notch .flare.l { left:0;  background: radial-gradient(circle at 0 100%, transparent 11.5px, #000 12px); }
   .notch .flare.r { right:0; background: radial-gradient(circle at 100% 100%, transparent 11.5px, #000 12px); }
 
-  .tabs { position:absolute; inset:0; color:#fff; opacity:0; transition: opacity .25s; user-select:none; touch-action: pan-y; }
+  .tabs { position:absolute; inset:0; color:#fff; opacity:0; transition: opacity .25s; user-select:none; touch-action: pan-y; overscroll-behavior: contain; }
   .notch.open .tabs { opacity:1; transition-delay:.15s; }
-  .dots { position:absolute; top:28px; left:0; right:0; display:flex; justify-content:center; gap:6px; }
-  .dots button { width:5px; height:5px; padding:0; border:0; border-radius:50%; background:rgba(255,255,255,.3); cursor:pointer; position:relative; }
-  .dots button::after { content:""; position:absolute; inset:-8px; }
+  /* z-index: the panes are absolutely positioned over the whole notch and would otherwise cover the dots */
+  .dots { position:absolute; top:28px; left:0; right:0; display:flex; justify-content:center; gap:10px; z-index:5; }
+  .dots button { width:5px; height:5px; padding:0; border:0; border-radius:50%; background:rgba(255,255,255,.3); cursor:pointer; position:relative; transition: transform .2s cubic-bezier(.3,1.6,.5,1), background .2s; }
+  .dots button::after { content:""; position:absolute; inset:-9px; }
+  .dots button:hover { transform: scale(1.8); background: rgba(255,255,255,.65); }
   .dots button[aria-current="true"] { background:#fff; }
   .pane { position:absolute; inset:0; transition: transform .4s cubic-bezier(.3,1,.5,1), opacity .3s; }
   .pane.music { padding: 46px 12px 0; }
@@ -384,7 +386,7 @@
       tagline: "Turn your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools.",
       download: 'Download', github: 'View on GitHub',
       latest: 'Latest release', prerelease: 'pre-release', allReleases: 'see all releases',
-      hint: 'Interactive preview: hit skip, brew an Espresso in the Control Center, tap the dots or swipe. Nothing actually plays.',
+      hint: 'Interactive preview: hit skip, brew an Espresso in the Control Center, tap the dots or swipe with two fingers. Nothing actually plays.',
       allDay: 'All day',
       whatH: 'What is it?',
       whatP: 'Notcholino is a free, open-source and non-commercial notch app for macOS. It extends the hardware notch with a fluid overlay that expands on hover and shows what matters: now playing, upcoming events, volume and brightness, and more.',
@@ -447,7 +449,7 @@
       tagline: 'Trasforma il Notch del tuo MacBook in un hub dinamico per Live Activities, notifiche e strumenti interattivi.',
       download: 'Scarica', github: 'Vedi su GitHub',
       latest: 'Ultima release', prerelease: 'pre-release', allReleases: 'vedi tutte le release',
-      hint: "Anteprima interattiva: prova lo skip, prepara un Espresso nel Control Center, tocca i puntini o scorri. Non suona niente per davvero.",
+      hint: "Anteprima interattiva: prova lo skip, prepara un Espresso nel Control Center, tocca i puntini o scorri con due dita. Non suona niente per davvero.",
       allDay: 'Tutto il giorno',
       whatH: "Cos'è?",
       whatP: "Notcholino è un'app per il notch di macOS gratuita, open source e non commerciale. Estende il notch hardware con un overlay fluido che si espande al passaggio del mouse e mostra ciò che conta: la musica in riproduzione, i prossimi eventi, volume e luminosità, e altro ancora.",
@@ -732,13 +734,33 @@
   }
   document.querySelectorAll('#dots button').forEach(function (b) { b.onclick = function () { setTab(Number(b.dataset.tab)); }; });
 
+  // Drag with the mouse or swipe with a finger: left goes to the next panel, as in the app
   var sx = null;
   tabs.addEventListener('pointerdown', function (e) { sx = e.clientX; });
+  tabs.addEventListener('pointercancel', function () { sx = null; });
   tabs.addEventListener('pointerup', function (e) {
     if (sx === null) return;
     var dx = e.clientX - sx; sx = null;
     if (dx < -40) setTab(Math.min(2, tab + 1)); else if (dx > 40) setTab(Math.max(0, tab - 1));
   });
+
+  // Two-finger horizontal swipe on a trackpad (or shift + mouse wheel), the same gesture as in the app.
+  // One switch per swipe: the inertia that follows keeps sending events, so we wait until they stop.
+  var wheelAcc = 0, wheelLocked = false, wheelTimer = null;
+  notch.addEventListener('wheel', function (e) {
+    var dx = e.deltaX, dy = e.deltaY;
+    if (e.shiftKey && dx === 0) { dx = dy; dy = 0; }
+    if (Math.abs(dx) <= Math.abs(dy)) return;   // vertical: let the page scroll
+    e.preventDefault();                          // and keep the browser's back/forward swipe out of it
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(function () { wheelAcc = 0; wheelLocked = false; }, 150);
+    if (wheelLocked) return;
+    wheelAcc += dx;
+    if (Math.abs(wheelAcc) > 30) {
+      wheelLocked = true;
+      setTab(wheelAcc > 0 ? Math.min(2, tab + 1) : Math.max(0, tab - 1));
+    }
+  }, { passive: false });
 
   /* ---------- Fit to narrow screens ---------- */
   function fit() {

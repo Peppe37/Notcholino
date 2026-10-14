@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1-alpha] - 2026-10-14
+
+### Fixed
+- The full month calendar touched the bottom edge of the notch. The notch is now a little taller in that view and the grid is more compact, so there is a margin even for months with six weeks.
+
+### Documentation
+- Website: the dots of the preview notch did not react to clicks (a panel covered them); they now work and grow on hover like in the app. The preview also follows a two-finger horizontal swipe on a trackpad, not only a mouse drag.
+
 ## [0.7.0-alpha] - 2026-10-14
 
 ### Changed
@@ -154,7 +162,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.7.0-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.7.1-alpha...HEAD
+[0.7.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.7.0-alpha...v0.7.1-alpha
 [0.7.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.6.1-alpha...v0.7.0-alpha
 [0.6.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.6.0-alpha...v0.6.1-alpha
 [0.6.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.3-alpha...v0.6.0-alpha

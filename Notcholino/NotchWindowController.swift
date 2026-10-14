@@ -50,7 +50,7 @@ class NotchWindowController: NSWindowController {
         self.targetScreen = screen
 
         let W: CGFloat = 520
-        let H: CGFloat = 310
+        let H: CGFloat = 340
 
         let panel = NSPanel(
             contentRect: NSRect(
@@ -200,6 +200,7 @@ struct NotchContentView: View {
     @AppStorage("controlCenterEnabled") private var controlCenterEnabled = true
     /// Reverses the direction of the two-finger swipe (and of the mouse wheel)
     @AppStorage("invertScroll")         private var invertScroll = false
+    @AppStorage("calDisplayMode")       private var calDisplayMode = 0
 
     @StateObject private var music   = MusicManager()
     @StateObject private var sysEvt  = SystemEventsManager()
@@ -262,7 +263,9 @@ struct NotchContentView: View {
     }
 
     private var expandH: CGFloat {
-        let baseH: CGFloat = ((shownTab == .music) ? (180 + 24) : (200 + 24)) + (topPad - 24) + (dotsRowH - 9)
+        // The month grid can have six weeks: give it room so it doesn't touch the bottom edge
+        let monthExtra: CGFloat = (shownTab == .calendar && calDisplayMode == 0) ? 22 : 0
+        let baseH: CGFloat = ((shownTab == .music) ? (180 + 24) : (200 + 24)) + (topPad - 24) + (dotsRowH - 9) + monthExtra
         if hoverExpands {
             return isSystemHudActive ? baseH + 46 : baseH
         } else {
@@ -1320,11 +1323,11 @@ struct CalendarNotchView: View {
 
             Group {
                 Spacer()
-                VStack(alignment: .trailing, spacing: 6) {
+                VStack(alignment: .trailing, spacing: 0) {
                     Text(monthName)
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(.red)
-                        .padding(.bottom, 2)
+                        .padding(.bottom, 8)
 
                     HStack(spacing: 4) {
                         ForEach(0..<7, id: \.self) { i in
@@ -1334,6 +1337,7 @@ struct CalendarNotchView: View {
                                 .frame(width: 22, alignment: .center)
                         }
                     }
+                    .padding(.bottom, 2)
 
                     ForEach(0..<monthGrid.count, id: \.self) { row in
                         HStack(spacing: 4) {
