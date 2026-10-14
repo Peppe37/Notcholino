@@ -408,13 +408,25 @@ struct ControlCenterSettingsView: View {
                 Text("The Control Center is the notch panel that holds your plugin buttons. Turn it off if you don't use plugins and you won't see it in the notch.")
             }
 
-            Section("Installed Plugins") {
+            Section {
                 if pluginManager.loadedPlugins.isEmpty {
                     Text("No plugins installed.")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(pluginManager.loadedPlugins, id: \.pluginIdentifier) { plugin in
                         HStack(spacing: 12) {
+                            VStack(spacing: 0) {
+                                Button { pluginManager.move(identifier: plugin.pluginIdentifier, by: -1) } label: {
+                                    Image(systemName: "chevron.up").frame(width: 20, height: 14)
+                                }
+                                .disabled(plugin.pluginIdentifier == pluginManager.loadedPlugins.first?.pluginIdentifier)
+                                Button { pluginManager.move(identifier: plugin.pluginIdentifier, by: 1) } label: {
+                                    Image(systemName: "chevron.down").frame(width: 20, height: 14)
+                                }
+                                .disabled(plugin.pluginIdentifier == pluginManager.loadedPlugins.last?.pluginIdentifier)
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Move this button in the Control Center")
                             Image(systemName: plugin.controlCenterIcon)
                                 .frame(width: 24)
                             VStack(alignment: .leading, spacing: 2) {
@@ -435,6 +447,10 @@ struct ControlCenterSettingsView: View {
                 ForEach(pluginManager.loadErrors, id: \.self) { error in
                     Text(error).font(.caption).foregroundStyle(.red)
                 }
+            } header: {
+                Text("Installed Plugins")
+            } footer: {
+                Text("The arrows set the order of the buttons in the notch: left to right, row by row.")
             }
 
             Section {

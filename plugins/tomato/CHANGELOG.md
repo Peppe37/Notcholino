@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.2-alpha] - 2026-10-14
+
+### Changed
+- The clock is now part of the notch: a black tab hangs from its bottom edge instead of a separate bubble, 2 points lower than before.
+
 ## [0.1.1-alpha] - 2026-10-14
 
 ### Changed

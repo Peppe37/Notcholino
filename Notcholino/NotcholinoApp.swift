@@ -120,7 +120,30 @@ final class PluginManager: ObservableObject {
         }
         pluginsByPath[url.path] = plugin
         loadedPlugins.append(plugin)
+        sortByOrder()
         return plugin
+    }
+
+    // MARK: Order of the buttons
+
+    private static let orderKey = "pluginOrder"
+    private var savedOrder: [String] { UserDefaults.standard.stringArray(forKey: Self.orderKey) ?? [] }
+
+    /// The saved order first; plugins that were never placed go after, in the order they were loaded
+    private func sortByOrder() {
+        let order = savedOrder
+        let rank = { (p: NotcholinoPlugin) in order.firstIndex(of: p.pluginIdentifier) ?? Int.max }
+        loadedPlugins = loadedPlugins.enumerated()
+            .sorted { (rank($0.element), $0.offset) < (rank($1.element), $1.offset) }
+            .map(\.element)
+    }
+
+    /// Moves a button one place up (-1) or down (1) in the Control Center
+    func move(identifier: String, by offset: Int) {
+        guard let i = loadedPlugins.firstIndex(where: { $0.pluginIdentifier == identifier }),
+              loadedPlugins.indices.contains(i + offset) else { return }
+        loadedPlugins.swapAt(i, i + offset)
+        UserDefaults.standard.set(loadedPlugins.map(\.pluginIdentifier), forKey: Self.orderKey)
     }
 
     /// Unloads the plugin and deletes its bundle. Its code stays in memory until the app restarts.

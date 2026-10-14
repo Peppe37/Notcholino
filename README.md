@@ -61,12 +61,12 @@ Notcholino is a free, open-source and non-commercial app that extends the hardwa
 *From the interactive preview on [the website](https://peppe37.github.io/Notcholino/), with made-up data.*
 
 <p align="center">
-  <img src="docs/assets/shots/control-center.png" alt="The Control Center panel with seven plugin buttons" width="640">
+  <img src="docs/assets/shots/hotter.png" alt="Hotter: temperature graph" width="420">
 </p>
 <p align="center">
-  <img src="docs/assets/shots/hotter.png" alt="Hotter: temperature graph" width="420">
-  <img src="docs/assets/shots/batlife.png" alt="BatLife: battery details" width="420">
+  <img src="docs/assets/shots/control-center.png" alt="The Control Center panel with seven plugin buttons" width="640">
 </p>
+
 
 ## Install
 

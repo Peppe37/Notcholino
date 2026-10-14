@@ -1455,10 +1455,23 @@ struct ControlCenterNotchView: View {
 
     /// Every button is built the same: a 48 pt circle (symbol or a short text in the same font size for all)
     /// and the plugin's name, one line, same font. Anything more (state, countdowns) goes in the options.
+    private static func activeColor(for id: String) -> Color {
+        switch id {
+        case "scrolly": return Color(hex: "#0A84FF") ?? .blue
+        case "tomato":  return Color(hex: "#FF453A") ?? .red
+        case "dusty":   return Color(hex: "#64D2FF") ?? .cyan
+        case "closeme": return Color(hex: "#BF5AF2") ?? .purple
+        default:        return Color(hex: "#FF9F0A") ?? .orange     // Espresso and anything else
+        }
+    }
+
     private func tile(_ plugin: NotcholinoPlugin) -> some View {
         let active = plugin.isActive
         let label = plugin.controlCenterLabel ?? ""
+        // The plugin's own color when it gives one, else the color this plugin is known by
         let tint = Color(hex: plugin.controlCenterTintColor ?? "")
+            ?? (active ? Self.activeColor(for: plugin.pluginIdentifier) : nil)
+        let showsText = !label.isEmpty
         return Button {
             if plugin.responds(to: Selector(("controlCenterButtonTapped"))) {
                 // A simple switch: no options to open
@@ -1470,15 +1483,16 @@ struct ControlCenterNotchView: View {
         } label: {
             VStack(spacing: 6) {
                 ZStack {
+                    // A reading (a temperature, a percentage) is its color on a dark tint of it; a switch is filled
                     Circle()
-                        .fill(tint ?? (active ? Color.orange : Color.white.opacity(0.12)))
+                        .fill(tint.map { showsText ? $0.opacity(0.2) : $0 } ?? Color.white.opacity(0.12))
                         .frame(width: 48, height: 48)
-                    if !label.isEmpty {
+                    if showsText {
                         Text(label)
                             .font(.system(size: 16, weight: .bold, design: .rounded))
                             .minimumScaleFactor(0.7)
                             .lineLimit(1)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(tint ?? .white)
                             .frame(width: 44)
                     } else {
                         Image(systemName: plugin.controlCenterIcon.isEmpty ? "puzzlepiece.extension.fill" : plugin.controlCenterIcon)

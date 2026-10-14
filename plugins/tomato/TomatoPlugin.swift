@@ -183,10 +183,18 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
 
 // MARK: - The clock under the notch
 
-/// A small black pill with the time left, just below the notch. It ignores the mouse, so it never gets in the way.
+/// The time left, in a black tab that hangs from the bottom of the notch, as if the notch itself grew a little.
+/// It ignores the mouse, so it never gets in the way.
 final class ClockPill {
     private var window: NSPanel?
+    private let shape = TabShape()
     private let label = NSTextField(labelWithString: "")
+
+    private let flare: CGFloat = 6          // the concave curves where the tab meets the notch
+    private let gap: CGFloat = 6            // from the bottom of the notch to the clock
+    private let clockHeight: CGFloat = 20
+    private let bottomPadding: CGFloat = 4
+    private var panelHeight: CGFloat { gap + clockHeight + bottomPadding }
 
     func show(text: String) {
         if window == nil { build() }
@@ -204,7 +212,7 @@ final class ClockPill {
     func hide() { window?.orderOut(nil) }
 
     private func build() {
-        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 66, height: 20),
+        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 80, height: panelHeight),
                             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.level = .screenSaver
         panel.isOpaque = false
@@ -213,27 +221,51 @@ final class ClockPill {
         panel.ignoresMouseEvents = true
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
 
-        let box = NSView(frame: panel.contentRect(forFrameRect: panel.frame))
-        box.wantsLayer = true
-        box.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.88).cgColor
-        box.layer?.cornerRadius = 10
+        shape.flare = flare
+        shape.frame = NSRect(x: 0, y: 0, width: 80, height: panelHeight)
+        shape.autoresizingMask = [.width, .height]
         label.font = .monospacedDigitSystemFont(ofSize: 11, weight: .semibold)
         label.alignment = .center
-        label.frame = NSRect(x: 0, y: 2, width: box.bounds.width, height: 15)
-        label.autoresizingMask = [.width]
-        box.addSubview(label)
-        box.autoresizingMask = [.width, .height]
-        panel.contentView = box
+        shape.addSubview(label)
+        panel.contentView = shape
         window = panel
     }
 
-    /// Centered on the screen with the menu bar, right under the notch (or the menu bar on a Mac without one)
+    /// Centered on the screen with the menu bar, starting right at the bottom of the notch (or the menu bar on a Mac without one)
     private func position() {
         guard let window, let screen = NSScreen.screens.first else { return }
         let top = max(screen.safeAreaInsets.top, 24)
-        let width: CGFloat = max(66, CGFloat(label.stringValue.count) * 8 + 22)
-        let frame = NSRect(x: screen.frame.midX - width / 2, y: screen.frame.maxY - top - 4 - 20, width: width, height: 20)
+        let body = max(66, CGFloat(label.stringValue.count) * 8 + 22)
+        let width = body + flare * 2
+        let frame = NSRect(x: screen.frame.midX - width / 2, y: screen.frame.maxY - top - panelHeight + 1,
+                           width: width, height: panelHeight)
         window.setFrame(frame, display: true)
+        // The clock sits `gap` below the notch (the panel's top edge is 1 pt inside it)
+        label.frame = NSRect(x: flare, y: gap + (clockHeight - 15) / 2, width: body, height: 15)
+        shape.needsDisplay = true
+    }
+}
+
+/// Black, flat on top where it joins the notch (with a small concave curve on each side) and rounded at the bottom
+private final class TabShape: NSView {
+    var flare: CGFloat = 6
+    override var isFlipped: Bool { true }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let w = bounds.width, h = bounds.height, f = flare, r: CGFloat = 10
+        let path = NSBezierPath()
+        path.move(to: NSPoint(x: 0, y: 0))
+        path.line(to: NSPoint(x: w, y: 0))
+        path.curve(to: NSPoint(x: w - f, y: f), controlPoint1: NSPoint(x: w - f, y: 0), controlPoint2: NSPoint(x: w - f, y: 0))
+        path.line(to: NSPoint(x: w - f, y: h - r))
+        path.curve(to: NSPoint(x: w - f - r, y: h), controlPoint1: NSPoint(x: w - f, y: h - r / 2), controlPoint2: NSPoint(x: w - f - r / 2, y: h))
+        path.line(to: NSPoint(x: f + r, y: h))
+        path.curve(to: NSPoint(x: f, y: h - r), controlPoint1: NSPoint(x: f + r / 2, y: h), controlPoint2: NSPoint(x: f, y: h - r / 2))
+        path.line(to: NSPoint(x: f, y: f))
+        path.curve(to: NSPoint(x: 0, y: 0), controlPoint1: NSPoint(x: f, y: 0), controlPoint2: NSPoint(x: f, y: 0))
+        path.close()
+        NSColor.black.setFill()
+        path.fill()
     }
 }
 

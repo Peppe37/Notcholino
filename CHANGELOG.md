@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1-alpha] - 2026-10-14
+
 ### Changed
+- Active Control Center buttons use the colors of the website preview: Espresso orange, Scrolly blue, Tomato red, Dusty cyan, CloseMe purple. A reading (Hotter, BatLife) is its color on a dark tint of it.
 - Closing the notch: the content now fades as one piece and stays in place while the shape closes over it, instead of fading in layers.
 
 ### Removed
 - Settings that did nothing: the Battery, Connectivity, Focus and Lock Screen pages, and "Hide in fullscreen apps", "Hide in Mission Control" and "Hide while gaming". They will come back when they actually work.
+
+### Added
+- Order of the Control Center buttons: use the arrows next to each plugin in **Settings → Control Center**. The order runs left to right, row by row.
 
 ## [0.9.0-alpha] - 2026-10-14
 
