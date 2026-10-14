@@ -160,7 +160,7 @@ Quit it from the menu bar icon, then drag **Notcholino** from Applications to th
 ## Privacy
 
 - No analytics, no telemetry, no accounts. Notcholino never sends your music, calendar or reminders anywhere.
-- It talks to the network only to: Spotify (when you click **Connect**, and to load the cover art of the song playing), and GitHub (the plugin list, plugin downloads, and the website's latest-release box).
+- It talks to the network only to: Spotify (when you click **Connect**, and to load the cover art of the song playing), and GitHub (the plugin list, plugin downloads, the website's latest-release box, and, once a day, one small request for the list of releases to tell you when a newer version exists: switch it off in **Settings → About**).
 - Your Spotify token stays in your macOS Keychain, and you can revoke it from **Settings → Now Playing → Disconnect** or on spotify.com.
 - Plugins run inside the app, so install only plugins you trust. Notcholino downloads them only from this repository's releases and checks their checksum.
 
@@ -168,21 +168,22 @@ Found a security problem? See [SECURITY.md](SECURITY.md).
 
 ## Performance
 
-Notcholino is meant to stay out of your way. These figures were measured on a MacBook Pro with an Apple M5 and macOS 26.6, with a Release build, averaged over 30 seconds per scenario, with the mouse still. The first two scenarios have no music player open.
+Notcholino is meant to stay out of your way. These figures were measured with version 0.10.0 on a MacBook Pro with an Apple M5 and macOS 26.6, with a Release build, averaged over 30 seconds per scenario, with the mouse still. The first two scenarios have no music player open.
 
 | | Idle (notch closed) | Open (hovering) |
 | --- | --- | --- |
-| **Memory** (physical footprint) | 45 MB | 46 MB |
-| **CPU** | 0.00 % | 0.01 % |
-| **Energy impact** (Activity Monitor scale) | 0.00 | 0.02 |
-| **Idle wakeups per second** | 0.0 | 0.0 |
-| **CPU, music playing** | 1.4 % | 1.7 % |
-| **Energy impact, music playing** | 2.1 | 2.8 |
+| **Memory** (physical footprint) | 44 MB | 45 MB |
+| **CPU** | 0.04 % | 0.00 % |
+| **Energy impact** (Activity Monitor scale) | 0.11 | 0.00 |
+| **Idle wakeups per second** | 0.7 | 0.4 |
+| **CPU, music playing** | 0.01 % | 0.17 % |
+| **Energy impact, music playing** | 0.06 | 0.21 |
 
 - **Moving the mouse** costs about 1 % of a core while you move it: macOS has to tell Notcholino about every movement so it knows when the pointer reaches the notch. Nothing runs while the mouse is still.
 - **Peak memory** is about 90 MB, only while the app starts.
-- **Disk**: the app is 2.9 MB, the DMG about 2 MB. The [Espresso](plugins/espresso) plugin is 120 KB (a 21 KB download). Nothing else is stored except the plugins you install.
+- **Disk**: the app is 3.1 MB, the DMG about 2 MB. The [Espresso](plugins/espresso) plugin is 120 KB (a 21 KB download). Nothing else is stored except the plugins you install.
 - **Espresso** adds about 1.5 MB of memory while it is on and no measurable CPU or energy. It holds two power assertions so the Mac and its screen stay awake: the extra power comes from the screen staying on, not from the plugin.
+- **Music playing** is measured with a stand-in for the system Now Playing (so nothing plays on your Mac): it shows the cost of the notch and its waveform, not of reading a real player.
 - **With a player open**, Notcholino reads Spotify or Music with a short AppleScript (about 28 ms of CPU each): every 3 seconds while playing, every 8 seconds while paused, plus right away when the player reports a change. With no player open it asks nothing.
 - **Any-app detection** runs one small helper process that is woken only when something changes: about 6 MB of memory and 0.00 % CPU. Turn it off in **Settings → Now Playing → Detect any app**.
 - **Temperature and GPU**: Notcholino only draws a small SwiftUI overlay, with no compute or Metal work of its own, and the thermal state stayed nominal. Per-process temperature and GPU time need root: run `sudo powermetrics --samplers cpu_power,gpu_power,thermal -i 1000 -n 10` to see them on your Mac.

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1-alpha] - 2026-10-14
+
+### Fixed
+- The app could freeze completely, notch and Settings window together, right after an update that changed the app's signature. Checking whether Notcholino may control Spotify or Music waited for the system on the main thread, and the system sometimes never answered. The check now runs in the background and never holds up the app.
+
+### Added
+- An update notice: once a day (and never more often) Notcholino makes one small request to GitHub for the list of releases and, if there is a newer version, shows "Update available" in the menu bar menu and in **Settings → About**. It never downloads or installs anything by itself. You can switch it off in **Settings → About → Check for new versions**.
+
 ## [0.10.0-alpha] - 2026-10-14
 
 ### Added

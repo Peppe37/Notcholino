@@ -10,11 +10,23 @@ struct NotcholinoApp: App {
         }
 
         MenuBarExtra("Notcholino", systemImage: "capsule.portrait.fill") {
-            OpenSettingsButton()
+            MenuBarContent()
+        }
+    }
+}
+
+struct MenuBarContent: View {
+    @ObservedObject private var updates = UpdateChecker.shared
+
+    var body: some View {
+        if let release = updates.available {
+            Button("Update available: \(release.version)…") { NSWorkspace.shared.open(release.url) }
             Divider()
-            Button("Quit Notcholino") {
-                NSApplication.shared.terminate(nil)
-            }
+        }
+        OpenSettingsButton()
+        Divider()
+        Button("Quit Notcholino") {
+            NSApplication.shared.terminate(nil)
         }
     }
 }
@@ -36,6 +48,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupNotches()
         SystemNowPlayingMonitor.shared.apply()
+        UpdateChecker.shared.start()
 
         NotificationCenter.default.addObserver(self, selector: #selector(setupNotches), name: NSApplication.didChangeScreenParametersNotification, object: nil)
         UserDefaults.standard.addObserver(self, forKeyPath: "displayScreens", options: .new, context: nil)

@@ -30,23 +30,38 @@ final class PermissionsManager: ObservableObject {
 
     private let store = EKEventStore()
 
+    /// Asking the system whether we may control Spotify or Music can take a long time, or never answer (it did, with the main
+    /// thread waiting: the whole app froze). So those lookups run here, one at a time, and never on the main thread.
+    private let automationQueue = DispatchQueue(label: "com.giuseppe.Notcholino.permissions", qos: .utility)
+    private var automationLookupRunning = false
+
     init() { refresh() }
 
-    /// Re-reads every status. Cheap, and never shows a dialog.
+    /// Re-reads every status. Cheap, never shows a dialog, and never waits on the system.
     func refresh() {
+        guard Thread.isMainThread else { DispatchQueue.main.async { self.refresh() }; return }
+
+        // These answer at once
         let c = Self.eventKitState(EKEventStore.authorizationStatus(for: .event))
         let r = Self.eventKitState(EKEventStore.authorizationStatus(for: .reminder))
-        let sp = Self.automationState(bundleID: Self.spotifyID, ask: false)
-        let mu = Self.automationState(bundleID: Self.musicID, ask: false)
         let ax = AXIsProcessTrusted()
-        DispatchQueue.main.async {
-            // Keep the calendar manager in step with what was just granted or revoked
-            CalendarManager.shared.refreshAccess()
-            if self.calendar != c { self.calendar = c }
-            if self.reminders != r { self.reminders = r }
-            if self.spotify != sp { self.spotify = sp }
-            if self.music != mu { self.music = mu }
-            if self.accessibility != ax { self.accessibility = ax }
+        // Keep the calendar manager in step with what was just granted or revoked
+        CalendarManager.shared.refreshAccess()
+        if calendar != c { calendar = c }
+        if reminders != r { reminders = r }
+        if accessibility != ax { accessibility = ax }
+
+        // These may not: ask in the background and show the answer when it comes. If a lookup is still waiting, skip.
+        guard !automationLookupRunning else { return }
+        automationLookupRunning = true
+        automationQueue.async {
+            let sp = Self.automationState(bundleID: Self.spotifyID, ask: false)
+            let mu = Self.automationState(bundleID: Self.musicID, ask: false)
+            DispatchQueue.main.async {
+                self.automationLookupRunning = false
+                if self.spotify != sp { self.spotify = sp }
+                if self.music != mu { self.music = mu }
+            }
         }
     }
 

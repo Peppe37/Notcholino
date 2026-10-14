@@ -535,6 +535,9 @@ struct LicenseView: View {
 // MARK: - About
 
 struct AboutView: View {
+    @ObservedObject private var updates = UpdateChecker.shared
+    @AppStorage("updateCheckEnabled") private var checkForUpdates = true
+
     private static var versionString: String {
         let info = Bundle.main.infoDictionary
         let v = info?["CFBundleShortVersionString"] as? String ?? "?"
@@ -548,6 +551,20 @@ struct AboutView: View {
                 LabeledContent("Version", value: Self.versionString)
                 LabeledContent("Author",  value: "Giuseppe")
                 LabeledContent("License", value: "PolyForm Noncommercial 1.0.0")
+            }
+            Section {
+                if let release = updates.available {
+                    LabeledContent("Update") {
+                        Link("Version \(release.version) is available", destination: release.url)
+                    }
+                } else if checkForUpdates {
+                    LabeledContent("Update", value: updates.lastChecked == nil ? "Not checked yet" : "You have the latest version")
+                }
+                Toggle("Check for new versions", isOn: $checkForUpdates)
+                Button(updates.isChecking ? "Checking…" : "Check now") { Task { await updates.check() } }
+                    .disabled(updates.isChecking)
+            } footer: {
+                Text("Once a day, Notcholino asks GitHub for the list of releases (a single small request) and tells you when there is a newer one. It never downloads or installs anything by itself.")
             }
             Section {
                 Link("GitHub Repository",
