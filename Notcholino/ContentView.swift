@@ -583,6 +583,8 @@ struct ControlCenterSettingsView: View {
             Spacer()
             if store.busyID == plugin.id {
                 ProgressView().controlSize(.small)
+            } else if !plugin.isCompatible {
+                Text("Needs Notcholino \(plugin.minAppVersion ?? "")+").font(.caption).foregroundStyle(.secondary)
             } else if installed == nil {
                 Button("Install") { Task { await store.install(plugin) } }
             } else if installed != plugin.version {

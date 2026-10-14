@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0-alpha] - 2026-10-14
+
+### Added
+- Plugins can have a richer Control Center button: a short text instead of the icon (like a temperature), their own color, a plain on/off switch behaviour, and a small line graph in their options.
+- New plugins, released on their own: **Scrolly** (reverse the mouse wheel's vertical scroll, trackpad untouched) and **Hotter** (the Mac's temperature as the button, from green to red, with an optional graph). CloseMe (keep the Mac running with the lid closed) is in the repository but not released until it has been tested with a real closed lid.
+- The plugin store shows "Needs Notcholino x.y.z+" for plugins that need a newer app, and doesn't install them.
+
 ## [0.7.1-alpha] - 2026-10-14
 
 ### Fixed
@@ -162,7 +169,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.7.1-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.8.0-alpha...HEAD
+[0.8.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.7.1-alpha...v0.8.0-alpha
 [0.7.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.7.0-alpha...v0.7.1-alpha
 [0.7.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.6.1-alpha...v0.7.0-alpha
 [0.6.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.6.0-alpha...v0.6.1-alpha

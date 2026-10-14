@@ -1,0 +1,11 @@
+{
+  "id": "scrolly",
+  "target": "Scrolly",
+  "name": "Scrolly",
+  "description": "Reverse the vertical scroll of your mouse wheel, without touching the trackpad.",
+  "author": "Giuseppe",
+  "icon": "arrow.up.arrow.down",
+  "version": "0.1.0-alpha",
+  "apiVersion": 1,
+  "minAppVersion": "0.8.0"
+}

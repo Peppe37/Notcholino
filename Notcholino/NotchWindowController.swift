@@ -1438,17 +1438,31 @@ struct ControlCenterNotchView: View {
 
     private func tile(_ plugin: NotcholinoPlugin) -> some View {
         let active = plugin.isActive
+        let label = plugin.controlCenterLabel ?? ""
+        let tint = Color(hex: plugin.controlCenterTintColor ?? "")
         return Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = plugin.pluginIdentifier }
+            if plugin.responds(to: Selector(("controlCenterButtonTapped"))) {
+                // A simple switch: no options to open
+                plugin.controlCenterButtonTapped?()
+            } else {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = plugin.pluginIdentifier }
+            }
         } label: {
             VStack(spacing: 6) {
                 ZStack {
                     Circle()
-                        .fill(active ? Color.orange : Color.white.opacity(0.12))
+                        .fill(tint ?? (active ? Color.orange : Color.white.opacity(0.12)))
                         .frame(width: 48, height: 48)
-                    Image(systemName: plugin.controlCenterIcon.isEmpty ? "puzzlepiece.extension.fill" : plugin.controlCenterIcon)
-                        .font(.system(size: 20))
-                        .foregroundStyle(.white)
+                    if !label.isEmpty {
+                        Text(label)
+                            .font(.system(size: label.count > 3 ? 14 : 17, weight: .bold, design: .rounded))
+                            .minimumScaleFactor(0.7)
+                            .foregroundStyle(.white)
+                    } else {
+                        Image(systemName: plugin.controlCenterIcon.isEmpty ? "puzzlepiece.extension.fill" : plugin.controlCenterIcon)
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white)
+                    }
                 }
                 Text(plugin.pluginName)
                     .font(.system(size: 11, weight: .medium))
@@ -1457,7 +1471,7 @@ struct ControlCenterNotchView: View {
                 if !plugin.statusText.isEmpty {
                     Text(plugin.statusText)
                         .font(.system(size: 10))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(tint ?? Color.orange)
                         .lineLimit(1)
                 }
             }
@@ -1483,9 +1497,15 @@ struct ControlCenterNotchView: View {
                 }
                 .buttonStyle(.plain)
 
-                Image(systemName: plugin.controlCenterIcon)
-                    .font(.system(size: 16))
-                    .foregroundStyle(plugin.isActive ? .orange : .white)
+                if let label = plugin.controlCenterLabel, !label.isEmpty {
+                    Text(label)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(hex: plugin.controlCenterTintColor ?? "") ?? .white)
+                } else {
+                    Image(systemName: plugin.controlCenterIcon)
+                        .font(.system(size: 16))
+                        .foregroundStyle(plugin.isActive ? .orange : .white)
+                }
                 Text(plugin.pluginName)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(.white)
@@ -1493,7 +1513,7 @@ struct ControlCenterNotchView: View {
                 if !plugin.statusText.isEmpty {
                     Text(plugin.statusText)
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color(hex: plugin.controlCenterTintColor ?? "") ?? .orange)
                 }
             }
             .padding(.horizontal, 20)
@@ -1506,6 +1526,9 @@ struct ControlCenterNotchView: View {
                             Text(header)
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundStyle(.white.opacity(0.5))
+                        }
+                        if let graph = group.graph {
+                            SparklineView(values: graph.values, caption: graph.caption, color: graph.color)
                         }
                         LazyVGrid(columns: optionColumns, spacing: 6) {
                             ForEach(group.items, id: \.id) { item in
@@ -1521,13 +1544,19 @@ struct ControlCenterNotchView: View {
     }
 
     private struct Option { let id: String; let title: String; let checked: Bool; let destructive: Bool }
-    private struct OptionGroup { var header: String?; var items: [Option] }
+    private struct Graph { var values: [Double]; var caption: String; var color: Color }
+    private struct OptionGroup { var header: String?; var items: [Option]; var graph: Graph? = nil }
 
     /// Turns the plugin's menu dictionaries into groups (a header starts a new group)
     private func groups(of raw: [[String: Any]]) -> [OptionGroup] {
         var result: [OptionGroup] = [OptionGroup(header: nil, items: [])]
         for entry in raw {
-            if let header = entry["header"] as? String {
+            if let values = entry["graph"] as? [Double] {
+                let color = Color(hex: entry["color"] as? String ?? "") ?? .white
+                result.append(OptionGroup(header: nil, items: [],
+                                          graph: Graph(values: values, caption: entry["caption"] as? String ?? "", color: color)))
+                result.append(OptionGroup(header: nil, items: []))
+            } else if let header = entry["header"] as? String {
                 result.append(OptionGroup(header: header, items: []))
             } else if let id = entry["id"] as? String, let title = entry["title"] as? String {
                 result[result.count - 1].items.append(Option(
@@ -1536,7 +1565,7 @@ struct ControlCenterNotchView: View {
                     destructive: entry["destructive"] as? Bool ?? false))
             }
         }
-        return result.filter { !$0.items.isEmpty }
+        return result.filter { !$0.items.isEmpty || $0.graph != nil }
     }
 
     private func optionChip(_ item: Option, action: @escaping () -> Void) -> some View {
@@ -1555,5 +1584,67 @@ struct ControlCenterNotchView: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Small shared views
+
+/// A compact line graph for plugins (the `"graph"` menu element)
+struct SparklineView: View {
+    let values: [Double]
+    let caption: String
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            GeometryReader { geo in
+                let pts = points(in: geo.size)
+                ZStack {
+                    if pts.count > 1 {
+                        Path { p in
+                            p.move(to: CGPoint(x: pts[0].x, y: geo.size.height))
+                            pts.forEach { p.addLine(to: $0) }
+                            p.addLine(to: CGPoint(x: pts[pts.count - 1].x, y: geo.size.height))
+                            p.closeSubpath()
+                        }
+                        .fill(LinearGradient(colors: [color.opacity(0.35), color.opacity(0)], startPoint: .top, endPoint: .bottom))
+                        Path { p in
+                            p.move(to: pts[0])
+                            pts.dropFirst().forEach { p.addLine(to: $0) }
+                        }
+                        .stroke(color, style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                    }
+                }
+            }
+            .frame(height: 38)
+            if !caption.isEmpty {
+                Text(caption)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    private func points(in size: CGSize) -> [CGPoint] {
+        guard values.count > 1, let lo = values.min(), let hi = values.max() else { return [] }
+        // Never zoom into noise: keep at least 6 units of range
+        let span = max(hi - lo, 6)
+        let mid = (hi + lo) / 2
+        let bottom = mid - span / 2
+        return values.enumerated().map { i, v in
+            CGPoint(x: size.width * CGFloat(i) / CGFloat(values.count - 1),
+                    y: size.height * (1 - CGFloat((v - bottom) / span)))
+        }
+    }
+}
+
+extension Color {
+    /// "#RRGGBB" (or "RRGGBB"); nil when the text isn't a color
+    init?(hex: String) {
+        var h = hex.trimmingCharacters(in: .whitespaces)
+        if h.hasPrefix("#") { h.removeFirst() }
+        guard h.count == 6, let v = UInt32(h, radix: 16) else { return nil }
+        self.init(red: Double((v >> 16) & 0xFF) / 255, green: Double((v >> 8) & 0xFF) / 255, blue: Double(v & 0xFF) / 255)
     }
 }

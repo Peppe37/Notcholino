@@ -110,8 +110,10 @@ The Control Center panel holds plugin buttons. Tap one to open its options right
 | Plugin | What it does |
 | --- | --- |
 | [**Espresso**](plugins/espresso) | Keeps your Mac and its screen awake, indefinitely or for 10 minutes up to 12 hours, or until a time you pick. |
+| [**Scrolly**](plugins/scrolly) | A switch that reverses the vertical scroll of your mouse wheel, leaving the trackpad alone. Needs Accessibility. |
+| [**Hotter**](plugins/hotter) | Your Mac's temperature as the button itself, turning from green to red as it heats up. Click for average or highest, °C or °F, and a small graph. Apple silicon only. |
 
-Want to write your own? See [plugins/README.md](plugins/README.md).
+More plugins are on the way: CloseMe (keep the Mac running with the lid closed) is written but waiting to be tested with a real closed lid. Want to write your own? See [plugins/README.md](plugins/README.md).
 
 ## FAQ
 

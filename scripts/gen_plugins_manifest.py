@@ -53,6 +53,7 @@ def main():
             "version": release["tag_name"][len(prefix):],
             "url": asset["browser_download_url"],
             "sha256": sha256_of(asset),
+            **({"minAppVersion": meta["minAppVersion"]} if meta.get("minAppVersion") else {}),
         })
         print(f"{meta['id']} {plugins[-1]['version']}")
 

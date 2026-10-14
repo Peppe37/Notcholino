@@ -15,6 +15,8 @@ public let notcholinoPluginAPIVersion = 1
 /// - `"checked"`     (Bool)    optional, highlights the option as the current choice
 /// - `"destructive"` (Bool)    optional, draws the option in red (e.g. "Turn off")
 /// - `"header"`      (String)  alternatively, a non-clickable section title (no `"id"`)
+/// - `"graph"`       ([Double]) alternatively, a small line graph of these values, drawn across the panel.
+///                   Optional with it: `"caption"` (String, shown under the graph) and `"color"` (String, "#RRGGBB").
 @objc(NotcholinoPlugin)
 public protocol NotcholinoPlugin: NSObjectProtocol {
     /// Must equal `notcholinoPluginAPIVersion`
@@ -40,4 +42,13 @@ public protocol NotcholinoPlugin: NSObjectProtocol {
 
     /// Called before the plugin is removed: release resources here
     @objc optional func pluginWillUnload()
+
+    // MARK: Optional: a richer Control Center button (added in Notcholino 0.8.0; older apps ignore these)
+
+    /// A short text (like "42°") drawn in the button instead of the SF Symbol
+    @objc optional var controlCenterLabel: String { get }
+    /// Color of the button as "#RRGGBB". Without it the button is orange while active, grey otherwise.
+    @objc optional var controlCenterTintColor: String { get }
+    /// Implement this to make the button a simple switch: tapping it calls this instead of opening the options
+    @objc optional func controlCenterButtonTapped()
 }

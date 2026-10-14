@@ -12,6 +12,26 @@ struct RemotePlugin: Decodable, Identifiable {
     let version: String
     let url: URL
     let sha256: String
+    /// Oldest Notcholino that can run it, e.g. "0.8.0"
+    let minAppVersion: String?
+
+    /// True if this version of the app is new enough
+    var isCompatible: Bool {
+        guard let min = minAppVersion else { return true }
+        let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        return RemotePlugin.compare(current, min) != .orderedAscending
+    }
+
+    /// Compares dotted numbers, ignoring a suffix like "-alpha"
+    static func compare(_ a: String, _ b: String) -> ComparisonResult {
+        func parts(_ v: String) -> [Int] { v.split(separator: "-").first.map { $0.split(separator: ".").map { Int($0) ?? 0 } } ?? [] }
+        let x = parts(a), y = parts(b)
+        for i in 0..<max(x.count, y.count) {
+            let l = i < x.count ? x[i] : 0, r = i < y.count ? y[i] : 0
+            if l != r { return l < r ? .orderedAscending : .orderedDescending }
+        }
+        return .orderedSame
+    }
 }
 
 private struct PluginManifest: Decodable {
@@ -62,6 +82,10 @@ final class PluginStore: ObservableObject {
     /// Asks for confirmation, then downloads, verifies and installs the plugin
     func install(_ plugin: RemotePlugin) async {
         guard busyID == nil else { return }
+        guard plugin.isCompatible else {
+            message = "\(plugin.name) needs Notcholino \(plugin.minAppVersion ?? "") or later. Update the app first."
+            return
+        }
         guard confirmInstall(plugin) else { return }
         busyID = plugin.id
         defer { busyID = nil }
