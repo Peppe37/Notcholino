@@ -266,8 +266,8 @@
     <h2 data-i18n="featH">Features</h2>
     <div class="grid">
       <div class="card"><h3 data-i18n="f1h">Dynamic Notch</h3><p data-i18n="f1p">A native overlay that blends with the hardware notch, with multi-monitor support.</p></div>
-      <div class="card"><h3 data-i18n="f2h">Now Playing</h3><p data-i18n="f2p">Control music players right from the notch.</p></div>
-      <div class="card"><h3 data-i18n="f3h">Calendar</h3><p data-i18n="f3p">See upcoming events and jump to them in Calendar.</p></div>
+      <div class="card"><h3 data-i18n="f2h">Now Playing</h3><p data-i18n="f2p">Control Spotify and Music, and see anything macOS reports as playing: YouTube, Netflix, Prime Video in a browser, Amazon Music and more.</p></div>
+      <div class="card"><h3 data-i18n="f3h">Calendar &amp; Reminders</h3><p data-i18n="f3p">See upcoming events and the reminders due today, and jump to them in Calendar.</p></div>
       <div class="card"><h3 data-i18n="f4h">System HUD</h3><p data-i18n="f4p">Volume and brightness feedback shown in the notch.</p></div>
       <div class="card"><h3 data-i18n="f5h">Native Settings</h3><p data-i18n="f5p">A System Settings–style preferences window built with SwiftUI.</p></div>
       <div class="card"><h3 data-i18n="f6h">Control Center &amp; plugins</h3><p data-i18n="f6p">Add buttons to the notch with plugins, installed from a built-in store.</p></div>
@@ -279,13 +279,13 @@
     <h2 data-i18n="perfH">Light on your Mac</h2>
     <p data-i18n="perfP">Notcholino stays out of the way. Measured on a MacBook Pro (Apple M5, macOS 26.6), with the notch closed and no music player open:</p>
     <div class="stats">
-      <div class="stat"><b>42 MB</b><span data-i18n="perfMem">memory</span></div>
+      <div class="stat"><b>45 MB</b><span data-i18n="perfMem">memory</span></div>
       <div class="stat"><b>0.00 %</b><span data-i18n="perfCpu">CPU when idle</span></div>
       <div class="stat"><b>0.00</b><span data-i18n="perfEnergy">energy impact</span></div>
       <div class="stat"><b>2.5 MB</b><span data-i18n="perfDisk">on disk</span></div>
       <div class="stat"><b>120 KB</b><span data-i18n="perfEsp">Espresso plugin</span></div>
     </div>
-    <p class="small" data-i18n="perfNote">Opening the notch takes 44 MB and 0.01 % CPU. Espresso adds about 1.5 MB while it is on. You can measure it on your own Mac with <code>scripts/benchmark.sh</code>; the details are in the <a href="https://github.com/Peppe37/Notcholino#performance">README</a>.</p>
+    <p class="small" data-i18n="perfNote">Opening the notch takes 46 MB and 0.00 % CPU. Espresso adds about 1.5 MB while it is on. You can measure it on your own Mac with <code>scripts/benchmark.sh</code>; the details are in the <a href="https://github.com/Peppe37/Notcholino#performance">README</a>.</p>
   </section>
 
   <section id="plugins">
@@ -345,8 +345,8 @@
       alphaP: 'Notcholino is in early development. Expect rough edges and breaking changes between versions.',
       featH: 'Features',
       f1h: 'Dynamic Notch', f1p: 'A native overlay that blends with the hardware notch, with multi-monitor support.',
-      f2h: 'Now Playing', f2p: 'Control music players right from the notch.',
-      f3h: 'Calendar', f3p: 'See upcoming events and jump to them in Calendar.',
+      f2h: 'Now Playing', f2p: 'Control Spotify and Music, and see anything macOS reports as playing: YouTube, Netflix, Prime Video in a browser, Amazon Music and more.',
+      f3h: 'Calendar & Reminders', f3p: 'See upcoming events and the reminders due today, and jump to them in Calendar.',
       f4h: 'System HUD', f4p: 'Volume and brightness feedback shown in the notch.',
       f5h: 'Native Settings', f5p: 'A System Settings–style preferences window built with SwiftUI.',
       f6h: 'Control Center & plugins', f6p: 'Add buttons to the notch with plugins, installed from a built-in store.',
@@ -392,8 +392,8 @@
       alphaP: "Notcholino è in sviluppo iniziale. Aspettati qualche spigolo e modifiche non retrocompatibili tra una versione e l'altra.",
       featH: 'Funzionalità',
       f1h: 'Notch dinamico', f1p: "Un overlay nativo che si fonde con il notch hardware, con supporto multi-monitor.",
-      f2h: 'In riproduzione', f2p: 'Controlla i lettori musicali direttamente dal notch.',
-      f3h: 'Calendario', f3p: 'Guarda i prossimi eventi e aprili in Calendario.',
+      f2h: 'In riproduzione', f2p: 'Controlla Spotify e Music e vedi tutto ciò che macOS riporta in riproduzione: YouTube, Netflix, Prime Video nel browser, Amazon Music e altro.',
+      f3h: 'Calendario e Promemoria', f3p: 'Guarda i prossimi eventi e i promemoria di oggi, e aprili in Calendario.',
       f4h: 'HUD di sistema', f4p: 'Volume e luminosità mostrati nel notch.',
       f5h: 'Impostazioni native', f5p: 'Una finestra di preferenze in stile Impostazioni di Sistema, fatta con SwiftUI.',
       f6h: 'Control Center e plugin', f6p: 'Aggiungi pulsanti al notch con i plugin, che installi da uno store integrato.',
@@ -406,7 +406,7 @@
       perfH: 'Leggero sul tuo Mac',
       perfP: 'Notcholino non ti ingombra. Misurato su un MacBook Pro (Apple M5, macOS 26.6), con il notch chiuso e nessun lettore musicale aperto:',
       perfMem: 'di memoria', perfCpu: 'CPU a riposo', perfEnergy: 'impatto energetico', perfDisk: 'su disco', perfEsp: 'plugin Espresso',
-      perfNote: 'Con il notch aperto usa 44 MB e lo 0,01 % di CPU. Espresso aggiunge circa 1,5 MB mentre è acceso. Puoi misurarlo sul tuo Mac con <code>scripts/benchmark.sh</code>; i dettagli sono nel <a href=\"' + REPO + '#performance\">README</a>.',
+      perfNote: 'Con il notch aperto usa 46 MB e lo 0,00 % di CPU. Espresso aggiunge circa 1,5 MB mentre è acceso. Puoi misurarlo sul tuo Mac con <code>scripts/benchmark.sh</code>; i dettagli sono nel <a href=\"' + REPO + '#performance\">README</a>.',
       ccTitle: 'Control Center',
       esAlways: 'Sempre attivo', esLeft: 'rimasti',
       esO: ['A tempo indefinito', '10 min', '30 min', '1 ora', '2 ore', '4 ore', '8 ore', '12 ore', 'Fino alle…', 'Disattiva'],

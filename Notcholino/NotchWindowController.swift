@@ -456,6 +456,9 @@ struct NotchContentView: View {
     private func setHovering(_ hovering: Bool) {
         collapseTask?.cancel()
         if hovering {
+            // Permissions may have been granted in System Settings meanwhile
+            PermissionsManager.shared.refresh()
+            calMgr.refreshAccess()
             withAnimation { isHovering = true }
         } else {
             collapseTask = Task {
@@ -660,10 +663,14 @@ struct NowPlayingNotchView: View {
     @AppStorage("npColorStyle")     private var colorStyle     = 2
 
     @ObservedObject private var spotify = SpotifyAuth.shared
+    @ObservedObject private var permissions = PermissionsManager.shared
 
     @State private var isDraggingSeek = false
     @State private var seekPreview:    Double = 0
     @State private var iconScale: CGFloat = 1.0
+
+    /// A track is known (playing or paused)
+    private var hasTrack: Bool { music.activePlayer != "None" && !music.trackName.isEmpty }
 
     private var activeFill: AnyShapeStyle {
         switch colorStyle {
@@ -697,15 +704,26 @@ struct NowPlayingNotchView: View {
                 .frame(width: 52, height: 52)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(music.isPlaying ? music.trackName : "Nothing Playing")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
+                    if !hasTrack, let blocked = permissions.blockedPlayer {
+                        // A player is open but Notcholino isn't allowed to read it yet
+                        Text("\(blocked.name) needs permission")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        AuthorizeButton(title: blocked.state == .denied ? "Open Settings" : "Authorize") {
+                            permissions.requestAutomation(bundleID: blocked.bundleID)
+                        }
+                    } else {
+                        Text(hasTrack ? music.trackName : "Nothing Playing")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
 
-                    Text(music.isPlaying ? music.artistName : "Open Spotify or Music")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
-                        .lineLimit(1)
+                        Text(hasTrack ? music.artistName : "Open Spotify or Music")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
                 }
 
                 Spacer()
@@ -814,6 +832,16 @@ struct NowPlayingNotchView: View {
 
     @ViewBuilder
     private func accessoryButton(type: String) -> some View {
+        // Shuffle, repeat and like only exist for Spotify and Music
+        if music.isGenericSource && type != "devices" {
+            EmptyView()
+        } else {
+            accessoryContent(type: type)
+        }
+    }
+
+    @ViewBuilder
+    private func accessoryContent(type: String) -> some View {
         switch type {
         case "shuffle":
             IconButton(icon: "shuffle", size: 15, opacity: music.isShuffleEnabled ? 1.0 : 0.5, color: music.isShuffleEnabled ? .green : .white) {
@@ -828,7 +856,7 @@ struct NowPlayingNotchView: View {
         case "like":
             if music.activePlayer == "Spotify" && !spotify.isConnected {
                 // Likes on Spotify go through the Web API: connect first
-                IconButton(icon: "heart.slash", size: 15, opacity: 0.3, color: .gray) {
+                AuthorizeButton(title: "Connect") {
                     if !spotify.clientID.isEmpty { spotify.connect() }
                 }
             } else {
@@ -845,20 +873,12 @@ struct NowPlayingNotchView: View {
         }
     }
     private func openActivePlayer() {
-        let bundleID: String
-        if music.activePlayer == "Spotify" {
-            bundleID = "com.spotify.client"
-        } else if music.activePlayer == "Music" {
-            bundleID = "com.apple.Music"
-        } else {
-            return
-        }
-
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            let config = NSWorkspace.OpenConfiguration()
-            config.activates = true
-            NSWorkspace.shared.openApplication(at: url, configuration: config, completionHandler: nil)
-        }
+        let bundleID = music.activeBundleID
+        guard !bundleID.isEmpty,
+              let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return }
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        NSWorkspace.shared.openApplication(at: url, configuration: config, completionHandler: nil)
     }
 
     private func togglePlayWithAnimation() {
@@ -947,6 +967,7 @@ struct IconButton: View {
 
 struct CalendarNotchView: View {
     @EnvironmentObject var calMgr: CalendarManager
+    @ObservedObject private var permissions = PermissionsManager.shared
     @AppStorage("calDisplayMode") private var displayMode = 0
 
     private var cal:   Calendar { .current }
@@ -1017,34 +1038,82 @@ struct CalendarNotchView: View {
     @ViewBuilder
     private var dayEvents: some View {
         if !calMgr.hasAccess {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("No Calendar Access")
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Calendar access needed")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.white.opacity(0.8))
-                Text("Please grant permission")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.red.opacity(0.8))
-            }
-        } else if calMgr.todayEvents.isEmpty {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("No events today")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.8))
-                Text("Your schedule is clear")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.5))
+                AuthorizeButton(title: permissions.calendar == .denied ? "Open Settings" : "Authorize Calendar") {
+                    permissions.requestCalendar()
+                }
             }
         } else {
             let events = calMgr.todayEvents
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(Array(events.prefix(maxRows)), id: \.eventIdentifier) { event in
-                    eventRow(event)
-                }
-                if events.count > maxRows {
-                    Text("+\(events.count - maxRows) more")
-                        .font(.system(size: 11, weight: .semibold))
+            let reminders = calMgr.showsReminders && calMgr.hasRemindersAccess ? calMgr.todayReminders : []
+            let askReminders = calMgr.showsReminders && !calMgr.hasRemindersAccess
+            let rows = askReminders ? maxRows - 1 : maxRows
+            let shownEvents = Array(events.prefix(rows))
+            let shownReminders = Array(reminders.prefix(max(0, rows - shownEvents.count)))
+            let hidden = events.count + reminders.count - shownEvents.count - shownReminders.count
+            if events.isEmpty && reminders.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("No events today")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                    Text("Your schedule is clear")
+                        .font(.system(size: 12))
                         .foregroundStyle(.white.opacity(0.5))
+                    if askReminders { remindersButton }
                 }
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(shownEvents, id: \.eventIdentifier) { eventRow($0) }
+                    ForEach(shownReminders, id: \.calendarItemIdentifier) { reminderRow($0) }
+                    if hidden > 0 {
+                        Text("+\(hidden) more")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+                    if askReminders { remindersButton }
+                }
+            }
+        }
+    }
+
+    private var remindersButton: some View {
+        AuthorizeButton(title: permissions.reminders == .denied ? "Reminders: Open Settings" : "Authorize Reminders") {
+            permissions.requestReminders()
+        }
+    }
+
+    private func reminderRow(_ reminder: EKReminder) -> some View {
+        let overdue = calMgr.isOverdue(reminder)
+        return HStack(alignment: .top, spacing: 8) {
+            Button {
+                withAnimation { calMgr.complete(reminder) }
+            } label: {
+                Image(systemName: "circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(overdue ? Color.red : Color.orange)
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(reminder.title ?? "")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                Text(calMgr.dueTime(of: reminder) ?? (overdue ? "Overdue" : "Reminder"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(overdue ? Color.red.opacity(0.9) : Color.white.opacity(0.5))
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.reminders") {
+                NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
             }
         }
     }
@@ -1121,19 +1190,35 @@ struct CalendarNotchView: View {
                             calMgr.openCalendar(at: event.startDate)
                         }
                     } else if calMgr.hasAccess {
-                        Text("No events today")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white.opacity(0.8))
-                        Text("Your schedule is clear")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.white.opacity(0.5))
+                        if let first = calMgr.showsReminders && calMgr.hasRemindersAccess ? calMgr.todayReminders.first : nil {
+                            reminderRow(first)
+                        } else {
+                            Text("No events today")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.8))
+                            Text("Your schedule is clear")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.white.opacity(0.5))
+                        }
                     } else {
-                        Text("No Calendar Access")
+                        Text("Calendar access needed")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(.white.opacity(0.8))
-                        Text("Please grant permission")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.red.opacity(0.8))
+                        AuthorizeButton(title: permissions.calendar == .denied ? "Open Settings" : "Authorize") {
+                            permissions.requestCalendar()
+                        }
+                    }
+                    if calMgr.hasAccess, calMgr.showsReminders {
+                        if calMgr.hasRemindersAccess {
+                            let extra = calMgr.todayReminders.count - (calMgr.upcomingEvent == nil ? 1 : 0)
+                            if extra > 0 {
+                                Text("\(extra) reminder\(extra == 1 ? "" : "s") today")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.orange.opacity(0.9))
+                            }
+                        } else {
+                            remindersButton
+                        }
                     }
                 }
                 .padding(.bottom, 20)

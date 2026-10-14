@@ -145,6 +145,8 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         Form {
+            PermissionsSection()
+
             Section {
                 Toggle("Launch at login",            isOn: $launchMgr.isEnabled)
                 Toggle("Hide in fullscreen apps",    isOn: $hideInFullscreen)
@@ -323,8 +325,8 @@ struct SoundSettingsView: View {
 
 struct NowPlayingSettingsView: View {
     @AppStorage("nowPlayingEnabled")   private var enabled = true
-    @AppStorage("npIdleDuration")      private var idleDuration: Double = 3.0
     @AppStorage("npPlayer")            private var player = 0
+    @AppStorage("npSystemDetect")      private var systemDetect = true
     @AppStorage("npLeftAccessory")     private var leftAccessory = "shuffle"
     @AppStorage("npRightAccessory")    private var rightAccessory = "repeat"
     @AppStorage("npColorStyle")        private var colorStyle = 2
@@ -336,7 +338,13 @@ struct NowPlayingSettingsView: View {
         Form {
             Section {
                 Toggle("Show Now Playing", isOn: $enabled)
-                LabeledSlider(label: "Idle timeout", value: $idleDuration, range: 1...15, unit: "s")
+            }
+
+            Section {
+                Toggle("Detect any app", isOn: $systemDetect)
+                    .onChange(of: systemDetect) { _ in SystemNowPlayingMonitor.shared.apply() }
+            } footer: {
+                Text("Besides Spotify and Apple Music, show whatever macOS reports as playing: YouTube, Netflix or Prime Video in a browser, Amazon Music, Podcasts and more. Shuffle, repeat and like are only available for Spotify and Apple Music.")
             }
 
             Section("Music Player") {
@@ -344,7 +352,6 @@ struct NowPlayingSettingsView: View {
                     Text("Auto-detect").tag(0)
                     Text("Apple Music").tag(1)
                     Text("Spotify").tag(2)
-                    Text("YouTube Music").tag(3)
                 }
             }
 
@@ -410,12 +417,15 @@ struct NowPlayingSettingsView: View {
 struct CalendarSettingsView: View {
     @AppStorage("calendarEnabled") private var enabled = true
     @AppStorage("calDisplayMode")  private var displayMode = 0
+    @AppStorage("calendarShowReminders") private var showReminders = true
     @ObservedObject private var calMgr = CalendarManager.shared
 
     var body: some View {
         Form {
             Section {
                 Toggle("Show Calendar", isOn: $enabled)
+                Toggle("Show reminders due today", isOn: $showReminders)
+                    .onChange(of: showReminders) { _ in calMgr.fetchReminders() }
             }
             Section("Display Mode") {
                 Picker("View", selection: $displayMode) {

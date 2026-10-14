@@ -26,5 +26,7 @@
 	<true/>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Notcholino needs access to display your upcoming events.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Notcholino needs access to show the reminders due today.</string>
 </dict>
 </plist>

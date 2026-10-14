@@ -37,10 +37,12 @@ Notcholino is a free, open-source and non-commercial app that extends the hardwa
 **Available now**
 
 - **Dynamic notch**: a native overlay that blends with the hardware notch and expands on hover. Works on the main display or on all displays.
-- **Now Playing**: control Spotify and Apple Music from the notch. Album art, scrubbable progress bar, seek, shuffle and repeat, an animated waveform, and colors extracted from the artwork. Click the song to bring the player to the front.
+- **Now Playing**: control Spotify and Apple Music from the notch. Album art, scrubbable progress bar, seek, shuffle and repeat, an animated waveform, and colors extracted from the artwork. Click the song to bring the player to the front. A paused song stays on screen, and the controls always go to the player you see when both are open.
+- **Any app**: besides Spotify and Music, Notcholino shows whatever macOS reports as playing, with play/pause, next, previous and seek: YouTube, Netflix or Prime Video in a browser, Amazon Music, Podcasts and more. Shuffle, repeat and like are only for Spotify and Music. Whether a site or app appears depends on it reporting to macOS "Now Playing", the same list you see in Control Center.
 - **Compact music mode**: while music plays, the collapsed notch shows the album art and a live waveform.
 - **Spotify Like**: connect your account once (OAuth with PKCE) to like the current song from the notch.
-- **Calendar**: today's date, the next event with its calendar color and location, and a month view. Pick which calendars to show, and click an event to open it in Calendar.
+- **Calendar and Reminders**: today's date, the next event with its calendar color and location, a month view, and the reminders due today (click the circle to complete one). Pick which calendars to show, and click an event to open it in Calendar.
+- **Permission buttons**: wherever something needs a permission (Calendar, Reminders, controlling Spotify or Music, Accessibility, your Spotify account), the notch shows an **Authorize** button, and **Settings → General → Permissions** lists them all.
 - **System HUDs**: volume and brightness feedback in the notch, replacing the native macOS HUD, with theme, label and decibel options.
 - **Control Center and plugins**: a third panel in the notch holds plugin buttons. Tap one to open its options right inside the notch. Install, update and remove plugins from **Settings → Control Center → Plugin Store**: they are downloaded from this repository's releases, always at their latest version, after you confirm and a SHA-256 check.
 - **Espresso** (first plugin): keeps your Mac and its screen awake, indefinitely or for 10 minutes up to 12 hours, or until a time you pick. See [plugins](plugins).
@@ -85,11 +87,12 @@ Notcholino asks for what it needs, when it needs it:
 
 | Permission | Why |
 | --- | --- |
-| **Automation** (Apple Events) | To read and control Spotify and Apple Music. |
+| **Automation** (Apple Events) | To read and control Spotify and Apple Music, asked when the app is open. Other apps need no permission. |
 | **Calendars** | To show your upcoming events. |
+| **Reminders** | To show the reminders due today. Optional. |
 | **Accessibility** | To handle the volume and brightness keys itself, so macOS doesn't show its own HUD next to the one in the notch. Optional: without it the keys keep working and both HUDs appear. |
 
-Because the app is not signed with a developer certificate, macOS may ask for these permissions again after an update.
+Because the app is not signed with an Apple developer certificate, macOS may ask for these permissions, and for your login password to read the Spotify token from the Keychain, again after an update, unless the release was signed with the project's fixed certificate (see below).
 
 Spotify Like uses your Spotify account through the official Web API, and only if you click **Connect** in the settings.
 
@@ -106,15 +109,16 @@ Notcholino is meant to stay out of your way. These figures were measured on a Ma
 
 | | Idle (notch closed) | Open (hovering) |
 | --- | --- | --- |
-| **Memory** (physical footprint) | 42 MB | 44 MB |
+| **Memory** (physical footprint) | 45 MB | 46 MB |
 | **CPU** | 0.00 % | 0.01 % |
 | **Energy impact** (Activity Monitor scale) | 0.00 | 0.02 |
 | **Idle wakeups per second** | 0.0 | 0.0 |
 
-- **Peak memory** is about 87 MB, only while the app starts.
-- **Disk**: the app is 2.5 MB, the DMG 1.7 MB. The [Espresso](plugins/espresso) plugin is 120 KB (a 21 KB download). Nothing else is stored except the plugins you install.
+- **Peak memory** is about 90 MB, only while the app starts.
+- **Disk**: the app is 2.9 MB, the DMG about 2 MB. The [Espresso](plugins/espresso) plugin is 120 KB (a 21 KB download). Nothing else is stored except the plugins you install.
 - **Espresso** adds about 1.5 MB of memory while it is on and no measurable CPU or energy. It holds two power assertions so the Mac and its screen stay awake: the extra power comes from the screen staying on, not from the plugin.
 - **With a player open**, Notcholino reads Spotify or Music with a short AppleScript (about 28 ms of CPU each): every 3 seconds while playing, every 8 seconds while paused, plus right away when the player reports a change. With no player open it asks nothing.
+- **Any-app detection** runs one small helper process that is woken only when something changes: about 6 MB of memory and 0.00 % CPU. Turn it off in **Settings → Now Playing → Detect any app**.
 - **Temperature and GPU**: Notcholino only draws a small SwiftUI overlay, with no compute or Metal work of its own, and the thermal state stayed nominal. Per-process temperature and GPU time need root: run `sudo powermetrics --samplers cpu_power,gpu_power,thermal -i 1000 -n 10` to see them on your Mac.
 
 Version 0.4.0 cut this down: before, the app started an `osascript` process every 2 seconds even with no player open, and scanned every running process once a second to hide the system volume HUD. Measured the same way, 0.3.0 used 0.15 % CPU and energy impact 0.17 when idle, plus about 1.4 % of a core in short-lived `osascript` processes that do not show up in the app's own numbers.
@@ -143,9 +147,15 @@ The Xcode project is generated from `project.yml` and is not committed. Build an
 
 Notcholino follows [Semantic Versioning](https://semver.org/) and keeps a [Keep a Changelog](https://keepachangelog.com/) style [CHANGELOG](CHANGELOG.md).
 
+Releases are signed with a fixed certificate when the repository has the `SIGNING_P12` and `SIGNING_P12_PASSWORD` secrets (create them once with `scripts/setup-signing.sh`), so macOS recognises every update as the same app and keeps its permissions and Keychain access. Without them the build is signed ad-hoc.
+
 Pushing a tag like `v0.1.0-alpha` triggers the release workflow: it checks the tag against the version in `project.yml`, builds the app, packages a DMG and publishes a GitHub release (marked as pre-release when the tag has a suffix) using the changelog entry as notes. The website is deployed to GitHub Pages from the `docs/` folder.
 
 Plugins are versioned and released on their own, from tags named `<plugin>-v<version>` (for example `espresso-v0.1.0-alpha`). The plugin release workflow publishes the release and refreshes the plugin store manifest. See [plugins](plugins) for details.
+
+## Credits
+
+Reading the system "Now Playing" uses [mediaremote-adapter](https://github.com/ungive/mediaremote-adapter) by Jonas van den Berg and contributors (BSD-3-Clause), vendored in [`third_party`](third_party/mediaremote-adapter).
 
 ## License
 

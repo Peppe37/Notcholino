@@ -42,8 +42,33 @@ jobs:
             -configuration Release -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO build
 
-      - name: Ad-hoc sign
-        run: codesign --force --deep --sign - build/Build/Products/Release/Notcholino.app
+      - name: Sign
+        env:
+          SIGNING_P12: ${{ secrets.SIGNING_P12 }}
+          SIGNING_P12_PASSWORD: ${{ secrets.SIGNING_P12_PASSWORD }}
+        run: |
+          APP=build/Build/Products/Release/Notcholino.app
+          if [ -n "$SIGNING_P12" ]; then
+            # Fixed self-signed identity: macOS keeps Keychain and privacy permissions across updates
+            KC="$RUNNER_TEMP/sign.keychain-db"; KCPW="$(uuidgen)"
+            echo "$SIGNING_P12" | base64 -d > "$RUNNER_TEMP/id.p12"
+            security create-keychain -p "$KCPW" "$KC"
+            security set-keychain-settings -lut 21600 "$KC"
+            security unlock-keychain -p "$KCPW" "$KC"
+            security import "$RUNNER_TEMP/id.p12" -k "$KC" -P "$SIGNING_P12_PASSWORD" -T /usr/bin/codesign
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCPW" "$KC" >/dev/null
+            security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+            # A self-signed certificate must be trusted for code signing before codesign accepts it
+            security find-certificate -c "Notcholino Self-Signed" -p "$KC" > "$RUNNER_TEMP/cert.pem"
+            sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
+            codesign --force --deep --sign "Notcholino Self-Signed" --keychain "$KC" "$APP"
+            rm -f "$RUNNER_TEMP/id.p12"
+          else
+            echo "::warning::No signing secrets: using an ad-hoc signature (macOS will ask for permissions again after each update)"
+            codesign --force --deep --sign - "$APP"
+          fi
+          codesign --verify --deep --strict "$APP"
+          codesign -dr - "$APP"
 
       - name: Create DMG
         env:

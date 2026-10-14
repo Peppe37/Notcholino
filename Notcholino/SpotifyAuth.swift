@@ -24,10 +24,20 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
     private var accessToken: String?
     private var accessExpiry = Date.distantPast
     private var session: ASWebAuthenticationSession?
+    /// The refresh token is read from the Keychain once and kept here: every Keychain read can ask for the
+    /// login password when the app's signature changed, so we never read it more than once per launch.
+    private var cachedRefreshToken: String?
 
     override init() {
         super.init()
-        isConnected = keychainRead() != nil
+        // Attributes only: this tells us a token exists without touching its secret, so no password prompt at launch
+        isConnected = keychainHasItem()
+    }
+
+    private func refreshToken() -> String? {
+        if let cached = cachedRefreshToken { return cached }
+        cachedRefreshToken = keychainRead()
+        return cachedRefreshToken
     }
 
     /// Optional override from Settings > Advanced, otherwise the bundled one.
@@ -75,6 +85,7 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
 
     func disconnect() {
         keychainDelete()
+        cachedRefreshToken = nil
         accessToken = nil
         accessExpiry = .distantPast
         DispatchQueue.main.async { self.isConnected = false }
@@ -120,14 +131,17 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
         }
         accessToken = token
         accessExpiry = Date().addingTimeInterval((json["expires_in"] as? Double) ?? 3600)
-        if let refresh = json["refresh_token"] as? String { keychainWrite(refresh) }
+        if let refresh = json["refresh_token"] as? String, refresh != cachedRefreshToken {
+            cachedRefreshToken = refresh
+            keychainWrite(refresh)
+        }
         await MainActor.run { self.isConnected = true; self.lastError = nil }
         return true
     }
 
     private func validToken() async -> String? {
         if let t = accessToken, accessExpiry > Date().addingTimeInterval(30) { return t }
-        guard let refresh = keychainRead() else { return nil }
+        guard let refresh = refreshToken() else { return nil }
         guard await tokenRequest([
             "grant_type": "refresh_token",
             "refresh_token": refresh,
@@ -181,7 +195,15 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
             print("Spotify \(method) \(path) -> \(status): \(String(data: data, encoding: .utf8) ?? "")")
         }
         if status == 401 { accessToken = nil }
-        if status == 403 { setError("Missing permissions: disconnect and reconnect Spotify") }
+        if status == 403 {
+            let body = String(data: data, encoding: .utf8)?.lowercased() ?? ""
+            if body.contains("not registered") || body.contains("developer dashboard") {
+                // Spotify apps in development mode only work for users added to the app on the dashboard
+                setError("This Spotify account is not allowed to use Notcholino's Spotify app yet. Ask to be added, or use your own Client ID under Advanced.")
+            } else {
+                setError("Missing permissions: disconnect and reconnect Spotify")
+            }
+        }
         return (data, status)
     }
 
@@ -212,6 +234,15 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
          kSecAttrAccount as String: "refresh_token"]
     }
 
+    /// True if a token is stored. Reads attributes only, so it never prompts.
+    private func keychainHasItem() -> Bool {
+        var q = keychainQuery
+        q[kSecReturnAttributes as String] = true
+        q[kSecMatchLimit as String] = kSecMatchLimitOne
+        q[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail
+        return SecItemCopyMatching(q as CFDictionary, nil) == errSecSuccess
+    }
+
     private func keychainRead() -> String? {
         var q = keychainQuery
         q[kSecReturnData as String] = true
@@ -222,11 +253,15 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
         return String(data: data, encoding: .utf8)
     }
 
+    /// Updates the item in place (one access) instead of delete + add (two more)
     private func keychainWrite(_ token: String) {
-        keychainDelete()
-        var q = keychainQuery
-        q[kSecValueData as String] = Data(token.utf8)
-        SecItemAdd(q as CFDictionary, nil)
+        let data = Data(token.utf8)
+        let status = SecItemUpdate(keychainQuery as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+        if status == errSecItemNotFound {
+            var q = keychainQuery
+            q[kSecValueData as String] = data
+            SecItemAdd(q as CFDictionary, nil)
+        }
     }
 
     private func keychainDelete() {

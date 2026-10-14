@@ -7,9 +7,13 @@ final class CalendarManager: ObservableObject {
     /// Every event of today (all-day first, then by start time)
     @Published var todayEvents: [EKEvent] = []
     @Published var hasAccess = false
+    /// Incomplete reminders due today or overdue (soonest first)
+    @Published var todayReminders: [EKReminder] = []
+    @Published var hasRemindersAccess = false
     
     private let store = EKEventStore()
     private var timer: Timer?
+    private var storeObserver: NSObjectProtocol?
 
     @Published var availableCalendars: [EKCalendar] = []
     @Published var selectedCalendarIDs: Set<String> = [] {
@@ -24,40 +28,119 @@ final class CalendarManager: ObservableObject {
             self.selectedCalendarIDs = Set(saved)
         }
         requestAccess()
+        refreshAccess()   // reminders: no dialog at launch, the user authorizes them from a button
         // Refresh every minute to keep "next event" accurate
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             self?.fetchEvents()
+            self?.fetchReminders()
+        }
+        // ...and right away when something changes in Calendar or Reminders
+        storeObserver = NotificationCenter.default.addObserver(forName: .EKEventStoreChanged, object: store, queue: .main) { [weak self] _ in
+            self?.fetchEvents()
+            self?.fetchReminders()
         }
     }
 
     deinit {
         timer?.invalidate()
+        if let storeObserver { NotificationCenter.default.removeObserver(storeObserver) }
     }
 
-    func requestAccess() {
-        if #available(macOS 14.0, *) {
-            store.requestFullAccessToEvents { [weak self] granted, _ in
-                DispatchQueue.main.async {
-                    self?.hasAccess = granted
-                    if granted {
-                        self?.fetchAvailableCalendars()
-                        self?.fetchEvents()
-                    }
-                }
-            }
-        } else {
-            store.requestAccess(to: .event) { [weak self] granted, _ in
-                DispatchQueue.main.async {
-                    self?.hasAccess = granted
-                    if granted {
-                        self?.fetchAvailableCalendars()
-                        self?.fetchEvents()
-                    }
-                }
-            }
+    /// Picks up permissions granted (or revoked) in System Settings while the app is running
+    func refreshAccess() {
+        let events = EKEventStore.authorizationStatus(for: .event)
+        let eventsGranted = events == .fullAccess || events == .authorized
+        if eventsGranted != hasAccess {
+            hasAccess = eventsGranted
+            if eventsGranted { fetchAvailableCalendars(); fetchEvents() }
+        }
+        let rem = EKEventStore.authorizationStatus(for: .reminder)
+        let remindersGranted = rem == .fullAccess || rem == .authorized
+        if remindersGranted != hasRemindersAccess {
+            hasRemindersAccess = remindersGranted
+            fetchReminders()
         }
     }
-    
+
+    func requestAccess(completion: (() -> Void)? = nil) {
+        let handler: (Bool, Error?) -> Void = { [weak self] granted, _ in
+            DispatchQueue.main.async {
+                self?.hasAccess = granted
+                if granted {
+                    self?.fetchAvailableCalendars()
+                    self?.fetchEvents()
+                }
+                completion?()
+            }
+        }
+        if #available(macOS 14.0, *) {
+            store.requestFullAccessToEvents(completion: handler)
+        } else {
+            store.requestAccess(to: .event, completion: handler)
+        }
+    }
+
+    func requestRemindersAccess(completion: (() -> Void)? = nil) {
+        let handler: (Bool, Error?) -> Void = { [weak self] granted, _ in
+            DispatchQueue.main.async {
+                self?.hasRemindersAccess = granted
+                if granted { self?.fetchReminders() }
+                completion?()
+            }
+        }
+        if #available(macOS 14.0, *) {
+            store.requestFullAccessToReminders(completion: handler)
+        } else {
+            store.requestAccess(to: .reminder, completion: handler)
+        }
+    }
+
+    // MARK: - Reminders
+
+    var showsReminders: Bool { UserDefaults.standard.object(forKey: "calendarShowReminders") as? Bool ?? true }
+
+    func fetchReminders() {
+        guard hasRemindersAccess, showsReminders,
+              let endOfDay = Calendar.current.date(bySettingHour: 23, minute: 59, second: 59, of: Date()) else {
+            DispatchQueue.main.async { self.todayReminders = [] }
+            return
+        }
+        let predicate = store.predicateForIncompleteReminders(withDueDateStarting: nil, ending: endOfDay, calendars: nil)
+        store.fetchReminders(matching: predicate) { [weak self] reminders in
+            let cal = Calendar.current
+            let sorted = (reminders ?? []).sorted {
+                let a = $0.dueDateComponents.flatMap { cal.date(from: $0) } ?? .distantFuture
+                let b = $1.dueDateComponents.flatMap { cal.date(from: $0) } ?? .distantFuture
+                return a < b
+            }
+            DispatchQueue.main.async { self?.todayReminders = sorted }
+        }
+    }
+
+    /// The time a reminder is due today, nil when it has no time or isn't due today
+    func dueTime(of reminder: EKReminder) -> String? {
+        guard let comps = reminder.dueDateComponents, comps.hour != nil,
+              let date = Calendar.current.date(from: comps), Calendar.current.isDateInToday(date) else { return nil }
+        return formatTime(date)
+    }
+
+    func isOverdue(_ reminder: EKReminder) -> Bool {
+        guard let comps = reminder.dueDateComponents, let date = Calendar.current.date(from: comps) else { return false }
+        // A date without a time is due the whole day
+        return comps.hour != nil ? date < Date() : Calendar.current.startOfDay(for: date) < Calendar.current.startOfDay(for: Date())
+    }
+
+    func complete(_ reminder: EKReminder) {
+        reminder.isCompleted = true
+        do {
+            try store.save(reminder, commit: true)
+            todayReminders.removeAll { $0.calendarItemIdentifier == reminder.calendarItemIdentifier }
+        } catch {
+            print("Could not complete reminder: \(error)")
+            reminder.isCompleted = false
+        }
+    }
+
     func fetchAvailableCalendars() {
         let cals = store.calendars(for: .event)
         self.availableCalendars = cals

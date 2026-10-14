@@ -35,6 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupNotches()
+        SystemNowPlayingMonitor.shared.apply()
 
         NotificationCenter.default.addObserver(self, selector: #selector(setupNotches), name: NSApplication.didChangeScreenParametersNotification, object: nil)
         UserDefaults.standard.addObserver(self, forKeyPath: "displayScreens", options: .new, context: nil)

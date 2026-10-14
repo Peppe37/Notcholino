@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0-alpha] - 2026-10-14
+
+### Added
+- Now Playing works with any app: besides Spotify and Music, Notcholino shows what macOS reports as playing (YouTube, Netflix or Prime Video in a browser, Amazon Music, Podcasts...) with play/pause, next, previous and seek. It can be turned off with Settings → Now Playing → Detect any app.
+- Reminders: the reminders due today (and overdue ones) appear in the calendar panel, and can be completed from the notch.
+- Authorize buttons: where a permission is missing (Calendar, Reminders, controlling Spotify or Music) the notch shows a button to grant it, and Connect for your Spotify account. Settings → General → Permissions lists every permission with its status.
+- A friendlier message when a Spotify account is not allowed to use Notcholino's Spotify app.
+- `scripts/setup-signing.sh` and support in the release workflow to sign releases with a fixed certificate, so macOS keeps permissions and Keychain access across updates.
+
+### Changed
+- When Spotify and Music are both open, the controls and the displayed song follow whichever is playing, instead of always going to Spotify.
+- A paused song stays on screen instead of showing "Nothing Playing".
+- The Default player setting now works (Auto-detect, Apple Music, Spotify). The "Idle timeout" and "YouTube Music" options did nothing and were removed.
+
+### Fixed
+- Spotify no longer asks for your login password several times per launch: the token is read from the Keychain once and updated in place.
+- The playback position of a paused song was not refreshed.
+
 ## [0.4.1-alpha] - 2026-10-14
 
 ### Fixed
@@ -91,7 +109,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.4.1-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.5.0-alpha...HEAD
+[0.5.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.4.1-alpha...v0.5.0-alpha
 [0.4.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.4.0-alpha...v0.4.1-alpha
 [0.4.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.3.0-alpha...v0.4.0-alpha
 [0.3.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.2.1-alpha...v0.3.0-alpha

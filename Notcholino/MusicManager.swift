@@ -1,6 +1,7 @@
 import Foundation
 import AppKit
 import SwiftUI
+import Combine
 
 final class MusicManager: NSObject, ObservableObject {
 
@@ -14,7 +15,27 @@ final class MusicManager: NSObject, ObservableObject {
     @Published var isShuffleEnabled: Bool = false
     @Published var isRepeatEnabled:  Bool = false
     @Published var isLiked:          Bool = false
+    /// True when what is shown comes from the system "Now Playing" (a browser tab, another player...) rather
+    /// than from Spotify or Music: those have no shuffle, repeat or like, and are controlled through the system
+    @Published var isGenericSource:  Bool = false
+    /// Bundle id of the app playing, so a click on the song can bring it to the front
+    @Published var activeBundleID:   String = ""
     private var spotifyTrackURI = ""
+
+    private struct ScriptInfo {
+        var player, name, artist: String
+        var duration, position: Double
+        var artURL: String
+        var shuffle, repeating: Bool
+        var loved, uri: String
+        var playing: Bool
+    }
+    /// The two sources: what AppleScript reads from Spotify/Music, and what the system reports for everything
+    private var scriptInfo: ScriptInfo?
+    private var systemInfo: SystemNowPlaying?
+    private var systemCancellable: AnyCancellable?
+    private var identity = ""
+    private var lastArtworkKey = 0
 
     private var pollTimer: Timer?
     private var tickTimer: Timer?
@@ -28,6 +49,13 @@ final class MusicManager: NSObject, ObservableObject {
     override init() {
         super.init()
         fetchNowPlaying()
+
+        systemCancellable = SystemNowPlayingMonitor.shared.$current
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] info in
+                self?.systemInfo = info
+                self?.recompute()
+            }
 
         // Refresh when a player says something changed, instead of polling to find out
         let distributed = DistributedNotificationCenter.default()
@@ -92,23 +120,25 @@ final class MusicManager: NSObject, ObservableObject {
         guard !isFetching else { return }
 
         guard isAnyPlayerRunning else {
-            // Nothing to read: reset the state without launching osascript
+            // Nothing to read: no need to launch osascript
             DispatchQueue.main.async {
-                self.isPlaying = false
-                self.trackName = ""
-                self.artistName = ""
-                self.activePlayer = "None"
+                self.scriptInfo = nil
+                self.recompute()
             }
             schedulePoll()
             return
         }
         isFetching = true
 
+        // Default player preference: 0 auto, 1 Music, 2 Spotify
+        let preferred = UserDefaults.standard.integer(forKey: "npPlayer")
         let script = """
-        set out to "None|||"
-        if application "Spotify" is running then
+        set pref to \(preferred)
+        set sOut to ""
+        set mOut to ""
+        if pref is not 1 and application "Spotify" is running then
             tell application "Spotify"
-                if player state is playing then
+                if player state is playing or player state is paused then
                     try
                         set d to (duration of current track) / 1000
                     on error
@@ -134,13 +164,13 @@ final class MusicManager: NSObject, ObservableObject {
                     on error
                         set tId to ""
                     end try
-                    set out to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL & "|||" & (shuf as string) & "|||" & (rep as string) & "|||unknown|||" & tId
+                    set sOut to "Spotify|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & artURL & "|||" & (shuf as string) & "|||" & (rep as string) & "|||unknown|||" & tId & "|||" & (player state as string)
                 end if
             end tell
         end if
-        if out is "None|||" and application "Music" is running then
+        if pref is not 2 and application "Music" is running then
             tell application "Music"
-                if player state is playing then
+                if player state is playing or player state is paused then
                     try
                         set d to duration of current track
                     on error
@@ -161,11 +191,16 @@ final class MusicManager: NSObject, ObservableObject {
                     on error
                         set lvd to false
                     end try
-                    set out to "Music|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & "|||" & (shuf as string) & "|||" & rep & "|||" & (lvd as string)
+                    set mOut to "Music|||" & (name of current track) & "|||" & (artist of current track) & "|||" & (d as string) & "|||" & (player position as string) & "|||" & "|||" & (shuf as string) & "|||" & rep & "|||" & (lvd as string) & "|||" & "|||" & (player state as string)
                 end if
             end tell
         end if
-        return out
+        -- Whatever is playing wins; otherwise show what is paused
+        if sOut ends with "playing" then return sOut
+        if mOut ends with "playing" then return mOut
+        if sOut is not "" then return sOut
+        if mOut is not "" then return mOut
+        return "None|||"
         """
 
         runOsascript(script) { [weak self] result in
@@ -174,56 +209,117 @@ final class MusicManager: NSObject, ObservableObject {
             self.schedulePoll()
             guard let raw = result, !raw.isEmpty, raw != "None|||" else {
                 DispatchQueue.main.async {
-                    self.isPlaying = false
-                    self.trackName = ""
-                    self.artistName = ""
-                    self.activePlayer = "None"
+                    self.scriptInfo = nil
+                    self.recompute()
                 }
                 return
             }
 
             let parts = raw.components(separatedBy: "|||")
             guard parts.count >= 5 else { return }
-
-            let player   = parts[0]
-            let tName    = parts[1]
-            let aName    = parts[2]
-            let duration = Double(parts[3].replacingOccurrences(of: ",", with: ".")) ?? 0
-            let position = Double(parts[4].replacingOccurrences(of: ",", with: ".")) ?? 0
-            let artURL   = parts.count > 5 ? parts[5] : ""
-            
-            let isShuffling = (parts.count > 6) ? (parts[6] == "true") : false
-            let isRepeating = (parts.count > 7) ? (parts[7] == "true" || parts[7] == "all" || parts[7] == "one") : false
-            let isLovedStr  = (parts.count > 8) ? parts[8] : "false"
-            let trackURI    = (player == "Spotify" && parts.count > 9) ? parts[9] : ""
-
+            let number: (String) -> Double = { Double($0.replacingOccurrences(of: ",", with: ".")) ?? 0 }
+            let player = parts[0]
+            let info = ScriptInfo(
+                player: player, name: parts[1], artist: parts[2],
+                duration: number(parts[3]), position: number(parts[4]),
+                artURL: parts.count > 5 ? parts[5] : "",
+                shuffle: parts.count > 6 ? parts[6] == "true" : false,
+                repeating: parts.count > 7 ? (parts[7] == "true" || parts[7] == "all" || parts[7] == "one") : false,
+                loved: parts.count > 8 ? parts[8] : "false",
+                uri: (player == "Spotify" && parts.count > 9) ? parts[9] : "",
+                playing: (parts.count > 10 ? parts[10] : "playing") == "playing")
             DispatchQueue.main.async {
-                self.activePlayer  = player
-                self.artistName    = aName
-                self.isPlaying     = true
-                self.trackDuration = duration
-                self.isShuffleEnabled = isShuffling
-                self.isRepeatEnabled  = isRepeating
-                
-                // Only reset position and local states if track changed
-                if self.trackName != tName {
-                    self.trackPosition = position
-                    self.trackName = tName
-                    
-                    // If unknown (Spotify), default to false until the Web API answers.
-                    self.isLiked = (isLovedStr == "true")
-                    self.spotifyTrackURI = trackURI
-                    self.refreshSpotifyLike(uri: trackURI)
-                    
-                    // Load new artwork
-                    self.fetchArtwork(player: player, urlString: artURL)
-                } else {
-                    // Track is the same. If status is unknown, preserve our local toggled state.
-                    if isLovedStr != "unknown" {
-                        self.isLiked = (isLovedStr == "true")
-                    }
-                }
+                self.scriptInfo = info
+                self.recompute()
             }
+        }
+    }
+
+    // MARK: - Choosing and showing the source
+
+    /// Spotify and Music are read with AppleScript, which gives more (shuffle, repeat, likes). Anything else
+    /// comes from the system. When both report something, the system's pick wins unless it is Spotify or Music.
+    private func shouldUseSystem() -> Bool {
+        guard SystemNowPlayingMonitor.shared.isEnabled, let sys = systemInfo else { return false }
+        if Self.playerBundleIDs.contains(sys.appBundleID) { return scriptInfo == nil }
+        return sys.playing || scriptInfo == nil
+    }
+
+    private func recompute() {
+        if shouldUseSystem(), let sys = systemInfo {
+            applySystem(sys)
+        } else if let info = scriptInfo {
+            applyScript(info)
+        } else {
+            isGenericSource = false
+            activeBundleID = ""
+            isPlaying = false
+            trackName = ""
+            artistName = ""
+            activePlayer = "None"
+            identity = ""
+        }
+    }
+
+    private func applySystem(_ sys: SystemNowPlaying) {
+        isGenericSource = true
+        activePlayer = sys.appName
+        activeBundleID = sys.appBundleID
+        artistName = sys.artist
+        isPlaying = sys.playing
+        trackDuration = sys.duration
+        isShuffleEnabled = false
+        isRepeatEnabled = false
+        isLiked = false
+
+        let key = "\(sys.bundleID)|\(sys.title)|\(sys.artist)"
+        if identity != key {
+            identity = key
+            trackName = sys.title
+            trackPosition = sys.position
+            spotifyTrackURI = ""
+            lastArtworkKey = 0
+            albumArt = nil
+            primaryColor = .white
+            secondaryColor = .white
+        } else if abs(trackPosition - sys.position) > 1.5 || !sys.playing {
+            trackPosition = sys.position
+        }
+        // Artwork often arrives a moment after the title
+        if let art = sys.artwork, sys.artworkKey != lastArtworkKey {
+            lastArtworkKey = sys.artworkKey
+            albumArt = art
+            updateColors(for: art)
+        }
+    }
+
+    private func applyScript(_ info: ScriptInfo) {
+        isGenericSource = false
+        activeBundleID = info.player == "Spotify" ? PermissionsManager.spotifyID : PermissionsManager.musicID
+        activePlayer = info.player
+        artistName = info.artist
+        isPlaying = info.playing
+        trackDuration = info.duration
+        isShuffleEnabled = info.shuffle
+        isRepeatEnabled = info.repeating
+
+        // Only reset position and local states if the track changed
+        let key = "\(info.player)|\(info.name)|\(info.artist)"
+        if identity != key {
+            identity = key
+            trackPosition = info.position
+            trackName = info.name
+
+            // If unknown (Spotify), default to false until the Web API answers.
+            isLiked = (info.loved == "true")
+            spotifyTrackURI = info.uri
+            refreshSpotifyLike(uri: info.uri)
+
+            fetchArtwork(player: info.player, urlString: info.artURL)
+        } else {
+            // Track is the same. If status is unknown, preserve our local toggled state.
+            if info.loved != "unknown" { isLiked = (info.loved == "true") }
+            if abs(trackPosition - info.position) > 1.5 || !info.playing { trackPosition = info.position }
         }
     }
 
@@ -304,95 +400,60 @@ final class MusicManager: NSObject, ObservableObject {
 
     // MARK: - Controls
 
-    func playPause() {
-        runOsascript("""
-        if application "Spotify" is running then
-            tell application "Spotify" to playpause
-        else if application "Music" is running then
-            tell application "Music" to playpause
-        end if
-        """) { [weak self] _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                self?.isFetching = false
-                self?.fetchNowPlaying()
-            }
+    /// AppleScript for the player currently shown in the notch. With both Spotify and Music open, the command
+    /// goes to the one being displayed; with nothing known yet it goes to whichever is running.
+    private func controlScript(spotify: String, music: String) -> String {
+        func block(_ app: String, _ body: String) -> String {
+            "if application \"\(app)\" is running then\n tell application \"\(app)\"\n\(body)\n end tell\nend if"
         }
+        switch activePlayer {
+        case "Spotify": return block("Spotify", spotify)
+        case "Music":   return block("Music", music)
+        default:
+            return "if application \"Spotify\" is running then\n tell application \"Spotify\"\n\(spotify)\n end tell\nelse if application \"Music\" is running then\n tell application \"Music\"\n\(music)\n end tell\nend if"
+        }
+    }
+
+    private func refreshSoon(forgetTrack: Bool = false) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.isFetching = false
+            if forgetTrack { self?.lastTrackName = "" }
+            self?.fetchNowPlaying()
+        }
+    }
+
+    func playPause() {
+        if isGenericSource { SystemNowPlayingMonitor.shared.send(.togglePlayPause); return }
+        runOsascript(controlScript(spotify: "playpause", music: "playpause")) { [weak self] _ in self?.refreshSoon() }
     }
 
     func nextTrack() {
-        runOsascript("""
-        if application "Spotify" is running then
-            tell application "Spotify" to next track
-        else if application "Music" is running then
-            tell application "Music" to next track
-        end if
-        """) { [weak self] _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                self?.isFetching = false
-                self?.lastTrackName = ""
-                self?.fetchNowPlaying()
-            }
-        }
+        if isGenericSource { SystemNowPlayingMonitor.shared.send(.next); return }
+        runOsascript(controlScript(spotify: "next track", music: "next track")) { [weak self] _ in self?.refreshSoon(forgetTrack: true) }
     }
 
     func previousTrack() {
-        runOsascript("""
-        if application "Spotify" is running then
-            tell application "Spotify" to previous track
-        else if application "Music" is running then
-            tell application "Music" to previous track
-        end if
-        """) { [weak self] _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                self?.isFetching = false
-                self?.lastTrackName = ""
-                self?.fetchNowPlaying()
-            }
-        }
+        if isGenericSource { SystemNowPlayingMonitor.shared.send(.previous); return }
+        runOsascript(controlScript(spotify: "previous track", music: "previous track")) { [weak self] _ in self?.refreshSoon(forgetTrack: true) }
     }
 
     func seek(to position: Double) {
         let pos = max(0, position)
         DispatchQueue.main.async { self.trackPosition = pos }
-        runOsascript("""
-        if application "Spotify" is running then
-            tell application "Spotify" to set player position to \(pos)
-        else if application "Music" is running then
-            tell application "Music" to set player position to \(pos)
-        end if
-        """) { _ in }
+        if isGenericSource { SystemNowPlayingMonitor.shared.seek(to: pos); return }
+        runOsascript(controlScript(spotify: "set player position to \(pos)", music: "set player position to \(pos)")) { _ in }
     }
 
     func toggleShuffle() {
-        runOsascript("""
-        if application "Spotify" is running then
-            tell application "Spotify" to set shuffling to not shuffling
-        else if application "Music" is running then
-            tell application "Music" to set shuffle enabled to not shuffle enabled
-        end if
-        """) { _ in }
+        guard !isGenericSource else { return }
+        runOsascript(controlScript(spotify: "set shuffling to not shuffling", music: "set shuffle enabled to not shuffle enabled")) { _ in }
     }
 
     func toggleRepeat() {
-        runOsascript("""
-        if application "Spotify" is running then
-            tell application "Spotify"
-                if repeating then
-                    set repeating to false
-                else
-                    set repeating to true
-                end if
-            end tell
-        else if application "Music" is running then
-            tell application "Music"
-                if song repeat is off then
-                    set song repeat to all
-                else
-                    set song repeat to off
-                end if
-            end tell
-        end if
-        """) { _ in }
+        guard !isGenericSource else { return }
+        runOsascript(controlScript(
+            spotify: "set repeating to not repeating",
+            music: "if song repeat is off then\n set song repeat to all\n else\n set song repeat to off\n end if")) { _ in }
     }
 
     private func refreshSpotifyLike(uri: String) {
@@ -406,6 +467,7 @@ final class MusicManager: NSObject, ObservableObject {
     }
 
     func toggleLike() {
+        guard !isGenericSource else { return }
         if activePlayer == "Spotify" {
             let uri = spotifyTrackURI
             let target = !isLiked   // the view flips isLiked right after this call
