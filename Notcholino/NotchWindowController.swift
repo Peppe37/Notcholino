@@ -1,4 +1,5 @@
 import AppKit
+import EventKit
 import SwiftUI
 
 // MARK: - NSHostingView con scroll wheel e acceptsFirstMouse
@@ -10,11 +11,16 @@ final class NotchHostingView: NSHostingView<AnyView> {
     override var acceptsFirstResponder: Bool { true }
 
     override func scrollWheel(with event: NSEvent) {
-        let delta = event.scrollingDeltaY
         NotificationCenter.default.post(
             name: .notchScrollWheel,
             object: notchID,
-            userInfo: ["dy": delta]
+            userInfo: [
+                "dx": event.scrollingDeltaX,
+                "dy": event.scrollingDeltaY,
+                "phase": event.phase.rawValue,
+                "momentum": event.momentumPhase.rawValue,
+                "inverted": event.isDirectionInvertedFromDevice
+            ]
         )
     }
 }
@@ -24,6 +30,7 @@ extension Notification.Name {
     static let notchLayoutChanged = Notification.Name("notchLayoutChanged")
     static let notchMouseLeft = Notification.Name("notchMouseLeft")
     static let notchMouseEntered = Notification.Name("notchMouseEntered")
+    static let notchMouseMoved = Notification.Name("notchMouseMoved")
 }
 
 // MARK: - Window Controller
@@ -60,7 +67,7 @@ class NotchWindowController: NSWindowController {
 
         super.init(window: panel)
 
-        let root = AnyView(NotchContentView(notchID: notchID))
+        let root = AnyView(NotchContentView(notchID: notchID, topInset: screen.safeAreaInsets.top))
         let hosting = NotchHostingView(rootView: root)
         hosting.notchID = notchID
         hosting.layer?.backgroundColor = NSColor.clear.cgColor
@@ -100,6 +107,11 @@ class NotchWindowController: NSWindowController {
     private func updateMouseTransparency() {
         guard let window else { return }
         let f = window.frame
+        let mouse = NSEvent.mouseLocation
+        // Position relative to the top-center of the window, so the view can hit-test its own controls
+        NotificationCenter.default.post(
+            name: .notchMouseMoved, object: notchID,
+            userInfo: ["x": mouse.x - f.midX, "y": f.maxY - mouse.y])
         let rect = NSRect(x: f.midX - notchSize.width / 2, y: f.maxY - notchSize.height,
                           width: notchSize.width, height: notchSize.height).insetBy(dx: -4, dy: -4)
         let inside = rect.contains(NSEvent.mouseLocation)
@@ -142,11 +154,27 @@ struct NotchShape: Shape {
 
 // MARK: - Main Notch Content View
 
+/// The panels the notch can show, in display order.
+enum NotchTab: Int, CaseIterable {
+    case controlCenter = -1, music = 0, calendar = 1
+}
+
 struct NotchContentView: View {
     let notchID: UUID
+    /// Height of the hardware notch on this screen (0 on Macs without one)
+    let topInset: CGFloat
     @State private var isHovering   = false
-    @State private var activeTab    = 0   // -1=ControlCenter, 0=Music, 1=Calendar
+    @State private var activeTab: NotchTab = .music
+    @State private var goingForward = true
+    @State private var hoveredDot: NotchTab?
+    @State private var scrollAcc: CGFloat = 0
+    @State private var scrollHandled = false
+    @State private var lastScrollSwitch = Date.distantPast
     @State private var collapseTask: Task<Void, Never>?
+
+    @AppStorage("nowPlayingEnabled")    private var nowPlayingEnabled    = true
+    @AppStorage("calendarEnabled")      private var calendarEnabled      = true
+    @AppStorage("controlCenterEnabled") private var controlCenterEnabled = true
 
     @StateObject private var music   = MusicManager()
     @StateObject private var sysEvt  = SystemEventsManager()
@@ -160,8 +188,32 @@ struct NotchContentView: View {
     private let baseH: CGFloat = 32
     private let flare: CGFloat = 12
 
+    private var enabledTabs: [NotchTab] {
+        NotchTab.allCases.filter {
+            switch $0 {
+            case .controlCenter: return controlCenterEnabled
+            case .music:         return nowPlayingEnabled
+            case .calendar:      return calendarEnabled
+            }
+        }
+    }
+
+    /// The tab actually on screen: the selected one, or the first enabled if it was switched off
+    private var shownTab: NotchTab? {
+        let tabs = enabledTabs
+        if tabs.contains(activeTab) { return activeTab }
+        return tabs.contains(.music) ? .music : tabs.first
+    }
+
+    private var hoverExpands: Bool { isHovering && !enabledTabs.isEmpty }
+
+    /// Space reserved above the tab dots so they clear the hardware notch
+    private var topPad: CGFloat { topInset > 0 ? topInset + 2 : 24 }
+    private let dotsRowH: CGFloat = 14
+    private let dotPitch: CGFloat = 16
+
     private var isPlayingCompact: Bool {
-        music.isPlaying && !isHovering && !isSystemHudActive
+        nowPlayingEnabled && music.isPlaying && !isHovering && !isSystemHudActive
     }
 
     private var isSystemHudActive: Bool {
@@ -180,13 +232,13 @@ struct NotchContentView: View {
 
     // Expanded size based on mode
     private var expandW: CGFloat {
-        if isHovering { return 400 }
+        if hoverExpands { return 400 }
         return isSystemHudActive ? 340 : 400
     }
 
     private var expandH: CGFloat {
-        let baseH: CGFloat = (activeTab == 0) ? (180 + 24) : (200 + 24)
-        if isHovering {
+        let baseH: CGFloat = ((shownTab == .music) ? (180 + 24) : (200 + 24)) + (topPad - 24) + (dotsRowH - 9)
+        if hoverExpands {
             return isSystemHudActive ? baseH + 46 : baseH
         } else {
             switch sysEvt.currentMode {
@@ -197,7 +249,7 @@ struct NotchContentView: View {
     }
 
     private var isExpanded: Bool {
-        return isHovering || isSystemHudActive
+        return hoverExpands || isSystemHudActive
     }
 
     private var curW: CGFloat { isExpanded ? expandW : pillW }
@@ -215,33 +267,20 @@ struct NotchContentView: View {
                 Group {
                     if isExpanded {
                         VStack(spacing: 0) {
-                            if isHovering || !isSystemHudActive {
+                            if hoverExpands || !isSystemHudActive {
                                 VStack(spacing: 0) {
-                                    Spacer().frame(height: 24)
-                                    if isMusicMode {
-                                        HStack(spacing: 6) {
-                                            Circle().fill(activeTab == -1 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
-                                            Circle().fill(activeTab == 0 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
-                                            Circle().fill(activeTab == 1 ? .white : Color.white.opacity(0.3)).frame(width: 5, height: 5)
-                                        }
-                                        .padding(.top, 4)
-                                        .allowsHitTesting(false)
-                                    }
-                                    if activeTab == -1 {
-                                        ControlCenterNotchView()
-                                            .transition(.asymmetric(
-                                                insertion: .move(edge: .leading).combined(with: .opacity),
-                                                removal:   .move(edge: .trailing).combined(with: .opacity)))
-                                    } else if activeTab == 0 {
-                                        NowPlayingNotchView(music: music)
-                                            .transition(.asymmetric(
-                                                insertion: .move(edge: activeTab == -1 ? .trailing : .leading).combined(with: .opacity),
-                                                removal:   .move(edge: activeTab == -1 ? .leading : .trailing).combined(with: .opacity)))
+                                    Spacer().frame(height: topPad)
+                                    if isMusicMode && enabledTabs.count > 1 {
+                                        tabDots
                                     } else {
-                                        CalendarNotchView()
+                                        Spacer().frame(height: dotsRowH)
+                                    }
+                                    if let tab = shownTab {
+                                        tabContent(tab)
+                                            .id(tab)
                                             .transition(.asymmetric(
-                                                insertion: .move(edge: .trailing).combined(with: .opacity),
-                                                removal:   .move(edge: .leading).combined(with: .opacity)))
+                                                insertion: .move(edge: goingForward ? .trailing : .leading).combined(with: .opacity),
+                                                removal:   .move(edge: goingForward ? .leading : .trailing).combined(with: .opacity)))
                                     }
                                 }
                             }
@@ -280,41 +319,135 @@ struct NotchContentView: View {
             .onChange(of: isHovering) { _ in publishLayout() }
             .onChange(of: sysEvt.currentMode) { _ in publishLayout() }
             .onChange(of: music.isPlaying) { _ in publishLayout() }
-            .onChange(of: activeTab) { _ in publishLayout() }
+            .onChange(of: shownTab) { _ in publishLayout() }
             .onReceive(NotificationCenter.default.publisher(for: .notchMouseEntered)) { notif in
                 if (notif.object as? UUID) == notchID { setHovering(true) }
             }
             .onReceive(NotificationCenter.default.publisher(for: .notchMouseLeft)) { notif in
                 if (notif.object as? UUID) == notchID { setHovering(false) }
             }
-            // Horizontal swipe
+            .onReceive(NotificationCenter.default.publisher(for: .notchMouseMoved)) { notif in
+                guard (notif.object as? UUID) == notchID,
+                      let x = notif.userInfo?["x"] as? CGFloat,
+                      let y = notif.userInfo?["y"] as? CGFloat else { return }
+                updateHoveredDot(x: x, y: y)
+            }
+            // Click-and-drag horizontally: left goes to the next panel
             .simultaneousGesture(
                 DragGesture(minimumDistance: 20, coordinateSpace: .local)
                     .onEnded { val in
                         guard isExpanded, isMusicMode else { return }
                         if val.translation.width < -30 {
-                            withAnimation { activeTab = min(activeTab + 1, 1) }
+                            step(1)
                         } else if val.translation.width > 30 {
-                            withAnimation { activeTab = max(activeTab - 1, -1) }
+                            step(-1)
                         }
                     }
             )
-            // Scroll wheel
+            // Two-finger horizontal swipe on the trackpad: same direction as the drag
             .onReceive(NotificationCenter.default.publisher(for: .notchScrollWheel)) { notif in
-                guard (notif.object as? UUID) == notchID,
-                      isExpanded, isMusicMode,
-                      let dy = notif.userInfo?["dy"] as? CGFloat else { return }
-                if dy > 5 {
-                    withAnimation { activeTab = min(activeTab + 1, 1) }
-                } else if dy < -5 {
-                    withAnimation { activeTab = max(activeTab - 1, -1) }
-                }
+                guard (notif.object as? UUID) == notchID, isExpanded, isMusicMode,
+                      let info = notif.userInfo,
+                      let dx = info["dx"] as? CGFloat,
+                      let dy = info["dy"] as? CGFloat else { return }
+                handleScroll(dx: dx, dy: dy,
+                             phase: NSEvent.Phase(rawValue: info["phase"] as? UInt ?? 0),
+                             momentum: NSEvent.Phase(rawValue: info["momentum"] as? UInt ?? 0),
+                             inverted: info["inverted"] as? Bool ?? true)
             }
 
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .environmentObject(calMgr)
+    }
+
+    // MARK: - Tabs
+
+    @ViewBuilder
+    private func tabContent(_ tab: NotchTab) -> some View {
+        switch tab {
+        case .controlCenter: ControlCenterNotchView()
+        case .music:         NowPlayingNotchView(music: music)
+        case .calendar:      CalendarNotchView()
+        }
+    }
+
+    private var tabDots: some View {
+        HStack(spacing: dotPitch - 14) {
+            ForEach(enabledTabs, id: \.self) { tab in
+                let hovered = hoveredDot == tab
+                Circle()
+                    .fill(shownTab == tab ? Color.white : Color.white.opacity(hovered ? 0.65 : 0.3))
+                    .frame(width: 5, height: 5)
+                    .scaleEffect(hovered ? 1.8 : 1)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.7), value: hovered)
+                    .frame(width: 14, height: dotsRowH)
+                    .contentShape(Rectangle())
+                    .onTapGesture { select(tab) }
+            }
+        }
+        .frame(height: dotsRowH)
+    }
+
+    private func select(_ tab: NotchTab) {
+        let tabs = enabledTabs
+        guard let from = shownTab.flatMap({ tabs.firstIndex(of: $0) }),
+              let to = tabs.firstIndex(of: tab), from != to else { return }
+        goingForward = to > from
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.8)) { activeTab = tab }
+    }
+
+    /// Move one panel forward (+1) or back (-1) among the enabled ones
+    private func step(_ delta: Int) {
+        let tabs = enabledTabs
+        guard tabs.count > 1, let shown = shownTab, let i = tabs.firstIndex(of: shown) else { return }
+        let n = max(0, min(tabs.count - 1, i + delta))
+        if n != i { select(tabs[n]) }
+    }
+
+    private func updateHoveredDot(x: CGFloat, y: CGFloat) {
+        let tabs = enabledTabs
+        var found: NotchTab?
+        if isExpanded, isMusicMode, tabs.count > 1 {
+            let cy = topPad + dotsRowH / 2
+            for (i, tab) in tabs.enumerated() {
+                let cx = (CGFloat(i) - CGFloat(tabs.count - 1) / 2) * dotPitch
+                if abs(x - cx) <= dotPitch / 2, abs(y - cy) <= dotsRowH / 2 + 2 { found = tab }
+            }
+        }
+        if found != hoveredDot { hoveredDot = found }
+    }
+
+    private func handleScroll(dx: CGFloat, dy: CGFloat, phase: NSEvent.Phase, momentum: NSEvent.Phase, inverted: Bool) {
+        if !momentum.isEmpty { return }   // ignore inertia after the fingers lift
+        // Direction of the fingers, whatever the "natural scrolling" setting
+        let finger = inverted ? dx : -dx
+
+        if phase.isEmpty {
+            // Mouse wheel: no gesture phases, so debounce
+            guard abs(dx) > abs(dy), abs(dx) > 0,
+                  Date().timeIntervalSince(lastScrollSwitch) > 0.3 else { return }
+            lastScrollSwitch = Date()
+            step(finger < 0 ? 1 : -1)
+            return
+        }
+
+        if phase.contains(.began) || phase.contains(.mayBegin) {
+            scrollAcc = 0
+            scrollHandled = false
+        }
+        if abs(dx) > abs(dy) {
+            scrollAcc += finger
+            if !scrollHandled && abs(scrollAcc) > 24 {
+                scrollHandled = true
+                step(scrollAcc < 0 ? 1 : -1)
+            }
+        }
+        if phase.contains(.ended) || phase.contains(.cancelled) {
+            scrollAcc = 0
+            scrollHandled = false
+        }
     }
 
     private func setHovering(_ hovering: Bool) {
@@ -838,13 +971,116 @@ struct CalendarNotchView: View {
     private let wds = ["M","T","W","T","F","S","S"]
 
     var body: some View {
+        if displayMode == 1 { singleDayBody } else { monthBody }
+    }
+
+    // MARK: Single day: weekday on the left, the day's events on the right
+
+    private var singleDayBody: some View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(dayName)
                     .font(.system(size: 15, weight: .heavy))
                     .foregroundStyle(.red)
                 Text(dayNum)
-                    .font(.system(size: displayMode == 0 ? 56 : 76, weight: .light))
+                    .font(.system(size: 76, weight: .light))
+                    .foregroundStyle(.white)
+                    .padding(.top, -8)
+                Text(monthName)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.5))
+                Spacer()
+            }
+            .frame(width: 150, alignment: .leading)
+            .padding(.leading, 32)
+            .padding(.top, 16)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.12))
+                .frame(width: 1)
+                .padding(.vertical, 18)
+
+            dayEvents
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(.leading, 18)
+                .padding(.trailing, 28)
+                .padding(.top, 20)
+                .padding(.bottom, 14)
+        }
+    }
+
+    private let maxRows = 4
+
+    @ViewBuilder
+    private var dayEvents: some View {
+        if !calMgr.hasAccess {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("No Calendar Access")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.8))
+                Text("Please grant permission")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.red.opacity(0.8))
+            }
+        } else if calMgr.todayEvents.isEmpty {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("No events today")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.8))
+                Text("Your schedule is clear")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+        } else {
+            let events = calMgr.todayEvents
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(Array(events.prefix(maxRows)), id: \.eventIdentifier) { event in
+                    eventRow(event)
+                }
+                if events.count > maxRows {
+                    Text("+\(events.count - maxRows) more")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+            }
+        }
+    }
+
+    private func eventRow(_ event: EKEvent) -> some View {
+        let finished = !event.isAllDay && event.endDate < Date()
+        return HStack(alignment: .top, spacing: 8) {
+            Rectangle()
+                .fill(Color(nsColor: NSColor(cgColor: event.calendar.cgColor) ?? .red))
+                .frame(width: 3)
+                .cornerRadius(1.5)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(event.title ?? "")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                Text(event.isAllDay ? "All day"
+                     : "\(calMgr.formatTime(event.startDate)) - \(calMgr.formatTime(event.endDate))")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .opacity(finished ? 0.4 : 1)
+        .contentShape(Rectangle())
+        .onTapGesture { calMgr.openCalendar(at: event.startDate) }
+    }
+
+    // MARK: Month grid
+
+    private var monthBody: some View {
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(dayName)
+                    .font(.system(size: 15, weight: .heavy))
+                    .foregroundStyle(.red)
+                Text(dayNum)
+                    .font(.system(size: 56, weight: .light))
                     .foregroundStyle(.white)
                     .padding(.top, -8)
                     .padding(.bottom, 4)
@@ -902,7 +1138,7 @@ struct CalendarNotchView: View {
             .padding(.leading, 32)
             .padding(.top, 16)
 
-            if displayMode == 0 {
+            Group {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 6) {
                     Text(monthName)

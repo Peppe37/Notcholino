@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Control Center section in the settings, with a switch to hide the panel from the notch.
+- Single-day calendar view: the weekday on the left and the events of the day on the right, using the whole width.
+- The tab dots grow when hovered and can be clicked to switch panel.
+
+### Fixed
+- Tab dots were hidden behind the hardware notch: they are now placed using the real notch height of each screen.
+- Trackpad swipes are now horizontal, in the same direction as click-and-drag, and reach every panel.
+- The Now Playing and Calendar switches in the settings now really hide those panels in the notch.
+- The About page shows the real app version.
+
 ## [0.1.1-alpha] - 2026-10-14
 
 ### Added

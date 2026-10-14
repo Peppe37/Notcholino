@@ -12,7 +12,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
     case nowPlaying  = "Now Playing"
     case calendar    = "Calendar"
     case lockScreen  = "Lock Screen"
-    case plugins     = "Plugins"
+    case controlCenter = "Control Center"
     case license     = "License"
     case about       = "About"
 
@@ -27,7 +27,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .nowPlaying:   return "music.note"
         case .calendar:     return "calendar"
         case .lockScreen:   return "lock.fill"
-        case .plugins:      return "puzzlepiece.extension.fill"
+        case .controlCenter: return "square.grid.2x2.fill"
         case .license:      return "checkmark.seal.fill"
         case .about:        return "info.circle.fill"
         }
@@ -44,7 +44,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .nowPlaying:   return .red
         case .calendar:     return .red
         case .lockScreen:   return Color(NSColor.labelColor)
-        case .plugins:      return .purple
+        case .controlCenter: return .purple
         case .license:      return .teal
         case .about:        return Color(NSColor.secondaryLabelColor)
         }
@@ -71,7 +71,7 @@ struct ContentView: View {
                 }
 
                 Section("Live Activities") {
-                    ForEach([SidebarItem.nowPlaying, .calendar, .lockScreen], id: \.self) { item in
+                    ForEach([SidebarItem.controlCenter, .nowPlaying, .calendar, .lockScreen], id: \.self) { item in
                         NavigationLink(value: item) { SidebarLabel(item: item) }
                     }
                 }
@@ -104,7 +104,7 @@ struct ContentView: View {
         case .nowPlaying:   NowPlayingSettingsView()
         case .calendar:     CalendarSettingsView()
         case .lockScreen:   LockScreenSettingsView()
-        case .plugins:      PluginStoreSettingsView()
+        case .controlCenter: ControlCenterSettingsView()
         case .license:      LicenseView()
         case .about:        AboutView()
         case nil:           EmptyView()
@@ -439,11 +439,18 @@ struct LockScreenSettingsView: View {
 }
 
 // MARK: - Plugins
-struct PluginStoreSettingsView: View {
+struct ControlCenterSettingsView: View {
+    @AppStorage("controlCenterEnabled") private var enabled = true
     @ObservedObject private var pluginManager = PluginManager.shared
     
     var body: some View {
         Form {
+            Section {
+                Toggle("Show Control Center", isOn: $enabled)
+            } footer: {
+                Text("The Control Center is the notch panel that holds your plugin buttons. Turn it off if you don't use plugins and you won't see it in the notch.")
+            }
+
             Section {
                 Text("Notcholino supports external compiled Swift `.bundle` plugins to extend its functionality.")
                     .font(.body)
@@ -478,7 +485,7 @@ struct PluginStoreSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Plugins")
+        .navigationTitle("Control Center")
     }
 }
 
@@ -506,10 +513,17 @@ struct LicenseView: View {
 // MARK: - About
 
 struct AboutView: View {
+    private static var versionString: String {
+        let info = Bundle.main.infoDictionary
+        let v = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let b = info?["CFBundleVersion"] as? String ?? "?"
+        return "\(v) (\(b))"
+    }
+
     var body: some View {
         Form {
             Section {
-                LabeledContent("Version", value: "0.1.0 (beta)")
+                LabeledContent("Version", value: Self.versionString)
                 LabeledContent("Author",  value: "Giuseppe")
                 LabeledContent("License", value: "PolyForm Noncommercial 1.0.0")
             }

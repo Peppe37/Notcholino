@@ -4,6 +4,8 @@ import Foundation
 final class CalendarManager: ObservableObject {
     static let shared = CalendarManager()
     @Published var upcomingEvent: EKEvent?
+    /// Every event of today (all-day first, then by start time)
+    @Published var todayEvents: [EKEvent] = []
     @Published var hasAccess = false
     
     private let store = EKEventStore()
@@ -72,7 +74,7 @@ final class CalendarManager: ObservableObject {
         
         let calsToSearch = store.calendars(for: .event).filter { selectedCalendarIDs.contains($0.calendarIdentifier) }
         guard !calsToSearch.isEmpty else {
-            DispatchQueue.main.async { self.upcomingEvent = nil }
+            DispatchQueue.main.async { self.upcomingEvent = nil; self.todayEvents = [] }
             return
         }
         
@@ -85,8 +87,16 @@ final class CalendarManager: ObservableObject {
             .sorted { $0.startDate < $1.startDate }
             .first
 
+        let startOfDay = cal.startOfDay(for: now)
+        let dayPred = store.predicateForEvents(withStart: startOfDay, end: endOfDay, calendars: calsToSearch)
+        let todays = store.events(matching: dayPred).sorted {
+            if $0.isAllDay != $1.isAllDay { return $0.isAllDay }
+            return $0.startDate < $1.startDate
+        }
+
         DispatchQueue.main.async {
             self.upcomingEvent = nextEvent
+            self.todayEvents = todays
         }
     }
     
