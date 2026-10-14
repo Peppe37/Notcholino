@@ -38,35 +38,33 @@ final class OSDManager {
         return highestPID
     }
     
+    /// Suspends the system volume/brightness HUD helper.
+    /// It only appears when a volume or brightness key is pressed, so instead of scanning every process
+    /// all the time we look for it right now and then in short bursts after each key press (`suppressNow()`).
     func startSuppressing() {
         guard !isSuppressing else { return }
         isSuppressing = true
-        
+        suppressNow()
+    }
+
+    /// Looks for a new OSDUIHelper and suspends it. Call after a volume/brightness key press.
+    func suppressNow() {
+        guard isSuppressing else { return }
+        task?.cancel()
         task = Task.detached(priority: .background) { [weak self] in
-            while !Task.isCancelled {
-                guard let self = self else { return }
-                
-                let currentPID = self.getOSDUIHelperPID()
-                
-                if let pid = currentPID, pid != self.lastSuspendedPID {
+            // ~50 ms apart for ~2 s: the helper is (re)launched by the system right after the key press
+            for _ in 0..<40 {
+                guard let self, !Task.isCancelled else { return }
+                if let pid = self.getOSDUIHelperPID(), pid != self.lastSuspendedPID {
                     kill(pid, SIGSTOP)
                     self.lastSuspendedPID = pid
-                    try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
-                    continue
+                    return
                 }
-                
-                let intervalNs: UInt64
-                if currentPID == nil {
-                    intervalNs = 1_000_000_000 // 1s
-                } else {
-                    intervalNs = 500_000_000 // 500ms
-                }
-                
-                try? await Task.sleep(nanoseconds: intervalNs)
+                try? await Task.sleep(nanoseconds: 50_000_000)
             }
         }
     }
-    
+
     func stopSuppressing() {
         guard isSuppressing else { return }
         isSuppressing = false

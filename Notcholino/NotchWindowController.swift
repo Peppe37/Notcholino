@@ -108,13 +108,16 @@ class NotchWindowController: NSWindowController {
         guard let window else { return }
         let f = window.frame
         let mouse = NSEvent.mouseLocation
-        // Position relative to the top-center of the window, so the view can hit-test its own controls
-        NotificationCenter.default.post(
-            name: .notchMouseMoved, object: notchID,
-            userInfo: ["x": mouse.x - f.midX, "y": f.maxY - mouse.y])
         let rect = NSRect(x: f.midX - notchSize.width / 2, y: f.maxY - notchSize.height,
                           width: notchSize.width, height: notchSize.height).insetBy(dx: -4, dy: -4)
-        let inside = rect.contains(NSEvent.mouseLocation)
+        let inside = rect.contains(mouse)
+        // Only tell the view about the mouse while it is over the notch (position relative to the
+        // top-center of the window, so the view can hit-test its own controls)
+        if inside {
+            NotificationCenter.default.post(
+                name: .notchMouseMoved, object: notchID,
+                userInfo: ["x": mouse.x - f.midX, "y": f.maxY - mouse.y])
+        }
         guard window.ignoresMouseEvents == inside else { return }
         window.ignoresMouseEvents = !inside
         // A window that ignores events never gets mouseExited, so tell the view
@@ -324,7 +327,7 @@ struct NotchContentView: View {
                 if (notif.object as? UUID) == notchID { setHovering(true) }
             }
             .onReceive(NotificationCenter.default.publisher(for: .notchMouseLeft)) { notif in
-                if (notif.object as? UUID) == notchID { setHovering(false) }
+                if (notif.object as? UUID) == notchID { setHovering(false); hoveredDot = nil }
             }
             .onReceive(NotificationCenter.default.publisher(for: .notchMouseMoved)) { notif in
                 guard (notif.object as? UUID) == notchID,

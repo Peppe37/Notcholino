@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-alpha] - 2026-10-14
+
+### Added
+- Benchmark script (`scripts/benchmark.sh`) and published performance figures for memory, CPU, energy and disk, in the README and on the website.
+
+### Changed
+- Much lighter when idle: CPU 0.15 % → 0.00 %, energy impact 0.17 → 0.00, and no more wakeups.
+- Notcholino no longer starts an `osascript` process every 2 seconds. With Spotify and Music closed it asks nothing; with a player open it refreshes on the player's own notifications, with a slower safety poll (3 s while playing, 8 s while paused).
+- The playback position timer only runs while music is playing.
+- Hiding the system volume/brightness HUD no longer scans every running process each second: it checks right after a volume or brightness key press.
+- Mouse tracking only reports to the notch while the cursor is over it.
+
 ## [0.3.0-alpha] - 2026-10-14
 
 ### Added
@@ -70,7 +82,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.3.0-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.4.0-alpha...HEAD
+[0.4.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.3.0-alpha...v0.4.0-alpha
 [0.3.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.2.1-alpha...v0.3.0-alpha
 [0.2.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.2.0-alpha...v0.2.1-alpha
 [0.2.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.1.1-alpha...v0.2.0-alpha

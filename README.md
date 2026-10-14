@@ -97,6 +97,31 @@ Spotify Like uses your Spotify account through the official Web API, and only if
 - **Click the song info** to open the active music player. **Click an event or a day** to open it in Calendar.
 - Use the **menu bar icon → Preferences…** (or <kbd>⌘</kbd><kbd>,</kbd>) to open the settings and quit the app.
 
+## Performance
+
+Notcholino is meant to stay out of your way. These figures were measured on a MacBook Pro with an Apple M5 and macOS 26.6, with a Release build, averaged over 30 seconds per scenario, with no music player open.
+
+| | Idle (notch closed) | Open (hovering) |
+| --- | --- | --- |
+| **Memory** (physical footprint) | 42 MB | 44 MB |
+| **CPU** | 0.00 % | 0.01 % |
+| **Energy impact** (Activity Monitor scale) | 0.00 | 0.02 |
+| **Idle wakeups per second** | 0.0 | 0.0 |
+
+- **Peak memory** is about 87 MB, only while the app starts.
+- **Disk**: the app is 2.5 MB, the DMG 1.7 MB. The [Espresso](plugins/espresso) plugin is 120 KB (a 21 KB download). Nothing else is stored except the plugins you install.
+- **Espresso** adds about 1.5 MB of memory while it is on and no measurable CPU or energy. It holds two power assertions so the Mac and its screen stay awake: the extra power comes from the screen staying on, not from the plugin.
+- **With a player open**, Notcholino reads Spotify or Music with a short AppleScript (about 28 ms of CPU each): every 3 seconds while playing, every 8 seconds while paused, plus right away when the player reports a change. With no player open it asks nothing.
+- **Temperature and GPU**: Notcholino only draws a small SwiftUI overlay, with no compute or Metal work of its own, and the thermal state stayed nominal. Per-process temperature and GPU time need root: run `sudo powermetrics --samplers cpu_power,gpu_power,thermal -i 1000 -n 10` to see them on your Mac.
+
+Version 0.4.0 cut this down: before, the app started an `osascript` process every 2 seconds even with no player open, and scanned every running process once a second to hide the system volume HUD. Measured the same way, 0.3.0 used 0.15 % CPU and energy impact 0.17 when idle, plus about 1.4 % of a core in short-lived `osascript` processes that do not show up in the app's own numbers.
+
+To measure on your own Mac (no `sudo` needed):
+
+```sh
+scripts/benchmark.sh /path/to/Notcholino.app 30
+```
+
 ## Building from source
 
 You need a recent Xcode (the releases are built with Xcode 26) and [XcodeGen](https://github.com/yonaskolb/XcodeGen).

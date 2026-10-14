@@ -62,6 +62,12 @@ final class SystemEventsManager: ObservableObject {
 
             DispatchQueue.main.async {
                 switch keyCode {
+                case 0, 1, 2, 3, 7:
+                    // The system HUD helper is relaunched on key presses: suspend it again if needed
+                    OSDManager.shared.suppressNow()
+                default: break
+                }
+                switch keyCode {
                 case 0, 1, 7: // volume up, down, mute
                     let soundEnabled = UserDefaults.standard.object(forKey: "soundEnabled") as? Bool ?? true
                     if soundEnabled {

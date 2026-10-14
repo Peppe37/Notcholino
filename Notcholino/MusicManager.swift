@@ -7,7 +7,7 @@ final class MusicManager: NSObject, ObservableObject {
     @Published var trackName:    String   = ""
     @Published var artistName:   String   = ""
     @Published var albumArt:     NSImage? = nil
-    @Published var isPlaying:    Bool     = false
+    @Published var isPlaying:    Bool     = false { didSet { updateTickTimer() } }
     @Published var activePlayer: String   = "None"
     @Published var trackDuration: Double  = 0
     @Published var trackPosition: Double  = 0
@@ -21,29 +21,87 @@ final class MusicManager: NSObject, ObservableObject {
     private var isFetching    = false
     private var lastTrackName = ""
 
+    /// Bundle ids of the players we can read
+    private static let playerBundleIDs = ["com.spotify.client", "com.apple.Music"]
+    private var observers: [(center: NotificationCenter, token: NSObjectProtocol)] = []
+
     override init() {
         super.init()
         fetchNowPlaying()
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            self?.fetchNowPlaying()
-        }
-        tickTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self, self.isPlaying else { return }
-            DispatchQueue.main.async {
-                self.trackPosition = min(self.trackPosition + 1.0, self.trackDuration)
+
+        // Refresh when a player says something changed, instead of polling to find out
+        let distributed = DistributedNotificationCenter.default()
+        for name in ["com.spotify.client.PlaybackStateChanged", "com.apple.Music.playerInfo"] {
+            let token = distributed.addObserver(forName: Notification.Name(name), object: nil, queue: .main) { [weak self] _ in
+                self?.fetchNowPlaying()
             }
+            observers.append((distributed, token))
+        }
+        // ...and when a player is opened or quit
+        let workspace = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
+            let token = workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+                let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+                guard let id = app?.bundleIdentifier, Self.playerBundleIDs.contains(id) else { return }
+                self?.fetchNowPlaying()
+            }
+            observers.append((workspace, token))
         }
     }
 
     deinit {
         pollTimer?.invalidate()
         tickTimer?.invalidate()
+        observers.forEach { $0.center.removeObserver($0.token) }
+    }
+
+    /// True when Spotify or Music is open: with neither, there is nothing to ask (and no process to spawn)
+    private var isAnyPlayerRunning: Bool {
+        Self.playerBundleIDs.contains { !NSRunningApplication.runningApplications(withBundleIdentifier: $0).isEmpty }
+    }
+
+    /// Next safety poll (position drift, missed notifications): only while a player is open
+    private func schedulePoll() {
+        DispatchQueue.main.async {
+            self.pollTimer?.invalidate()
+            self.pollTimer = nil
+            guard self.isAnyPlayerRunning else { return }
+            let interval: TimeInterval = self.isPlaying ? 3 : 8
+            self.pollTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+                self?.fetchNowPlaying()
+            }
+        }
+    }
+
+    /// The 1 s position tick only runs while something is playing
+    private func updateTickTimer() {
+        if isPlaying, tickTimer == nil {
+            tickTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+                guard let self else { return }
+                self.trackPosition = min(self.trackPosition + 1.0, self.trackDuration)
+            }
+        } else if !isPlaying {
+            tickTimer?.invalidate()
+            tickTimer = nil
+        }
     }
 
     // MARK: - Fetch track info
 
     func fetchNowPlaying() {
         guard !isFetching else { return }
+
+        guard isAnyPlayerRunning else {
+            // Nothing to read: reset the state without launching osascript
+            DispatchQueue.main.async {
+                self.isPlaying = false
+                self.trackName = ""
+                self.artistName = ""
+                self.activePlayer = "None"
+            }
+            schedulePoll()
+            return
+        }
         isFetching = true
 
         let script = """
@@ -113,6 +171,7 @@ final class MusicManager: NSObject, ObservableObject {
         runOsascript(script) { [weak self] result in
             guard let self else { return }
             self.isFetching = false
+            self.schedulePoll()
             guard let raw = result, !raw.isEmpty, raw != "None|||" else {
                 DispatchQueue.main.async {
                     self.isPlaying = false

@@ -135,6 +135,11 @@
   .cc-opts button { height:28px; border:0; border-radius:14px; background:rgba(255,255,255,.12); color:#fff; font:600 11px/1 inherit; font-family:inherit; cursor:pointer; padding:0 4px; white-space:nowrap; }
   .cc-opts button.sel { background:#fff; color:#000; }
   .cc-opts button.off { background:rgba(255,69,58,.2); color:#ff453a; }
+  .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px; margin: 20px 0 12px; }
+  .stat { background:var(--card); border-radius:16px; padding:18px 16px; text-align:center; }
+  .stat b { display:block; font-size:1.9rem; letter-spacing:-.02em; }
+  .stat span { color:var(--muted); font-size:.85rem; }
+  .small { color:var(--muted); font-size:.9rem; }
   .hint { text-align:center; color:var(--muted); font-size:.85rem; margin: 14px 0 0; }
 
   section { padding: 32px 0; }
@@ -270,6 +275,19 @@
     </div>
   </section>
 
+  <section id="performance">
+    <h2 data-i18n="perfH">Light on your Mac</h2>
+    <p data-i18n="perfP">Notcholino stays out of the way. Measured on a MacBook Pro (Apple M5, macOS 26.6), with the notch closed and no music player open:</p>
+    <div class="stats">
+      <div class="stat"><b>42 MB</b><span data-i18n="perfMem">memory</span></div>
+      <div class="stat"><b>0.00 %</b><span data-i18n="perfCpu">CPU when idle</span></div>
+      <div class="stat"><b>0.00</b><span data-i18n="perfEnergy">energy impact</span></div>
+      <div class="stat"><b>2.5 MB</b><span data-i18n="perfDisk">on disk</span></div>
+      <div class="stat"><b>120 KB</b><span data-i18n="perfEsp">Espresso plugin</span></div>
+    </div>
+    <p class="small" data-i18n="perfNote">Opening the notch takes 44 MB and 0.01 % CPU. Espresso adds about 1.5 MB while it is on. You can measure it on your own Mac with <code>scripts/benchmark.sh</code>; the details are in the <a href="https://github.com/Peppe37/Notcholino#performance">README</a>.</p>
+  </section>
+
   <section id="plugins">
     <h2 data-i18n="plugH">Plugins</h2>
     <p data-i18n="plugP">The Control Center panel of the notch holds plugin buttons. Open <b>Settings → Control Center</b> to install plugins from the built-in store: they are downloaded from the releases of this repository, at their latest version, after you confirm and a checksum check.</p>
@@ -337,6 +355,10 @@
       plugEh: '☕ Espresso',
       plugEp: 'Keeps your Mac and its screen awake, indefinitely or for 10 minutes up to 12 hours, or until a time you pick. Try it in the preview above.',
       plugDev: 'Want to write your own? See the <a href="' + REPO + '/tree/main/plugins">plugins folder</a> on GitHub.',
+      perfH: 'Light on your Mac',
+      perfP: 'Notcholino stays out of the way. Measured on a MacBook Pro (Apple M5, macOS 26.6), with the notch closed and no music player open:',
+      perfMem: 'memory', perfCpu: 'CPU when idle', perfEnergy: 'energy impact', perfDisk: 'on disk', perfEsp: 'Espresso plugin',
+      perfNote: 'Opening the notch takes 44 MB and 0.01 % CPU. Espresso adds about 1.5 MB while it is on. You can measure it on your own Mac with <code>scripts/benchmark.sh</code>; the details are in the <a href=\"' + REPO + '#performance\">README</a>.',
       ccTitle: 'Control Center',
       esAlways: 'Always on', esLeft: 'left',
       esO: ['Indefinitely', '10 min', '30 min', '1 hour', '2 hours', '4 hours', '8 hours', '12 hours', 'Until…', 'Turn off'],
@@ -379,6 +401,10 @@
       plugEh: '☕ Espresso',
       plugEp: "Tiene il Mac e lo schermo accesi, a tempo indefinito o da 10 minuti fino a 12 ore, oppure fino a un'ora a tua scelta. Provalo nell'anteprima qui sopra.",
       plugDev: 'Vuoi scriverne uno tuo? Guarda la <a href="' + REPO + '/tree/main/plugins">cartella dei plugin</a> su GitHub.',
+      perfH: 'Leggero sul tuo Mac',
+      perfP: 'Notcholino non ti ingombra. Misurato su un MacBook Pro (Apple M5, macOS 26.6), con il notch chiuso e nessun lettore musicale aperto:',
+      perfMem: 'di memoria', perfCpu: 'CPU a riposo', perfEnergy: 'impatto energetico', perfDisk: 'su disco', perfEsp: 'plugin Espresso',
+      perfNote: 'Con il notch aperto usa 44 MB e lo 0,01 % di CPU. Espresso aggiunge circa 1,5 MB mentre è acceso. Puoi misurarlo sul tuo Mac con <code>scripts/benchmark.sh</code>; i dettagli sono nel <a href=\"' + REPO + '#performance\">README</a>.',
       ccTitle: 'Control Center',
       esAlways: 'Sempre attivo', esLeft: 'rimasti',
       esO: ['A tempo indefinito', '10 min', '30 min', '1 ora', '2 ore', '4 ore', '8 ore', '12 ore', 'Fino alle…', 'Disattiva'],
