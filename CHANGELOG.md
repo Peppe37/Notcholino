@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1-alpha] - 2026-10-14
+
+### Changed
+- Releases are now signed with a fixed certificate instead of a different one-off signature each time. macOS recognises every update as the same app, so Calendar, Reminders, Automation and Accessibility permissions, and access to the Spotify token in the Keychain, are kept across updates. Updating to this version asks for them one last time. It is not Apple's notarization: the first-launch warning remains.
+
 ## [0.6.0-alpha] - 2026-10-14
 
 ### Added
@@ -141,7 +146,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.6.0-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.6.1-alpha...HEAD
+[0.6.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.6.0-alpha...v0.6.1-alpha
 [0.6.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.3-alpha...v0.6.0-alpha
 [0.5.3-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.2-alpha...v0.5.3-alpha
 [0.5.2-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.1-alpha...v0.5.2-alpha

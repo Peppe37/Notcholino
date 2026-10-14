@@ -92,7 +92,7 @@ Notcholino asks for what it needs, when it needs it:
 | **Reminders** | To show the reminders due today. Optional. |
 | **Accessibility** | To handle the volume and brightness keys itself, so macOS doesn't show its own HUD next to the one in the notch. Optional: without it the keys keep working and both HUDs appear. |
 
-Because the app is not signed with an Apple developer certificate, macOS may ask for these permissions, and for your login password to read the Spotify token from the Keychain, again after an update, unless the release was signed with the project's fixed certificate (see [Releases](#releases-and-versioning)).
+From version 0.6.1 every release is signed with the same certificate, so macOS recognises each update as the same app and keeps these permissions, and the Spotify token in your Keychain, without asking again. Updating from an older version, macOS asks one last time (see [Releases](#releases-and-versioning)).
 
 Spotify Like uses your Spotify account through the official Web API, and only if you click **Connect** in the settings.
 
@@ -119,7 +119,7 @@ Want to write your own? See [plugins/README.md](plugins/README.md).
 That is normal for the alpha: see [First launch](#first-launch-allowing-the-app). It takes four clicks, once.
 
 **It asks me for the same permissions again after an update.**
-macOS ties permissions to the app's signature, and updates are signed with a different one-off signature unless the maintainer has set up the fixed certificate. See [Releases](#releases-and-versioning).
+Before 0.6.1 each update was signed with a different one-off signature, and macOS ties permissions to the signature. From 0.6.1 on, releases use one fixed certificate, so after one last time when you update to it, permissions are kept. See [Releases](#releases-and-versioning).
 
 **The macOS volume or brightness HUD still shows next to the notch.**
 Allow Notcholino in **System Settings → Privacy & Security → Accessibility**, or click **Authorize** in **Settings → Sound** or **Display**. Without it the system HUD can't be hidden. If it looks switched on there but the HUD still shows, it is a leftover entry from a previous version: click **Authorize** in Notcholino, which clears it and asks again (or run `tccutil reset Accessibility com.giuseppe.Notcholino` in the Terminal).
@@ -226,7 +226,7 @@ The Xcode project is generated from `project.yml` and is not committed. Build an
 
 Notcholino follows [Semantic Versioning](https://semver.org/) and keeps a [Keep a Changelog](https://keepachangelog.com/) style [CHANGELOG](CHANGELOG.md). While it is in alpha, versions are `0.x.y-alpha`: `x` goes up for features, `y` for fixes.
 
-Releases are signed with a fixed certificate when the repository has the `SIGNING_P12` and `SIGNING_P12_PASSWORD` secrets (create them once with `scripts/setup-signing.sh`), so macOS recognises every update as the same app and keeps its permissions and Keychain access. Without them the build is signed ad-hoc.
+Since 0.6.1 releases are signed with a fixed, self-signed certificate (stored as the `SIGNING_P12` and `SIGNING_P12_PASSWORD` secrets, created once with `scripts/setup-signing.sh`), so macOS recognises every update as the same app and keeps its permissions and Keychain access. This is not Apple's notarization: the first-launch warning remains. Without the secrets, for example in a fork, the build is signed ad-hoc.
 
 Pushing a tag like `v0.1.0-alpha` triggers the release workflow: it checks the tag against the version in `project.yml`, builds the app, packages a DMG and publishes a GitHub release (marked as pre-release when the tag has a suffix) using the changelog entry as notes. The website is deployed to GitHub Pages from the `docs/` folder.
 
