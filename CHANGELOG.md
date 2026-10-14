@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.2.1-alpha] - 2026-10-14
+
 ### Changed
 - The DMG now opens with a styled install window: gradient background, arrow and drag-to-Applications layout.
 
