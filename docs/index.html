@@ -224,7 +224,7 @@
 
   <section>
     <h2 data-i18n="instH">Install</h2>
-    <p data-i18n="instP1">Requires macOS 14 or later. Download the latest build from the <a href="https://github.com/Peppe37/Notcholino/releases">Releases page</a>. Since the app is not notarized yet, on first launch right-click it and choose <b>Open</b>.</p>
+    <p data-i18n="instP1">Requires macOS 14 or later. Download the latest build from the <a href="https://github.com/Peppe37/Notcholino/releases">Releases page</a>. The app is not notarized yet, so macOS will block it the first time: click <b>Done</b>, then open <b>System Settings → Privacy &amp; Security</b>, scroll to <b>Security</b> and click <b>Open Anyway</b>. Or run <code>xattr -dr com.apple.quarantine /Applications/Notcholino.app</code> in Terminal.</p>
     <p data-i18n="instP2">Prefer building it yourself? Install <code>xcodegen</code>, run <code>xcodegen generate</code> and open <code>Notcholino.xcodeproj</code>. See the <a href="https://github.com/Peppe37/Notcholino#building-from-source">README</a>.</p>
   </section>
 </main>
@@ -261,7 +261,7 @@
       f5h: 'Native Settings', f5p: 'A System Settings–style preferences window built with SwiftUI.',
       f6h: 'Plugins & Raycast', f6p: 'Plugin architecture and Raycast integration are in the works.',
       instH: 'Install',
-      instP1: 'Requires macOS 14 or later. Download the latest build from the <a href="' + REPO + '/releases">Releases page</a>. Since the app is not notarized yet, on first launch right-click it and choose <b>Open</b>.',
+      instP1: 'Requires macOS 14 or later. Download the latest build from the <a href="' + REPO + '/releases">Releases page</a>. The app is not notarized yet, so macOS will block it the first time: click <b>Done</b>, then open <b>System Settings → Privacy &amp; Security</b>, scroll to <b>Security</b> and click <b>Open Anyway</b>. Or run <code>xattr -dr com.apple.quarantine /Applications/Notcholino.app</code> in Terminal.',
       instP2: 'Prefer building it yourself? Install <code>xcodegen</code>, run <code>xcodegen generate</code> and open <code>Notcholino.xcodeproj</code>. See the <a href="' + REPO + '#building-from-source">README</a>.',
       license: 'Licensed under <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a>',
       changelog: 'Changelog', releases: 'Releases', issues: 'Report an issue'
@@ -285,7 +285,7 @@
       f5h: 'Impostazioni native', f5p: 'Una finestra di preferenze in stile Impostazioni di Sistema, fatta con SwiftUI.',
       f6h: 'Plugin e Raycast', f6p: "Architettura a plugin e integrazione con Raycast sono in arrivo.",
       instH: 'Installazione',
-      instP1: "Richiede macOS 14 o successivo. Scarica l'ultima build dalla <a href=\"" + REPO + "/releases\">pagina delle Release</a>. Poiché l'app non è ancora notarizzata, al primo avvio fai clic destro e scegli <b>Apri</b>.",
+      instP1: "Richiede macOS 14 o successivo. Scarica l'ultima build dalla <a href=\"" + REPO + "/releases\">pagina delle Release</a>. L'app non è ancora notarizzata, quindi macOS la blocca al primo avvio: clicca <b>Fine</b>, apri <b>Impostazioni di Sistema → Privacy e sicurezza</b>, scorri fino a <b>Sicurezza</b> e clicca <b>Apri comunque</b>. Oppure esegui <code>xattr -dr com.apple.quarantine /Applications/Notcholino.app</code> nel Terminale.",
       instP2: 'Preferisci compilarla tu? Installa <code>xcodegen</code>, esegui <code>xcodegen generate</code> e apri <code>Notcholino.xcodeproj</code>. Vedi il <a href="' + REPO + '#building-from-source">README</a>.',
       license: 'Licenza <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a>',
       changelog: 'Changelog', releases: 'Release', issues: 'Segnala un problema'

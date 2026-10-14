@@ -23,6 +23,9 @@ First public alpha. Expect rough edges and breaking changes.
 - Foundation for a Swift `.bundle` plugin architecture and a Control Center tab.
 - Landing page on GitHub Pages and an automated release pipeline.
 
+### Known issues
+- The app is not notarized, so macOS 15 and later block it on first launch. Open **System Settings → Privacy & Security**, scroll to **Security** and click **Open Anyway**, or run `xattr -dr com.apple.quarantine /Applications/Notcholino.app`.
+
 ### Fixed
 - Hover glitches: ghosting, the notch collapsing immediately when moved below 32px, and per-display hover state.
 - Crashes caused by a constraint loop in the hosting view and by AppleScript on music videos and local files.
