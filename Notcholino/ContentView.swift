@@ -6,6 +6,8 @@ enum SidebarItem: String, Hashable, CaseIterable {
     case general     = "General"
     case display     = "Display"
     case sound       = "Sound"
+    case devices     = "Devices"
+    case shelf       = "Shelf"
     case nowPlaying  = "Now Playing"
     case calendar    = "Calendar"
     case controlCenter = "Control Center"
@@ -17,6 +19,8 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .general:      return "gearshape.fill"
         case .display:      return "sun.max.fill"
         case .sound:        return "speaker.wave.3.fill"
+        case .devices:      return "airpodspro"
+        case .shelf:        return "tray.full.fill"
         case .nowPlaying:   return "music.note"
         case .calendar:     return "calendar"
         case .controlCenter: return "square.grid.2x2.fill"
@@ -30,6 +34,8 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .general:      return Color(NSColor.secondaryLabelColor)
         case .display:      return .yellow
         case .sound:        return .pink
+        case .devices:      return .green
+        case .shelf:        return .blue
         case .nowPlaying:   return .red
         case .calendar:     return .red
         case .controlCenter: return .purple
@@ -53,13 +59,13 @@ struct ContentView: View {
                 }
 
                 Section("Notifications") {
-                    ForEach([SidebarItem.display, .sound], id: \.self) { item in
+                    ForEach([SidebarItem.display, .sound, .devices], id: \.self) { item in
                         NavigationLink(value: item) { SidebarLabel(item: item) }
                     }
                 }
 
                 Section("Live Activities") {
-                    ForEach([SidebarItem.controlCenter, .nowPlaying, .calendar], id: \.self) { item in
+                    ForEach([SidebarItem.controlCenter, .shelf, .nowPlaying, .calendar], id: \.self) { item in
                         NavigationLink(value: item) { SidebarLabel(item: item) }
                     }
                 }
@@ -86,6 +92,8 @@ struct ContentView: View {
         case .general:      GeneralSettingsView()
         case .display:      DisplaySettingsView()
         case .sound:        SoundSettingsView()
+        case .devices:      DevicesSettingsView()
+        case .shelf:        ShelfSettingsView()
         case .nowPlaying:   NowPlayingSettingsView()
         case .calendar:     CalendarSettingsView()
         case .controlCenter: ControlCenterSettingsView()
@@ -248,6 +256,106 @@ struct SoundSettingsView: View {
         }
         .formStyle(.grouped)
         .navigationTitle("Sound")
+    }
+}
+
+// MARK: - Devices Settings
+
+struct DevicesSettingsView: View {
+    @AppStorage("devicePopupBluetooth") private var bluetooth = true
+    @AppStorage("devicePopupPower")     private var power = true
+    @AppStorage("devicePopupDisks")     private var disks = true
+    @AppStorage("devicePopupSeconds")   private var seconds: Double = 4
+    @AppStorage("focusMoonEnabled")     private var focusMoon = true
+    @ObservedObject private var focus = FocusMonitor.shared
+    @State private var btAuth = DeviceMonitor.bluetoothAuthorization
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Bluetooth devices (AirPods, mouse, keyboard…)", isOn: $bluetooth)
+                    .onChange(of: bluetooth) { _ in DeviceMonitor.shared.refreshBluetooth() }
+                if bluetooth && btAuth != .allowedAlways {
+                    HStack {
+                        Label(btAuth == .notDetermined ? "Notcholino needs your permission to see Bluetooth connections" : "Bluetooth access is not allowed",
+                              systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Spacer()
+                        Button(btAuth == .notDetermined ? "Authorize" : "Open Settings") { DeviceMonitor.requestBluetoothAccess() }
+                    }
+                }
+                Toggle("Charger plugged in or removed", isOn: $power)
+                Toggle("Disks and USB drives", isOn: $disks)
+                LabeledSlider(label: "Show for", value: $seconds, range: 2...8, unit: "s", format: "%.0f")
+            } header: {
+                Text("Popups")
+            } footer: {
+                Text("A small message hangs under the closed notch when one of these connects. For earbuds it adds the battery when macOS reports it. Bluetooth connections need your permission: click Authorize above.")
+            }
+
+            Section {
+                Toggle("Show a moon beside the notch", isOn: $focusMoon)
+                    .onChange(of: focusMoon) { _ in focus.refresh() }
+                if focus.authorization != .authorized {
+                    HStack {
+                        Label(focus.authorization == .notDetermined ? "Notcholino needs your permission to see if a Focus is on" : "Focus status is not allowed",
+                              systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Spacer()
+                        Button(focus.authorization == .notDetermined ? "Authorize" : "Open Settings") { focus.requestAccess() }
+                    }
+                }
+            } header: {
+                Text("Do Not Disturb")
+            } footer: {
+                Text("macOS only tells apps whether a Focus is on, not which one. The moon shows for any of them.")
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle("Devices")
+        .onAppear { focus.refresh(); btAuth = DeviceMonitor.bluetoothAuthorization }
+        // A permission granted in the system dialog or in System Settings: pick it up, and start listening
+        .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in
+            btAuth = DeviceMonitor.bluetoothAuthorization
+            DeviceMonitor.shared.refreshBluetooth()
+        }
+    }
+}
+
+// MARK: - Shelf Settings
+
+struct ShelfSettingsView: View {
+    @AppStorage("shelfEnabled")   private var enabled = true
+    @AppStorage("shelfRetention") private var retention = 0
+    @ObservedObject private var shelf = ShelfManager.shared
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Show the Shelf", isOn: $enabled)
+            } footer: {
+                Text("Drag a screenshot, a recording or any file toward the notch: it opens on the Shelf and keeps the file there, without saving it on your Desktop. Drag it out again whenever you like. The page between Control Center and Now Playing only appears while the Shelf holds something.")
+            }
+
+            Section {
+                Picker("Keep files", selection: $retention) {
+                    Text("Until I remove them").tag(0)
+                    Text("For 24 hours").tag(1)
+                    Text("Until restart").tag(2)
+                }
+                .onChange(of: retention) { _ in shelf.prune() }
+            } footer: {
+                Text("\"Until restart\" empties the Shelf when Notcholino starts again, which also happens after restarting the Mac.")
+            }
+
+            Section {
+                LabeledContent("On the Shelf", value: shelf.items.isEmpty ? "Nothing" : "\(shelf.items.count) item\(shelf.items.count == 1 ? "" : "s"), \(shelf.totalSizeText)")
+                Button("Empty the Shelf", role: .destructive) { shelf.removeAll() }
+                    .disabled(shelf.items.isEmpty)
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle("Shelf")
     }
 }
 

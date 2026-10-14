@@ -49,6 +49,7 @@ private struct PermissionRow: View {
 struct PermissionsSection: View {
     @ObservedObject private var permissions = PermissionsManager.shared
     @ObservedObject private var spotify = SpotifyAuth.shared
+    @ObservedObject private var focus = FocusMonitor.shared
 
     var body: some View {
         Section {
@@ -67,6 +68,10 @@ struct PermissionsSection: View {
                           detail: permissions.music == .unavailable ? "Open Music to check" : "Read and control playback",
                           state: permissions.music) {
                 permissions.requestAutomation(bundleID: PermissionsManager.musicID)
+            }
+            PermissionRow(title: "Focus status", detail: "Show a moon beside the notch while Do Not Disturb is on",
+                          state: focus.authorization == .authorized ? .granted : (focus.authorization == .notDetermined ? .notDetermined : .denied)) {
+                focus.requestAccess()
             }
             PermissionRow(title: "Accessibility", detail: "Hide the macOS volume and brightness HUD",
                           state: permissions.accessibility ? .granted : .notDetermined) {

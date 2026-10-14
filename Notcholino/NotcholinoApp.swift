@@ -49,6 +49,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupNotches()
         SystemNowPlayingMonitor.shared.apply()
         UpdateChecker.shared.start()
+        FocusMonitor.shared.start()
+        DeviceMonitor.shared.start()
 
         NotificationCenter.default.addObserver(self, selector: #selector(setupNotches), name: NSApplication.didChangeScreenParametersNotification, object: nil)
         UserDefaults.standard.addObserver(self, forKeyPath: "displayScreens", options: .new, context: nil)
@@ -134,7 +136,35 @@ final class PluginManager: ObservableObject {
         pluginsByPath[url.path] = plugin
         loadedPlugins.append(plugin)
         sortByOrder()
+        plugin.setPopupHandler? { PopupCenter.shared.show(from: $0) }
+        startSideIconWatch()
         return plugin
+    }
+
+    // MARK: Plugins that show something beside the closed notch
+
+    struct SideIcon: Equatable { let symbol: String; let colorHex: String }
+    @Published private(set) var sideIcons: [SideIcon] = []
+    private var sideTimer: Timer?
+
+    /// The plugins that have a Control Center button (a plugin can be only popups and side icons)
+    var buttonPlugins: [NotcholinoPlugin] { loadedPlugins.filter { !($0.controlCenterHidden ?? false) } }
+
+    /// Plugins change their side icon on their own, so it is read once a second, but only if some plugin offers one
+    private func startSideIconWatch() {
+        guard sideTimer == nil, loadedPlugins.contains(where: { $0.responds(to: Selector(("notchSideIcon"))) }) else { return }
+        let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in self?.refreshSideIcons() }
+        t.tolerance = 0.5
+        RunLoop.main.add(t, forMode: .common)
+        sideTimer = t
+    }
+
+    private func refreshSideIcons() {
+        let icons = loadedPlugins.compactMap { p -> SideIcon? in
+            guard let symbol = p.notchSideIcon, !symbol.isEmpty else { return nil }
+            return SideIcon(symbol: symbol, colorHex: p.notchSideIconColor ?? "")
+        }
+        if icons != sideIcons { sideIcons = icons }
     }
 
     // MARK: Order of the buttons

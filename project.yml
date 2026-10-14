@@ -33,6 +33,8 @@ targets:
         NSAppleScriptEnabled: true
         NSCalendarsFullAccessUsageDescription: "Notcholino needs access to display your upcoming events."
         NSRemindersFullAccessUsageDescription: "Notcholino needs access to show the reminders due today."
+        NSFocusStatusUsageDescription: "Notcholino shows a moon beside the notch while a Focus, such as Do Not Disturb, is on."
+        NSBluetoothAlwaysUsageDescription: "Notcholino shows a small popup when a Bluetooth device, such as your AirPods, connects."
   # --- Plugins (compiled as .bundle and loaded by the app at runtime) ---
   Espresso:
     type: bundle

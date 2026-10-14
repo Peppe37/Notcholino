@@ -24,8 +24,12 @@
 	<string>Notcholino needs Apple Events access to control music players.</string>
 	<key>NSAppleScriptEnabled</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Notcholino shows a small popup when a Bluetooth device, such as your AirPods, connects.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Notcholino needs access to display your upcoming events.</string>
+	<key>NSFocusStatusUsageDescription</key>
+	<string>Notcholino shows a moon beside the notch while a Focus, such as Do Not Disturb, is on.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Notcholino needs access to show the reminders due today.</string>
 </dict>

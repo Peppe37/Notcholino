@@ -1,6 +1,55 @@
 import AppKit
 import EventKit
 import SwiftUI
+import UniformTypeIdentifiers
+
+/// Receives what is dropped on the notch (see `DropCatcher`)
+final class NotchDropView: NSView {
+    var notchID = UUID()
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        registerForDraggedTypes([.fileURL, .tiff, .png])
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    /// Not quite transparent: macOS lets a drag pass through a window whose pixels are fully clear (one percent is invisible)
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor.black.withAlphaComponent(0.01).setFill()
+        bounds.fill()
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        guard ShelfManager.shared.isEnabled, ShelfManager.shared.dragActive else { return [] }
+        NotificationCenter.default.post(name: .notchDropTargeted, object: notchID, userInfo: ["on": true])
+        return .copy
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        ShelfManager.shared.isEnabled && ShelfManager.shared.dragActive ? .copy : []
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        NotificationCenter.default.post(name: .notchDropTargeted, object: notchID, userInfo: ["on": false])
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        NotificationCenter.default.post(name: .notchDropTargeted, object: notchID, userInfo: ["on": false])
+        guard ShelfManager.shared.isEnabled else { return false }
+        let board = sender.draggingPasteboard
+        var accepted = false
+        if let urls = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
+            urls.forEach { ShelfManager.shared.add(fileURL: $0) }
+            accepted = true
+        } else if let data = board.data(forType: .png) ?? board.data(forType: .tiff) {
+            ShelfManager.shared.add(imageData: data)
+            accepted = true
+        }
+        if accepted { NotificationCenter.default.post(name: .notchDropped, object: notchID) }
+        return accepted
+    }
+}
 
 // MARK: - NSHostingView con scroll wheel e acceptsFirstMouse
 
@@ -31,6 +80,8 @@ extension Notification.Name {
     static let notchMouseLeft = Notification.Name("notchMouseLeft")
     static let notchMouseEntered = Notification.Name("notchMouseEntered")
     static let notchMouseMoved = Notification.Name("notchMouseMoved")
+    static let notchDropTargeted = Notification.Name("notchDropTargeted")
+    static let notchDropped = Notification.Name("notchDropped")
 }
 
 // MARK: - Window Controller
@@ -100,7 +151,23 @@ class NotchWindowController: NSWindowController {
         // instead let clicks fall through to other apps whenever the cursor is
         // outside the visible notch.
         panel.ignoresMouseEvents = true
-        let handler: (NSEvent) -> Void = { [weak self] _ in self?.updateMouseTransparency() }
+        let handler: (NSEvent) -> Void = { [weak self] _ in
+            // The mouse moves freely again: any drag to or from the shelf is over
+            ShelfManager.shared.draggingOut = false
+            if ShelfManager.shared.dragActive { ShelfManager.shared.dragActive = false }
+            self?.hideCatcher()
+            self?.updateMouseTransparency()
+        }
+        // Dragging a file toward the notch opens the shelf. Events of other apps' drags come to the global monitors.
+        if let g = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown, handler: { [weak self] _ in
+            self?.pasteboardCountAtMouseDown = NSPasteboard(name: .drag).changeCount
+        }) { monitors.append(g) }
+        if let g = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged, handler: { [weak self] _ in self?.handleDrag() }) { monitors.append(g) }
+        if let g = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp, handler: { [weak self] _ in
+            ShelfManager.shared.dragActive = false
+            self?.hideCatcher()
+            self?.updateMouseTransparency()
+        }) { monitors.append(g) }
         if let g = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: handler) { monitors.append(g) }
         if let l = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved, handler: { e in handler(e); return e }) { monitors.append(l) }
     }
@@ -126,8 +193,62 @@ class NotchWindowController: NSWindowController {
         return NSRect(x: f.midX - width / 2, y: f.maxY - height, width: width, height: height)
     }
 
+    private var pasteboardCountAtMouseDown = 0
+
+    /// The notch's own window sits at the screen-saver level, and macOS doesn't offer windows that high as drop targets.
+    /// So while a file is being dragged near the notch, a small invisible window one level lower waits right there to take it.
+    private lazy var catcher: NSPanel = {
+        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 260, height: 40),
+                            styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.level = NSWindow.Level(rawValue: 500)
+        panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+        panel.hidesOnDeactivate = false
+        let view = NotchDropView(frame: NSRect(x: 0, y: 0, width: 260, height: 40))
+        view.notchID = notchID
+        view.autoresizingMask = [.width, .height]
+        panel.contentView = view
+        return panel
+    }()
+
+    private func hideCatcher() {
+        if catcher.isVisible { catcher.orderOut(nil) }
+    }
+
+    /// Where a dragged file counts as being on the notch: a wider strip than for hovering, since you are carrying something
+    private func dragRect(in f: NSRect) -> NSRect {
+        if isOpen { return hoverRect(in: f) }
+        let width = max(notchSize.width + 120, 260)
+        return NSRect(x: f.midX - width / 2, y: f.maxY - 40, width: width, height: 40)
+    }
+
+    private func handleDrag() {
+        guard let window, ShelfManager.shared.isEnabled else { return }
+        let board = NSPasteboard(name: .drag)
+        // Only a drag that put files or an image on the drag pasteboard (moving a window, selecting text, etc. don't)
+        guard board.changeCount != pasteboardCountAtMouseDown,
+              board.availableType(from: [.fileURL, .tiff, .png]) != nil else { return }
+        let zone = dragRect(in: window.frame)
+        let mouse = NSEvent.mouseLocation
+        let inside = zone.contains(mouse)
+        if ShelfManager.shared.dragActive != inside { ShelfManager.shared.dragActive = inside }
+        // The catcher has to be in place a little before the pointer arrives: the system picks the window under a drag
+        // at each movement
+        if zone.insetBy(dx: -30, dy: -30).contains(mouse) {
+            if catcher.frame != zone { catcher.setFrame(zone, display: false) }
+            if !catcher.isVisible { catcher.orderFrontRegardless() }
+        } else {
+            hideCatcher()
+        }
+    }
+
     private func updateMouseTransparency() {
         guard let window else { return }
+        // A file is being dragged out of the shelf: keep the notch (and the drag) alive until it lands
+        if ShelfManager.shared.draggingOut { return }
+        if ShelfManager.shared.dragActive { return }
         let f = window.frame
         let mouse = NSEvent.mouseLocation
         let inside = hoverRect(in: f).contains(mouse)
@@ -179,7 +300,7 @@ struct NotchShape: Shape {
 
 /// The panels the notch can show, in display order.
 enum NotchTab: Int, CaseIterable {
-    case controlCenter = -1, music = 0, calendar = 1
+    case controlCenter = -2, shelf = -1, music = 0, calendar = 1
 }
 
 struct NotchContentView: View {
@@ -199,10 +320,16 @@ struct NotchContentView: View {
     @AppStorage("nowPlayingEnabled")    private var nowPlayingEnabled    = true
     @AppStorage("calendarEnabled")      private var calendarEnabled      = true
     @AppStorage("controlCenterEnabled") private var controlCenterEnabled = true
+    @AppStorage("shelfEnabled")         private var shelfEnabled = true
+    @ObservedObject private var shelf = ShelfManager.shared
+    @ObservedObject private var popups = PopupCenter.shared
+    @State private var dropTargeted = false
     /// Reverses the direction of the two-finger swipe (and of the mouse wheel)
     @AppStorage("invertScroll")         private var invertScroll = false
     @AppStorage("calDisplayMode")       private var calDisplayMode = 0
     @ObservedObject private var pluginManager = PluginManager.shared
+    @ObservedObject private var focusMonitor = FocusMonitor.shared
+    private var focusOn: Bool { focusMonitor.isFocused }
 
     @StateObject private var music   = MusicManager()
     @StateObject private var sysEvt  = SystemEventsManager()
@@ -220,6 +347,8 @@ struct NotchContentView: View {
         NotchTab.allCases.filter {
             switch $0 {
             case .controlCenter: return controlCenterEnabled
+            // The shelf has a page only while it holds something (or something is being dragged to it)
+            case .shelf:         return shelfEnabled && (!shelf.items.isEmpty || shelf.pending > 0 || shelf.dragActive)
             case .music:         return nowPlayingEnabled
             case .calendar:      return calendarEnabled
             }
@@ -233,7 +362,7 @@ struct NotchContentView: View {
         return tabs.contains(.music) ? .music : tabs.first
     }
 
-    private var hoverExpands: Bool { isHovering && !enabledTabs.isEmpty }
+    private var hoverExpands: Bool { (isHovering || (shelfEnabled && shelf.dragActive)) && !enabledTabs.isEmpty }
 
     /// Space reserved above the tab dots so they clear the hardware notch
     private var topPad: CGFloat { topInset > 0 ? topInset + 2 : 24 }
@@ -268,7 +397,7 @@ struct NotchContentView: View {
         // The month grid can have six weeks: give it room so it doesn't touch the bottom edge
         let monthExtra: CGFloat = (shownTab == .calendar && calDisplayMode == 0) ? 22 : 0
         // More than one row of plugin buttons (four fit on a row) needs a taller panel
-        let pluginRowsExtra: CGFloat = (shownTab == .controlCenter && pluginManager.loadedPlugins.count > 4) ? 36 : 0
+        let pluginRowsExtra: CGFloat = (shownTab == .controlCenter && pluginManager.buttonPlugins.count > 4) ? 36 : 0
         let baseH: CGFloat = ((shownTab == .music) ? (180 + 24) : (200 + 24)) + (topPad - 24) + (dotsRowH - 9) + monthExtra + pluginRowsExtra
         if hoverExpands {
             return isSystemHudActive ? baseH + 46 : baseH
@@ -339,6 +468,31 @@ struct NotchContentView: View {
                 // Perfect clipping to avoid ghosting
                 .clipShape(NotchShape(cornerRadius: isExpanded ? 28 : 10, flareRadius: flare))
             }
+            // A small message from the app or a plugin, hanging under the closed notch
+            .overlay(alignment: .top) {
+                if let popup = popups.current, !isExpanded {
+                    NotchPopupView(popup: popup)
+                        .offset(y: curH - 2)
+                        .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: -10)), removal: .opacity))
+                }
+            }
+            // Icons beside the closed notch: Do Not Disturb on the left, plugins on the right
+            .overlay(alignment: .topLeading) {
+                if !isExpanded, focusOn { SideIcon(symbol: "moon.fill", color: Color(red: 0.62, green: 0.55, blue: 1)).offset(x: -26, y: (curH - 14) / 2) }
+            }
+            .overlay(alignment: .topTrailing) {
+                if !isExpanded, !pluginManager.sideIcons.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(Array(pluginManager.sideIcons.enumerated()), id: \.offset) { _, icon in
+                            SideIcon(symbol: icon.symbol, color: Color(hex: icon.colorHex) ?? .white)
+                        }
+                    }
+                    .offset(x: 26 + CGFloat(pluginManager.sideIcons.count - 1) * 20, y: (curH - 14) / 2)
+                }
+            }
+            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: popups.current)
+            .animation(.easeInOut(duration: 0.2), value: focusOn)
+            .animation(.easeInOut(duration: 0.2), value: pluginManager.sideIcons)
             .background(
                 // Background and Shadow Layer
                 NotchShape(cornerRadius: isExpanded ? 28 : 10, flareRadius: flare)
@@ -355,6 +509,18 @@ struct NotchContentView: View {
             .onChange(of: sysEvt.currentMode) { _ in publishLayout() }
             .onChange(of: music.isPlaying) { _ in publishLayout() }
             .onChange(of: shownTab) { _ in publishLayout() }
+            .onReceive(NotificationCenter.default.publisher(for: .notchDropTargeted)) { notif in
+                if (notif.object as? UUID) == notchID { dropTargeted = notif.userInfo?["on"] as? Bool ?? false }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .notchDropped)) { notif in
+                guard (notif.object as? UUID) == notchID else { return }
+                setHovering(true)            // stay open after the drop, as long as the pointer is on the notch
+                shelf.dragActive = false
+            }
+            .onChange(of: shelf.dragActive) { dragging in
+                // Something is being dragged to the notch: open on the shelf
+                if dragging, shelfEnabled { goingForward = false; activeTab = .shelf }
+            }
             .onReceive(NotificationCenter.default.publisher(for: .notchMouseEntered)) { notif in
                 if (notif.object as? UUID) == notchID { setHovering(true) }
             }
@@ -403,6 +569,7 @@ struct NotchContentView: View {
     private func tabContent(_ tab: NotchTab) -> some View {
         switch tab {
         case .controlCenter: ControlCenterNotchView()
+        case .shelf:         ShelfNotchView(dropTargeted: dropTargeted)
         case .music:         NowPlayingNotchView(music: music)
         case .calendar:      CalendarNotchView()
         }
@@ -1428,7 +1595,7 @@ struct ControlCenterNotchView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 14)
 
-            if pluginManager.loadedPlugins.isEmpty {
+            if pluginManager.buttonPlugins.isEmpty {
                 VStack(spacing: 3) {
                     Spacer()
                     Text("No plugins installed")
@@ -1443,7 +1610,7 @@ struct ControlCenterNotchView: View {
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVGrid(columns: tileColumns, alignment: .center, spacing: 14) {
-                        ForEach(pluginManager.loadedPlugins, id: \.pluginIdentifier) { plugin in
+                        ForEach(pluginManager.buttonPlugins, id: \.pluginIdentifier) { plugin in
                             tile(plugin)
                         }
                     }
@@ -1796,5 +1963,20 @@ extension Color {
         if h.hasPrefix("#") { h.removeFirst() }
         guard h.count == 6, let v = UInt32(h, radix: 16) else { return nil }
         self.init(red: Double((v >> 16) & 0xFF) / 255, green: Double((v >> 8) & 0xFF) / 255, blue: Double(v & 0xFF) / 255)
+    }
+}
+
+
+/// A small symbol beside the closed notch
+struct SideIcon: View {
+    let symbol: String
+    let color: Color
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(color)
+            .frame(width: 14, height: 14)
+            .transition(.opacity.combined(with: .scale(scale: 0.6)))
     }
 }

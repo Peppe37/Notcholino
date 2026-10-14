@@ -56,4 +56,17 @@ public protocol NotcholinoPlugin: NSObjectProtocol {
     @objc optional var controlCenterTintColor: String { get }
     /// Implement this to make the button a simple switch: tapping it calls this instead of opening the options
     @objc optional func controlCenterButtonTapped()
+
+    // MARK: Optional: plugins that reach out of the Control Center (added in Notcholino 0.11.0)
+
+    /// True for a plugin that has no button at all: it only shows popups and side icons. Defaults to false.
+    @objc optional var controlCenterHidden: Bool { get }
+    /// Called once, right after loading. Keep `handler` and call it to show a small popup under the closed notch with
+    /// these keys: `"title"` (String), `"subtitle"` (String, optional), `"icon"` (SF Symbol name, optional),
+    /// `"color"` ("#RRGGBB", optional), `"seconds"` (Double, optional, default 3). Call it from the main thread.
+    @objc optional func setPopupHandler(_ handler: @escaping ([String: Any]) -> Void)
+    /// An SF Symbol drawn beside the closed notch while it is not empty (for example while something is recording)
+    @objc optional var notchSideIcon: String { get }
+    /// Its color as "#RRGGBB". Defaults to white.
+    @objc optional var notchSideIconColor: String { get }
 }
