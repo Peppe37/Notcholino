@@ -1,0 +1,58 @@
+name: Bug report
+description: Something doesn't work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Please check the [README](https://github.com/Peppe37/Notcholino#readme) (permissions, first launch) and existing issues first.
+  - type: input
+    id: version
+    attributes:
+      label: Notcholino version
+      description: Settings → About, or the name of the DMG you downloaded.
+      placeholder: "0.5.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac model
+      placeholder: "macOS 26.1, MacBook Pro 14-inch (M3)"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what you saw instead. Screenshots or a short screen recording help a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Spotify and play a song
+        2. Hover the notch
+        3. ...
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Notch / animations
+        - Now Playing (Spotify, Apple Music)
+        - Now Playing (browser, other apps)
+        - Calendar / Reminders
+        - Volume / brightness HUD
+        - Permissions
+        - Plugins / Espresso
+        - Settings
+        - Install / first launch
+        - Other
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Multiple displays, external monitors, other apps that change the menu bar, etc.

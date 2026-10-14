@@ -1,0 +1,31 @@
+name: Feature request
+description: An idea to make Notcholino better
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: Describe the problem or the use case first, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could it work?
+      description: Sketches and examples from other apps are welcome.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Could it be a plugin?
+      description: Small buttons for the Control Center (like Espresso) are easy to ship as plugins.
+      options:
+        - Not sure
+        - Yes, a plugin fits
+        - No, it needs to be in the app
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contributing
+      options:
+        - label: I would like to help build it

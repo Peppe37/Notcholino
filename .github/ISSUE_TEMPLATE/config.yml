@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/Peppe37/Notcholino/discussions
+    about: Ask how something works, or share ideas, in Discussions.
+  - name: Can't open the app?
+    url: https://peppe37.github.io/Notcholino/#first-launch
+    about: macOS blocks the app the first time. Here is how to allow it.

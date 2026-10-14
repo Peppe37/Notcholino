@@ -5,36 +5,42 @@
 <h1 align="center">Notcholino</h1>
 
 <p align="center">
-  A living Notch for macOS.<br>
-  Turn the notch of your MacBook into a dynamic hub for music, calendar and system feedback.
+  <b>A living Notch for macOS.</b><br>
+  Turn the notch of your MacBook into a dynamic hub for music, calendar, reminders and system feedback.<br>
+  Free, open source, and made with SwiftUI.
 </p>
 
 <p align="center">
-  <a href="https://github.com/Peppe37/Notcholino/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/Peppe37/Notcholino?include_prereleases&label=release"></a>
+  <a href="https://github.com/Peppe37/Notcholino/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Peppe37/Notcholino?include_prereleases&label=release&color=7a3fc9"></a>
+  <a href="https://github.com/Peppe37/Notcholino/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Peppe37/Notcholino/total?color=4a35b8"></a>
+  <a href="https://github.com/Peppe37/Notcholino/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Peppe37/Notcholino?style=flat&color=e0a82e"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-blue">
   <img alt="Swift" src="https://img.shields.io/badge/Swift-SwiftUI-orange">
   <a href="LICENSE"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-lightgrey"></a>
-  <a href="https://peppe37.github.io/Notcholino/"><img alt="Website" src="https://img.shields.io/badge/website-live-brightgreen"></a>
+  <a href="https://github.com/Peppe37/Notcholino/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/Peppe37/Notcholino"></a>
+  <a href="https://github.com/Peppe37/Notcholino/issues"><img alt="Issues" src="https://img.shields.io/github/issues/Peppe37/Notcholino"></a>
 </p>
 
 <p align="center">
   <a href="https://peppe37.github.io/Notcholino/">Website</a> ·
-  <a href="https://github.com/Peppe37/Notcholino/releases">Download</a> ·
+  <a href="https://github.com/Peppe37/Notcholino/releases/latest">Download</a> ·
+  <a href="#faq">FAQ</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
-  <a href="https://github.com/Peppe37/Notcholino/issues">Report an issue</a>
+  <a href="https://github.com/Peppe37/Notcholino/discussions">Discussions</a> ·
+  <a href="https://github.com/Peppe37/Notcholino/issues/new/choose">Report an issue</a>
 </p>
 
 ---
 
-> **Status: alpha.** Notcholino is in early development. Expect rough edges and breaking changes between versions.
+> **Status: alpha.** Notcholino is in early development. Expect rough edges and breaking changes between versions. Feedback is very welcome.
+
+**Contents:** [What is it?](#what-is-it) · [Features](#features) · [Install](#install) · [Usage](#usage) · [Plugins](#plugins) · [FAQ](#faq) · [Privacy](#privacy) · [Performance](#performance) · [Roadmap](#roadmap) · [Support and contributing](#support-and-contributing) · [Building from source](#building-from-source) · [Releases](#releases-and-versioning) · [License](#license)
 
 ## What is it?
 
-Notcholino is a free, open-source and non-commercial app that extends the hardware notch of your MacBook with a fluid overlay. It stays out of the way as a small pill, and expands when you hover it to show what matters: what is playing, what is on your calendar, and the volume and brightness you are changing.
+Notcholino is a free, open-source and non-commercial app that extends the hardware notch of your MacBook with a fluid overlay. It stays out of the way as a small pill, and expands when you hover it to show what matters: what is playing, what is on your calendar, the reminders due today, and the volume and brightness you are changing.
 
 ## Features
-
-**Available now**
 
 - **Dynamic notch**: a native overlay that blends with the hardware notch and expands on hover. Works on the main display or on all displays.
 - **Now Playing**: control Spotify and Apple Music from the notch. Album art, scrubbable progress bar, seek, shuffle and repeat, an animated waveform, and colors extracted from the artwork. Click the song to bring the player to the front. A paused song stays on screen, and the controls always go to the player you see when both are open.
@@ -44,23 +50,15 @@ Notcholino is a free, open-source and non-commercial app that extends the hardwa
 - **Calendar and Reminders**: today's date, the next event with its calendar color and location, a month view, and the reminders due today (click the circle to complete one). Pick which calendars to show, and click an event to open it in Calendar.
 - **Permission buttons**: wherever something needs a permission (Calendar, Reminders, controlling Spotify or Music, Accessibility, your Spotify account), the notch shows an **Authorize** button, and **Settings → General → Permissions** lists them all.
 - **System HUDs**: volume and brightness feedback in the notch, replacing the native macOS HUD, with theme, label and decibel options.
-- **Control Center and plugins**: a third panel in the notch holds plugin buttons. Tap one to open its options right inside the notch. Install, update and remove plugins from **Settings → Control Center → Plugin Store**: they are downloaded from this repository's releases, always at their latest version, after you confirm and a SHA-256 check.
-- **Espresso** (first plugin): keeps your Mac and its screen awake, indefinitely or for 10 minutes up to 12 hours, or until a time you pick. See [plugins](plugins).
+- **Control Center and plugins**: a third panel in the notch holds plugin buttons, installed from a built-in store. See [Plugins](#plugins).
 - **Native settings**: a System Settings–style preferences window built with SwiftUI, plus launch at login.
-- **Gestures**: scroll or swipe horizontally to switch between tabs.
-
-**Coming soon**
-
-- Battery, connectivity, Focus and lock-screen notifications (the settings exist, the live activities are not wired yet).
-- More plugins, and a guide for writing your own (see [plugins](plugins)).
-- Raycast integration.
-- Signed and notarized builds.
+- **Gestures**: scroll or swipe horizontally to switch between panels.
 
 ## Install
 
 **Requirements:** macOS 14 Sonoma or later.
 
-1. Download `Notcholino-<version>.dmg` from the [Releases page](https://github.com/Peppe37/Notcholino/releases).
+1. Download `Notcholino-<version>.dmg` from the [Releases page](https://github.com/Peppe37/Notcholino/releases/latest).
 2. Open the DMG and drag **Notcholino** to **Applications**.
 3. Launch it. macOS will block it the first time, see below.
 
@@ -92,7 +90,7 @@ Notcholino asks for what it needs, when it needs it:
 | **Reminders** | To show the reminders due today. Optional. |
 | **Accessibility** | To handle the volume and brightness keys itself, so macOS doesn't show its own HUD next to the one in the notch. Optional: without it the keys keep working and both HUDs appear. |
 
-Because the app is not signed with an Apple developer certificate, macOS may ask for these permissions, and for your login password to read the Spotify token from the Keychain, again after an update, unless the release was signed with the project's fixed certificate (see below).
+Because the app is not signed with an Apple developer certificate, macOS may ask for these permissions, and for your login password to read the Spotify token from the Keychain, again after an update, unless the release was signed with the project's fixed certificate (see [Releases](#releases-and-versioning)).
 
 Spotify Like uses your Spotify account through the official Web API, and only if you click **Connect** in the settings.
 
@@ -102,6 +100,51 @@ Spotify Like uses your Spotify account through the official Web API, and only if
 - **Scroll or swipe** horizontally to switch between Control Center, Now Playing and Calendar, or click the dots at the top.
 - **Click the song info** to open the active music player. **Click an event or a day** to open it in Calendar.
 - Use the **menu bar icon → Preferences…** (or <kbd>⌘</kbd><kbd>,</kbd>) to open the settings and quit the app.
+
+## Plugins
+
+The Control Center panel holds plugin buttons. Tap one to open its options right inside the notch. Install, update and remove plugins from **Settings → Control Center → Plugin Store**: they are downloaded from this repository's releases, always at their latest version, after you confirm and a SHA-256 check.
+
+| Plugin | What it does |
+| --- | --- |
+| [**Espresso**](plugins/espresso) | Keeps your Mac and its screen awake, indefinitely or for 10 minutes up to 12 hours, or until a time you pick. |
+
+Want to write your own? See [plugins/README.md](plugins/README.md).
+
+## FAQ
+
+**macOS says it can't verify the app, or the app doesn't open.**
+That is normal for the alpha: see [First launch](#first-launch-allowing-the-app). It takes four clicks, once.
+
+**It asks me for the same permissions again after an update.**
+macOS ties permissions to the app's signature, and updates are signed with a different one-off signature unless the maintainer has set up the fixed certificate. See [Releases](#releases-and-versioning).
+
+**The macOS volume or brightness HUD still shows next to the notch.**
+Allow Notcholino in **System Settings → Privacy & Security → Accessibility**. Without it the system HUD can't be hidden.
+
+**Spotify Like doesn't work.**
+Click **Connect** (in the notch next to the controls, or in **Settings → Now Playing**) and log in to Spotify. If you get an error saying your account is not allowed, the Spotify app used by Notcholino is in Spotify's development mode, which only works for accounts added on its dashboard: open an issue to be added, or use your own Client ID under **Settings → Now Playing → Advanced**.
+
+**YouTube, Netflix or another app doesn't show up in Now Playing.**
+Notcholino shows what macOS itself lists in Control Center as playing. If the site or app doesn't appear there, it doesn't report to the system. Check **Settings → Now Playing → Detect any app** is on.
+
+**Does it work on a Mac without a notch?**
+It draws the same pill at the top of the screen, but Notcholino is built and tested on MacBooks with a notch.
+
+**Is it really free?**
+Yes. The source is open and you can use, modify and fork it for free under the [PolyForm Noncommercial](LICENSE) license, which does not allow commercial use or selling it.
+
+**How do I uninstall it?**
+Quit it from the menu bar icon, then drag **Notcholino** from Applications to the Trash. To also remove its data: delete `~/Library/Application Support/Notcholino`, run `defaults delete com.giuseppe.Notcholino`, and remove the `com.giuseppe.Notcholino.spotify` item in Keychain Access if you connected Spotify.
+
+## Privacy
+
+- No analytics, no telemetry, no accounts. Notcholino never sends your music, calendar or reminders anywhere.
+- It talks to the network only to: Spotify (when you click **Connect**, and to load the cover art of the song playing), and GitHub (the plugin list, plugin downloads, and the website's latest-release box).
+- Your Spotify token stays in your macOS Keychain, and you can revoke it from **Settings → Now Playing → Disconnect** or on spotify.com.
+- Plugins run inside the app, so install only plugins you trust. Notcholino downloads them only from this repository's releases and checks their checksum.
+
+Found a security problem? See [SECURITY.md](SECURITY.md).
 
 ## Performance
 
@@ -129,6 +172,23 @@ To measure on your own Mac (no `sudo` needed):
 scripts/benchmark.sh /path/to/Notcholino.app 30
 ```
 
+## Roadmap
+
+No dates, just direction. Vote with 👍 or suggest more in [Discussions](https://github.com/Peppe37/Notcholino/discussions) and [issues](https://github.com/Peppe37/Notcholino/issues).
+
+- **Live activities for** battery, connectivity (AirPods and others), Focus and lock screen: the settings exist, the notifications are not wired yet.
+- **Quick actions** from the notch: create a note or reminder, open an app or a Safari window, start a call or a message.
+- **Calendar inside the notch**: open a day without leaving the notch, and create events, notes and reminders from it.
+- **More plugins** and an easier way to write them, and **Raycast** integration.
+- **Signed and notarized builds**, so the first launch needs no extra steps. This depends on the project getting funded, see below.
+
+## Support and contributing
+
+- **Questions and ideas:** [Discussions](https://github.com/Peppe37/Notcholino/discussions).
+- **Bugs and feature requests:** [open an issue](https://github.com/Peppe37/Notcholino/issues/new/choose).
+- **Contribute code, plugins or translations:** read [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Help it be found:** star the repository and tell a friend, it makes a real difference for an open source project.
+
 ## Building from source
 
 You need a recent Xcode (the releases are built with Xcode 26) and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
@@ -145,7 +205,7 @@ The Xcode project is generated from `project.yml` and is not committed. Build an
 
 ## Releases and versioning
 
-Notcholino follows [Semantic Versioning](https://semver.org/) and keeps a [Keep a Changelog](https://keepachangelog.com/) style [CHANGELOG](CHANGELOG.md).
+Notcholino follows [Semantic Versioning](https://semver.org/) and keeps a [Keep a Changelog](https://keepachangelog.com/) style [CHANGELOG](CHANGELOG.md). While it is in alpha, versions are `0.x.y-alpha`: `x` goes up for features, `y` for fixes.
 
 Releases are signed with a fixed certificate when the repository has the `SIGNING_P12` and `SIGNING_P12_PASSWORD` secrets (create them once with `scripts/setup-signing.sh`), so macOS recognises every update as the same app and keeps its permissions and Keychain access. Without them the build is signed ad-hoc.
 

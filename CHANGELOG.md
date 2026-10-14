@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+- README: badges, table of contents, FAQ, privacy, roadmap, and support and contributing sections.
+- Website: FAQ, support and community section, social preview image, structured data, `robots.txt` and `sitemap.xml`.
+- Community files: issue templates, pull request template, `CONTRIBUTING.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md`.
+- Removed leftover experiment scripts from the repository root.
+
 ## [0.5.0-alpha] - 2026-10-14
 
 ### Added
