@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/assets/icon.png" width="96" alt="Notcholino logo"></p>
+
 # Notcholino 🖤
 
 Notcholino is a beautiful, open-source, and non-commercial app for macOS. It supercharges your MacBook's Notch by turning it into a dynamic hub for Live Activities, Notifications, and interactive tools.
