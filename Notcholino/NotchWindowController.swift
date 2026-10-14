@@ -39,6 +39,8 @@ class NotchWindowController: NSWindowController {
 
     /// Size of the visible notch (not the window), used to decide where clicks are ours.
     private var notchSize = NSSize(width: 174, height: 32)
+    /// True while the notch is open (hover or HUD): then the whole notch keeps it open, not just the opening zone
+    private var isOpen = false
     private var monitors: [Any] = []
     let notchID = UUID()
 
@@ -90,6 +92,7 @@ class NotchWindowController: NSWindowController {
             guard let w = notif.userInfo?["w"] as? CGFloat,
                   let h = notif.userInfo?["h"] as? CGFloat else { return }
             self?.notchSize = NSSize(width: w, height: h)
+            self?.isOpen = notif.userInfo?["open"] as? Bool ?? false
             self?.updateMouseTransparency()
         }
 
@@ -104,13 +107,30 @@ class NotchWindowController: NSWindowController {
 
     deinit { monitors.forEach { NSEvent.removeMonitor($0) } }
 
+    /// Where the pointer counts as being on the notch.
+    /// Once the notch is open, anywhere on it keeps it open. To *open* it, the default is a thin strip along the top
+    /// edge, a bit narrower than the hardware notch, so that moving to a browser's tab bar or address bar doesn't
+    /// trigger it by accident. "Normal" (Settings → General) is the whole closed notch.
+    private func hoverRect(in f: NSRect) -> NSRect {
+        let whole = NSRect(x: f.midX - notchSize.width / 2, y: f.maxY - notchSize.height,
+                           width: notchSize.width, height: notchSize.height).insetBy(dx: -4, dy: -4)
+        if isOpen || UserDefaults.standard.integer(forKey: "hoverArea") == 1 { return whole }
+
+        // Width of the hardware notch (the gap between the two sides of the menu bar), or a typical one
+        var hardwareWidth: CGFloat = 162
+        if let left = targetScreen.auxiliaryTopLeftArea, let right = targetScreen.auxiliaryTopRightArea {
+            hardwareWidth = targetScreen.frame.width - left.width - right.width
+        }
+        let width = min(max(hardwareWidth * 0.8, 90), notchSize.width)
+        let height: CGFloat = 12
+        return NSRect(x: f.midX - width / 2, y: f.maxY - height, width: width, height: height)
+    }
+
     private func updateMouseTransparency() {
         guard let window else { return }
         let f = window.frame
         let mouse = NSEvent.mouseLocation
-        let rect = NSRect(x: f.midX - notchSize.width / 2, y: f.maxY - notchSize.height,
-                          width: notchSize.width, height: notchSize.height).insetBy(dx: -4, dy: -4)
-        let inside = rect.contains(mouse)
+        let inside = hoverRect(in: f).contains(mouse)
         // Only tell the view about the mouse while it is over the notch (position relative to the
         // top-center of the window, so the view can hit-test its own controls)
         if inside {
@@ -474,7 +494,7 @@ struct NotchContentView: View {
     private func publishLayout() {
         NotificationCenter.default.post(
             name: .notchLayoutChanged, object: notchID,
-            userInfo: ["w": curW, "h": curH])
+            userInfo: ["w": curW, "h": curH, "open": isExpanded])
     }
 
     private var isMusicMode: Bool {

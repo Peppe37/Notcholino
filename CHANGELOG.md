@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0-alpha] - 2026-10-14
+
+### Changed
+- The notch no longer opens when the pointer merely passes near it, for example over a browser's tab bar or address bar. Opening now needs the pointer on a thin strip along the top edge of the screen, a bit narrower than the hardware notch. Once open, the whole notch keeps it open as before.
+
+### Added
+- Settings → General → Opening: choose between the small opening area (default) and the whole notch.
+
 ## [0.6.1-alpha] - 2026-10-14
 
 ### Changed
@@ -146,7 +154,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.6.1-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.7.0-alpha...HEAD
+[0.7.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.6.1-alpha...v0.7.0-alpha
 [0.6.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.6.0-alpha...v0.6.1-alpha
 [0.6.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.3-alpha...v0.6.0-alpha
 [0.5.3-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.2-alpha...v0.5.3-alpha

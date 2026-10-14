@@ -141,6 +141,7 @@ struct GeneralSettingsView: View {
     @AppStorage("hideInMissionControl") private var hideInMissionControl = true
     @AppStorage("hideWhileGaming")      private var hideWhileGaming = false
     @AppStorage("invertScroll")         private var invertScroll = false
+    @AppStorage("hoverArea")            private var hoverArea = 0
     @AppStorage("notchWidth")           private var notchWidth: Double = 0
     @AppStorage("notchHeight")          private var notchHeight: Double = 0
 
@@ -155,6 +156,17 @@ struct GeneralSettingsView: View {
                 Toggle("Hide while gaming",          isOn: $hideWhileGaming)
             }
             
+            Section {
+                Picker("Open the notch", selection: $hoverArea) {
+                    Text("At the top edge (small)").tag(0)
+                    Text("Anywhere on the notch (normal)").tag(1)
+                }
+            } header: {
+                Text("Opening")
+            } footer: {
+                Text("The small area is a thin strip along the top of the screen, so passing over a browser's tab bar doesn't open the notch by accident. Once open, the whole notch keeps it open.")
+            }
+
             Section {
                 Toggle("Invert swipe direction", isOn: $invertScroll)
             } header: {

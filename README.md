@@ -44,7 +44,7 @@ Notcholino is a free, open-source and non-commercial app that extends the hardwa
 
 ## Features
 
-- **Dynamic notch**: a native overlay that blends with the hardware notch and expands on hover. Works on the main display or on all displays.
+- **Dynamic notch**: a native overlay that blends with the hardware notch and expands when you move the pointer to it. Works on the main display or on all displays.
 - **Now Playing**: control Spotify and Apple Music from the notch. Album art, scrubbable progress bar, seek, shuffle and repeat, an animated waveform, and colors extracted from the artwork. Click the song to bring the player to the front. A paused song stays on screen, and the controls always go to the player you see when both are open.
 - **Any app**: besides Spotify and Music, Notcholino shows whatever macOS reports as playing, with play/pause, next, previous and seek: YouTube, Netflix or Prime Video in a browser, Amazon Music, Podcasts and more. Shuffle, repeat and like are only for Spotify and Music. Whether a site or app appears depends on it reporting to macOS "Now Playing", the same list you see in Control Center.
 - **Compact music mode**: while music plays, the collapsed notch shows the album art and a live waveform.
@@ -98,7 +98,7 @@ Spotify Like uses your Spotify account through the official Web API, and only if
 
 ## Usage
 
-- **Hover** the notch to expand it, move away to collapse it.
+- **Move the pointer to the top edge of the screen at the notch** to expand it, and move away to collapse it. The opening zone is a thin strip, so passing over a browser's tab bar doesn't open it by accident. You can make it the whole notch in **Settings → General → Opening**.
 - **Scroll or swipe** horizontally to switch between Control Center, Now Playing and Calendar, or click the dots at the top.
 - **Click the song info** to open the active music player. **Click an event or a day** to open it in Calendar.
 - Use the **menu bar icon → Preferences…** (or <kbd>⌘</kbd><kbd>,</kbd>) to open the settings and quit the app.
