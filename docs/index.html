@@ -56,7 +56,7 @@
   .menubar .l b { font-weight:700; }
   @media (max-width: 520px) { .menubar .l span:nth-child(n+3) { display:none; } }
 
-  .scale { position:absolute; top:0; left:50%; width:400px; height:230px; transform: translateX(-50%) scale(var(--s, 1)); transform-origin: top center; }
+  .scale { position:absolute; top:0; left:50%; width:400px; height:260px; transform: translateX(-50%) scale(var(--s, 1)); transform-origin: top center; }
   .notch { position:absolute; top:0; left:50%; width: var(--w); height: var(--h); transform: translateX(-50%);
     transition: width .5s cubic-bezier(.3,1.35,.5,1), height .5s cubic-bezier(.3,1.35,.5,1);
     --w: 186px; --h: 32px; filter: drop-shadow(0 16px 24px rgba(0,0,0,0)); transition-property: width, height, filter; }
@@ -125,26 +125,33 @@
   .grid7 span { height:20px; display:grid; place-items:center; font-size:11px; font-weight:500; color:rgba(255,255,255,.6); }
   .grid7 .wd { font-weight:700; color:rgba(255,255,255,.5); } .grid7 .wd.we { color:rgba(255,255,255,.3); }
   .grid7 .today { background:#ff453a; color:#fff; font-weight:700; border-radius:50%; width:20px; margin: 0 auto; }
-  /* Control Center (Espresso) */
+  /* Control Center (plugins, fake data) */
   .pane.cc { padding: 40px 12px 0; }
-  .cc-title { font-size:14px; font-weight:700; color:rgba(255,255,255,.8); padding: 6px 12px 12px; }
-  .cc-tile { display:flex; flex-direction:column; align-items:center; gap:6px; width:84px; margin-left:12px; background:none; border:0; color:#fff; cursor:pointer; padding:0; font-family:inherit; }
-  .cc-circle { width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,.12); display:grid; place-items:center; transition: background .25s; }
-  .cc-circle svg { width:22px; height:22px; }
-  .cc-tile.on .cc-circle, .cc-icon.on { background:#ff9f0a; }
+  .notch.open.big { --h: 252px; }
+  .cc-title { font-size:14px; font-weight:700; color:rgba(255,255,255,.8); padding: 6px 12px 10px; }
+  .cc-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px 0; padding:0 4px; }
+  .cc-tile { display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:0; color:#fff; cursor:pointer; padding:0; font-family:inherit; }
+  .cc-circle { width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,.12); display:grid; place-items:center; transition: background .25s; font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .cc-circle svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .cc-name { font-size:11px; font-weight:500; }
-  .cc-status { font-size:10px; color:#ff9f0a; min-height:12px; }
-  .cc-head { display:flex; align-items:center; gap:10px; padding: 4px 8px 10px; }
+  .cc-head { display:flex; align-items:center; gap:10px; padding: 4px 8px 8px; }
   .cc-head b { font-size:14px; }
-  .cc-head .st { margin-left:auto; font-size:12px; font-weight:600; color:#ff9f0a; }
+  .cc-head .st { margin-left:auto; font-size:12px; font-weight:600; }
   .cc-back { width:28px; height:28px; border:0; background:none; color:rgba(255,255,255,.8); cursor:pointer; display:grid; place-items:center; padding:0; }
   .cc-back svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
-  .cc-icon { width:18px; height:18px; color:#fff; } .cc-icon svg { width:18px; height:18px; }
-  .cc-icon.on { background:none; color:#ff9f0a; }
+  .cc-icon { width:18px; height:18px; color:#fff; } .cc-icon svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .cc-body { max-height:160px; overflow-y:auto; scrollbar-width:none; }
+  .cc-body::-webkit-scrollbar { display:none; }
   .cc-opts { display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; padding: 0 12px; }
   .cc-opts button { height:28px; border:0; border-radius:14px; background:rgba(255,255,255,.12); color:#fff; font:600 11px/1 inherit; font-family:inherit; cursor:pointer; padding:0 4px; white-space:nowrap; }
   .cc-opts button.sel { background:#fff; color:#000; }
   .cc-opts button.off { background:rgba(255,69,58,.2); color:#ff453a; }
+  .cc-hdr { grid-column:1/-1; font-size:11px; color:rgba(255,255,255,.55); padding:2px 2px 0; }
+  .cc-info { grid-column:1/-1; display:flex; justify-content:space-between; font-size:12px; padding:2px 4px; }
+  .cc-info span:first-child { color:rgba(255,255,255,.6); }
+  .cc-info span:last-child { font-weight:600; font-variant-numeric:tabular-nums; }
+  .cc-graph { grid-column:1/-1; height:34px; }
+  .cc-graph svg { width:100%; height:100%; display:block; }
   .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px; margin: 20px 0 12px; }
   .stat { background:var(--card); border-radius:16px; padding:18px 16px; text-align:center; }
   .stat b { display:block; font-size:1.9rem; letter-spacing:-.02em; }
@@ -215,14 +222,14 @@
                 <div class="pane cc hidden-left" id="pane-cc">
                   <div id="cc-overview">
                     <div class="cc-title" data-i18n="ccTitle">Control Center</div>
-                    <button type="button" class="cc-tile" id="cc-tile"><span class="cc-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10h11v4a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4v-4z"/><path d="M16 11h1.5a2 2 0 0 1 0 4H16"/><path d="M3.5 21h14"/><path d="M8.5 3.5c0 1.4 1.5 1.6 1.5 3M12 3.5c0 1.4 1.5 1.6 1.5 3"/></svg></span><span class="cc-name">Espresso</span><span class="cc-status" id="cc-status"></span></button>
+                    <div class="cc-grid" id="cc-grid"></div>
                   </div>
                   <div id="cc-detail" hidden>
                     <div class="cc-head">
                       <button type="button" class="cc-back" id="cc-back" aria-label="Back"><svg viewBox="0 0 24 24"><polyline points="15 4 7 12 15 20"/></svg></button>
-                      <span class="cc-icon" id="cc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10h11v4a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4v-4z"/><path d="M16 11h1.5a2 2 0 0 1 0 4H16"/><path d="M3.5 21h14"/><path d="M8.5 3.5c0 1.4 1.5 1.6 1.5 3M12 3.5c0 1.4 1.5 1.6 1.5 3"/></svg></span><b>Espresso</b><span class="st" id="cc-status2"></span>
+                      <span class="cc-icon" id="cc-icon"></span><b id="cc-dname"></b><span class="st" id="cc-status2"></span>
                     </div>
-                    <div class="cc-opts" id="cc-opts"></div>
+                    <div class="cc-body"><div class="cc-opts" id="cc-opts"></div></div>
                   </div>
                 </div>
 
@@ -392,7 +399,7 @@
       tagline: "Turn your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools.",
       download: 'Download', github: 'View on GitHub',
       latest: 'Latest release', prerelease: 'pre-release', allReleases: 'see all releases',
-      hint: 'Interactive preview: hit skip, brew an Espresso in the Control Center, tap the dots or swipe with two fingers. Nothing actually plays.',
+      hint: 'Interactive preview: hit skip, open the plugins in the Control Center, tap the dots or swipe with two fingers. Nothing actually plays.',
       allDay: 'All day',
       whatH: 'What is it?',
       whatP: 'Notcholino is a free, open-source and non-commercial notch app for macOS. It extends the hardware notch with a fluid overlay that expands on hover and shows what matters: now playing, upcoming events, volume and brightness, and more.',
@@ -461,7 +468,7 @@
       tagline: 'Trasforma il Notch del tuo MacBook in un hub dinamico per Live Activities, notifiche e strumenti interattivi.',
       download: 'Scarica', github: 'Vedi su GitHub',
       latest: 'Ultima release', prerelease: 'pre-release', allReleases: 'vedi tutte le release',
-      hint: "Anteprima interattiva: prova lo skip, prepara un Espresso nel Control Center, tocca i puntini o scorri con due dita. Non suona niente per davvero.",
+      hint: "Anteprima interattiva: prova lo skip, apri i plugin nel Control Center, tocca i puntini o scorri con due dita. Non suona niente per davvero.",
       allDay: 'Tutto il giorno',
       whatH: "Cos'è?",
       whatP: "Notcholino è un'app per il notch di macOS gratuita, open source e non commerciale. Estende il notch hardware con un overlay fluido che si espande al passaggio del mouse e mostra ciò che conta: la musica in riproduzione, i prossimi eventi, volume e luminosità, e altro ancora.",
@@ -694,11 +701,95 @@
     renderProgress();
   }, 1000);
 
-  /* ---------- Control Center: Espresso (fake) ---------- */
+  /* ---------- Control Center: the plugins, with made-up data (nothing here does anything for real) ---------- */
   var ES_IDS = ['indefinite', '10m', '30m', '1h', '2h', '4h', '8h', '12h', 'until'];
   var ES_SECS = { '10m': 600, '30m': 1800, '1h': 3600, '2h': 7200, '4h': 14400, '8h': 28800, '12h': 43200, until: 5400 };
   var es = { id: null, end: null };
+  var ICON = {
+    cup: '<path d="M5 10h11v4a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4v-4z"/><path d="M16 11h1.5a2 2 0 0 1 0 4H16"/><path d="M3.5 21h14"/><path d="M8.5 3.5c0 1.4 1.5 1.6 1.5 3M12 3.5c0 1.4 1.5 1.6 1.5 3"/>',
+    scroll: '<rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 7v3"/>',
+    timer: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 3h5"/>',
+    spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
+    laptop: '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/>'
+  };
+  function secOpts(list, unit) { return list.map(function (n) { return { id: String(n), title: n + ' ' + unit }; }); }
+  var P = [
+    { id: 'espresso', name: 'Espresso', icon: 'cup', tint: '#ff9f0a', kind: 'menu' },
+    { id: 'scrolly', name: 'Scrolly', icon: 'scroll', tint: '#0a84ff', kind: 'toggle', on: true },
+    { id: 'hotter', name: 'Hotter', kind: 'hotter' },
+    { id: 'batlife', name: 'BatLife', kind: 'batlife' },
+    { id: 'tomato', name: 'Tomato', icon: 'timer', tint: '#ff453a', kind: 'menu', multi: true,
+      header: 'Start a timer', items: secOpts([5, 10, 15, 25, 45, 60], 'min'), flags: [['sound', 'Sound', true], ['iphone', 'iPhone', false]] },
+    { id: 'dusty', name: 'Dusty', icon: 'spark', tint: '#64d2ff', kind: 'menu', flash: true,
+      header: 'Lock keyboard, trackpad and screen for', items: secOpts([5, 10, 15, 20, 30, 45, 60], 's') },
+    { id: 'closeme', name: 'CloseMe', icon: 'laptop', tint: '#bf5af2', kind: 'menu',
+      header: 'Keep running with the lid closed for', items: [{ id: '1', title: '1 hour' }, { id: '2', title: '2 hours' }, { id: '4', title: '4 hours' }, { id: '8', title: '8 hours' }, { id: '12', title: '12 hours' }] }
+  ];
+  P.forEach(function (p) { p.sel = null; p.flag = {}; (p.flags || []).forEach(function (f) { p.flag[f[0]] = f[2]; }); });
+  var byId = {}; P.forEach(function (p) { byId[p.id] = p; });
+  var open = null;                       // plugin id whose options are showing
+  var hot = { vals: [], f: false, mode: 'avg', graph: true };
+  for (var i = 0; i < 40; i++) hot.vals.push(30 + Math.sin(i / 5) * 2.5 + Math.random() * 1.5);
+  var bat = { pct: 53 };
 
+  function svg(path) { return '<svg viewBox="0 0 24 24">' + path + '</svg>'; }
+  function tempColor(c) { return c < 45 ? '#30d158' : c < 60 ? '#ffd60a' : c < 75 ? '#ff9f0a' : '#ff453a'; }
+  function hotLabel() {
+    var v = hot.vals, last = v[v.length - 1], c = hot.mode === 'max' ? Math.max.apply(null, v.slice(-8)) + 1.5 : last;
+    return { c: c, text: Math.round(hot.f ? c * 9 / 5 + 32 : c) + '°' };
+  }
+  function tileInfo(p) {
+    if (p.kind === 'hotter') { var h = hotLabel(); return { label: h.text, color: tempColor(h.c), on: true }; }
+    if (p.kind === 'batlife') return { label: bat.pct + '%', color: bat.pct <= 20 ? '#ff453a' : bat.pct <= 40 ? '#ff9f0a' : '#30d158', on: true };
+    var on = p.kind === 'toggle' ? p.on : p.id === 'espresso' ? !!es.id : !!p.sel || !!p.flashing;
+    return { icon: p.icon, color: p.tint, on: on };
+  }
+  function renderGrid() {
+    $('cc-grid').innerHTML = P.map(function (p) {
+      var ti = tileInfo(p), inner = ti.label ? ti.label : svg(ICON[ti.icon]);
+      var style = ti.on ? ' style="background:' + ti.color + (ti.label ? '33;color:' + ti.color : '') + '"' : '';
+      return '<button type="button" class="cc-tile" data-p="' + p.id + '"><span class="cc-circle"' + style + '>' + inner + '</span><span class="cc-name">' + p.name + '</span></button>';
+    }).join('');
+    notch.classList.toggle('big', tab === 0);
+  }
+  function opt(id, title, cls) { return '<button type="button" data-o="' + id + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + title + '</button>'; }
+  function graphSvg() {
+    var v = hot.vals, mn = Math.min.apply(null, v) - 1, mx = Math.max.apply(null, v) + 1, w = 340, h = 34;
+    var pts = v.map(function (y, i) { return (i * w / (v.length - 1)).toFixed(1) + ',' + (h - (y - mn) / (mx - mn) * h).toFixed(1); }).join(' ');
+    var col = tempColor(v[v.length - 1]);
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>';
+  }
+  function renderDetail() {
+    var p = byId[open]; if (!p) return;
+    var html = '', status = '', color = p.tint || '#ff9f0a';
+    if (p.kind === 'menu' && p.id === 'espresso') {
+      var labels = (I18N[lang] || I18N.en).esO;
+      ES_IDS.forEach(function (id, i) { html += opt(id, labels[i], es.id === id ? 'sel' : ''); });
+      if (es.id) html += opt('off', labels[9], 'off');
+      status = esStatus();
+    } else if (p.kind === 'menu') {
+      html += '<div class="cc-hdr">' + p.header + '</div>';
+      p.items.forEach(function (it) { html += opt(it.id, it.title, p.sel === it.id ? 'sel' : ''); });
+      (p.flags || []).forEach(function (f) { html += opt('flag:' + f[0], f[1], p.flag[f[0]] ? 'sel' : ''); });
+      if (p.sel) html += opt('off', p.id === 'tomato' ? 'Stop' : 'Turn off', 'off');
+    } else if (p.kind === 'hotter') {
+      var h = hotLabel(); color = tempColor(h.c); status = h.text + (hot.f ? 'F' : 'C');
+      if (hot.graph) html += '<div class="cc-graph">' + graphSvg() + '</div>';
+      html += opt('avg', 'Average', hot.mode === 'avg' ? 'sel' : '') + opt('max', 'Highest', hot.mode === 'max' ? 'sel' : '') +
+              opt('graph', 'Graph', hot.graph ? 'sel' : '') + opt('f', '°F', hot.f ? 'sel' : '');
+    } else if (p.kind === 'batlife') {
+      status = bat.pct + '%'; color = tileInfo(p).color;
+      [['Health', '91 %'], ['Cycles', '214'], ['Power', '−8.4 W'], ['Time left', '5h 12m'], ['Temperature', '31°'], ['Charger', 'Not connected']].forEach(function (r) {
+        html += '<div class="cc-info"><span>' + r[0] + '</span><span>' + r[1] + '</span></div>';
+      });
+    }
+    $('cc-opts').innerHTML = html;
+    $('cc-dname').textContent = p.name;
+    $('cc-icon').innerHTML = p.icon ? svg(ICON[p.icon]) : '';
+    $('cc-icon').style.color = (p.sel || (p.id === 'espresso' && es.id)) ? color : '';
+    $('cc-status2').textContent = status;
+    $('cc-status2').style.color = color;
+  }
   function esStatus() {
     if (!es.id) return '';
     if (!es.end) return t('esAlways');
@@ -707,37 +798,46 @@
             : left >= 60 ? Math.floor(left / 60) + 'm' : left + 's';
     return txt + ' ' + t('esLeft');
   }
-  function renderEspresso() {
-    var st = esStatus();
-    $('cc-status').textContent = st;
-    $('cc-status2').textContent = st;
-    $('cc-tile').classList.toggle('on', !!es.id);
-    $('cc-icon').classList.toggle('on', !!es.id);
-    var labels = (I18N[lang] || I18N.en).esO, html = '';
-    ES_IDS.forEach(function (id, i) {
-      html += '<button type="button" data-es="' + id + '"' + (es.id === id ? ' class="sel"' : '') + '>' + labels[i] + '</button>';
-    });
-    if (es.id) html += '<button type="button" class="off" data-es="off">' + labels[9] + '</button>';
-    $('cc-opts').innerHTML = html;
-  }
-  $('cc-opts').addEventListener('click', function (e) {
-    var id = e.target.getAttribute && e.target.getAttribute('data-es');
-    if (!id) return;
-    if (id === 'off') es = { id: null, end: null };
-    else es = { id: id, end: ES_SECS[id] ? Date.now() + ES_SECS[id] * 1000 : null };
-    renderEspresso();
+  function showDetail(id) { open = id; $('cc-overview').hidden = true; $('cc-detail').hidden = false; renderDetail(); renderGrid(); }
+  function showGrid() { open = null; $('cc-detail').hidden = true; $('cc-overview').hidden = false; renderGrid(); }
+  function renderEspresso() { renderGrid(); if (open) renderDetail(); }
+
+  $('cc-grid').addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-p]'); if (!b) return;
+    var p = byId[b.getAttribute('data-p')];
+    if (p.kind === 'toggle') { p.on = !p.on; renderGrid(); } else showDetail(p.id);
   });
-  $('cc-tile').onclick = function () { $('cc-overview').hidden = true; $('cc-detail').hidden = false; };
-  $('cc-back').onclick = function () { $('cc-detail').hidden = true; $('cc-overview').hidden = false; };
+  $('cc-opts').addEventListener('click', function (e) {
+    var id = e.target.getAttribute && e.target.getAttribute('data-o'); if (!id) return;
+    var p = byId[open];
+    if (p.id === 'espresso') {
+      es = id === 'off' ? { id: null, end: null } : { id: id, end: ES_SECS[id] ? Date.now() + ES_SECS[id] * 1000 : null };
+    } else if (p.kind === 'hotter') {
+      if (id === 'avg' || id === 'max') hot.mode = id; else if (id === 'graph') hot.graph = !hot.graph; else hot.f = !hot.f;
+    } else if (id.indexOf('flag:') === 0) {
+      var k = id.slice(5); p.flag[k] = !p.flag[k];
+    } else if (id === 'off') p.sel = null;
+    else {
+      p.sel = id;
+      if (p.flash) { p.flashing = true; setTimeout(function () { p.flashing = false; p.sel = null; renderGrid(); if (open === p.id) renderDetail(); }, 1800); }
+    }
+    renderDetail(); renderGrid();
+  });
+  $('cc-back').onclick = showGrid;
+
+  // Made-up readings that drift a little, like the real ones
   setInterval(function () {
-    var st = esStatus();
-    $('cc-status').textContent = st;
-    $('cc-status2').textContent = st;
+    var v = hot.vals; v.push(Math.max(27, Math.min(46, v[v.length - 1] + (Math.random() - 0.5) * 2.2))); v.shift();
+    bat.pct = Math.max(20, bat.pct - (Math.random() < 0.1 ? 1 : 0));
+    renderGrid(); if (open === 'hotter' || open === 'batlife') renderDetail();
+  }, 3000);
+  setInterval(function () {
+    if (open === 'espresso') $('cc-status2').textContent = esStatus();
     if (es.end && Date.now() >= es.end) { es = { id: null, end: null }; renderEspresso(); }
   }, 1000);
 
   window.__renderEspresso = renderEspresso;
-  renderEspresso();
+  renderGrid();
 
   /* ---------- Tabs ---------- */
   var tab = 1;  // 0 = Control Center, 1 = Now Playing, 2 = Calendar
@@ -748,6 +848,7 @@
       pane.classList.toggle('hidden-right', i > n);
     });
     notch.classList.toggle('cal', n !== 1);
+    notch.classList.toggle('big', n === 0);
     document.querySelectorAll('#dots button').forEach(function (b) { b.setAttribute('aria-current', String(Number(b.dataset.tab) === n)); });
   }
   document.querySelectorAll('#dots button').forEach(function (b) { b.onclick = function () { setTab(Number(b.dataset.tab)); }; });
