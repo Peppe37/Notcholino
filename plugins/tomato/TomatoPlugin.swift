@@ -1,15 +1,8 @@
 import AppKit
-import EventKit
 import Foundation
 
 /// Tomato is a Pomodoro timer: a stretch of work, a break, and again, until you stop it. You choose how many minutes each
-/// lasts. A small clock hangs under the notch, a sound plays when each stretch ends, and, if you allow it, your iPhone is
-/// alerted too.
-///
-/// An iPhone can't be rung from a Mac: no public API sets an alarm on it. What iCloud does share is a Reminder with an alarm,
-/// so the iPhone alert is a notification from a Reminder due when the current stretch ends. It is created for the next switch
-/// only, and removed again shortly after, so the list doesn't fill up. It needs Reminders access, and the default Reminders
-/// list to be an iCloud one.
+/// lasts. A small clock hangs under the notch and a sound plays when each stretch ends.
 @objc(TomatoPlugin)
 final class TomatoPlugin: NSObject, NotcholinoPlugin {
 
@@ -30,8 +23,6 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
         static let work = "plugin.tomato.workMinutes"
         static let rest = "plugin.tomato.breakMinutes"
         static let sound = "plugin.tomato.sound"
-        static let iphone = "plugin.tomato.iphone"
-        static let leftoverReminder = "plugin.tomato.reminderID"
     }
     private static let workRange = 1...180
     private static let breakRange = 1...60
@@ -45,24 +36,12 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
         return Self.breakRange.contains(v) ? v : 5
     }
     private var soundOn: Bool { UserDefaults.standard.object(forKey: Key.sound) as? Bool ?? true }
-    private var iphoneOn: Bool { UserDefaults.standard.bool(forKey: Key.iphone) }
 
     private enum Phase { case work, rest }
     private var phase = Phase.work
     private var endDate: Date?
     private var timer: Timer?
     private var pill: ClockPill?
-    private var reminders: RemindersBridge?
-    private var message: String?
-
-    override init() {
-        super.init()
-        // An iPhone alert left behind by a previous run (the app quit while a timer was running)
-        if let id = UserDefaults.standard.string(forKey: Key.leftoverReminder) {
-            RemindersBridge.remove(identifier: id)
-            UserDefaults.standard.removeObject(forKey: Key.leftoverReminder)
-        }
-    }
 
     // MARK: Control Center
 
@@ -71,7 +50,6 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
     var controlCenterTintColor: String { isActive ? "#FF453A" : "" }
 
     var statusText: String {
-        if let message { return message }
         guard let end = endDate else { return "" }
         return (phase == .work ? "Work " : "Break ") + Self.clock(end.timeIntervalSinceNow)
     }
@@ -81,15 +59,13 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
             ["stepper": "Work", "id": "work", "value": workMinutes, "unit": "min", "min": Self.workRange.lowerBound, "max": Self.workRange.upperBound],
             ["stepper": "Break", "id": "break", "value": breakMinutes, "unit": "min", "min": Self.breakRange.lowerBound, "max": Self.breakRange.upperBound],
             isActive ? ["id": "stop", "title": "Stop", "destructive": true] : ["id": "start", "title": "Start"],
-            ["id": "sound", "title": "Sound", "checked": soundOn],
-            ["id": "iphone", "title": "iPhone", "checked": iphoneOn]
+            ["id": "sound", "title": "Sound", "checked": soundOn]
         ]
         if isActive { items.insert(["header": "A new stretch starts by itself after each one"], at: 0) }
         return items
     }
 
     func performMenuAction(_ id: String) {
-        message = nil
         let d = UserDefaults.standard
         if id.hasPrefix("work="), let v = Int(id.dropFirst(5)) { d.set(min(max(v, Self.workRange.lowerBound), Self.workRange.upperBound), forKey: Key.work); return }
         if id.hasPrefix("break="), let v = Int(id.dropFirst(6)) { d.set(min(max(v, Self.breakRange.lowerBound), Self.breakRange.upperBound), forKey: Key.rest); return }
@@ -97,19 +73,6 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
         case "start": start()
         case "stop": stop()
         case "sound": d.set(!soundOn, forKey: Key.sound)
-        case "iphone":
-            let turningOn = !iphoneOn
-            d.set(turningOn, forKey: Key.iphone)
-            if turningOn {
-                RemindersBridge.requestAccess { [weak self] ok in
-                    if !ok {
-                        d.set(false, forKey: Key.iphone)
-                        self?.message = "Allow Notcholino in Reminders to alert your iPhone"
-                    } else if !RemindersBridge.usesICloud {
-                        self?.message = "Turn on iCloud Reminders so your iPhone gets the alert"
-                    }
-                }
-            }
         default: break
         }
     }
@@ -126,22 +89,13 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
         timer = t
     }
 
-    /// Starts a stretch of work or of break, and gets the iPhone alert ready for its end
+    /// Starts a stretch of work or of break
     private func begin(_ next: Phase) {
         phase = next
         let end = Date().addingTimeInterval(TimeInterval((next == .work ? workMinutes : breakMinutes) * 60))
         endDate = end
         if pill == nil { pill = ClockPill() }
         pill?.show(text: Self.pillText(phase, end.timeIntervalSinceNow), color: Self.pillColor(phase))
-
-        reminders?.removeScheduled(after: 60)
-        reminders = nil
-        if iphoneOn, RemindersBridge.isAuthorized, RemindersBridge.usesICloud {
-            let bridge = RemindersBridge()
-            let title = next == .work ? "🍅 Break over: back to work" : "🍅 Time for a break"
-            if let id = bridge.schedule(at: end, title: title) { UserDefaults.standard.set(id, forKey: Key.leftoverReminder) }
-            reminders = bridge
-        }
     }
 
     private func tick() {
@@ -160,9 +114,6 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
         timer = nil
         endDate = nil
         pill?.hide()
-        reminders?.removeScheduled(after: 0)
-        reminders = nil
-        UserDefaults.standard.removeObject(forKey: Key.leftoverReminder)
     }
 
     private static func pillText(_ phase: Phase, _ seconds: TimeInterval) -> String {
@@ -276,58 +227,5 @@ private final class TabShape: NSView {
         path.close()
         NSColor.black.setFill()
         path.fill()
-    }
-}
-
-// MARK: - iPhone alert through iCloud Reminders
-
-final class RemindersBridge {
-    private static let store = EKEventStore()
-    private var identifier: String?
-
-    static var isAuthorized: Bool {
-        let s = EKEventStore.authorizationStatus(for: .reminder)
-        return s == .fullAccess || s == .authorized
-    }
-
-    /// An alert only reaches the iPhone if the Reminders list syncs through iCloud
-    static var usesICloud: Bool {
-        guard let calendar = store.defaultCalendarForNewReminders() else { return false }
-        return calendar.source.sourceType == .calDAV
-    }
-
-    static func requestAccess(_ done: @escaping (Bool) -> Void) {
-        if isAuthorized { DispatchQueue.main.async { done(true) }; return }
-        store.requestFullAccessToReminders { granted, _ in DispatchQueue.main.async { done(granted) } }
-    }
-
-    /// Creates a reminder due at `date`, with an alarm at that moment. Returns its identifier.
-    func schedule(at date: Date, title: String) -> String? {
-        guard let calendar = Self.store.defaultCalendarForNewReminders() else { return nil }
-        let reminder = EKReminder(eventStore: Self.store)
-        reminder.calendar = calendar
-        reminder.title = title
-        reminder.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
-        reminder.addAlarm(EKAlarm(absoluteDate: date))
-        do {
-            try Self.store.save(reminder, commit: true)
-            identifier = reminder.calendarItemIdentifier
-            return identifier
-        } catch {
-            return nil
-        }
-    }
-
-    /// Removes the reminder after a delay (the iPhone needs the alarm to fire first)
-    func removeScheduled(after seconds: TimeInterval) {
-        guard let identifier else { return }
-        self.identifier = nil
-        if seconds <= 0 { Self.remove(identifier: identifier); return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { Self.remove(identifier: identifier) }
-    }
-
-    static func remove(identifier: String) {
-        guard isAuthorized, let item = store.calendarItem(withIdentifier: identifier) as? EKReminder else { return }
-        try? store.remove(item, commit: true)
     }
 }

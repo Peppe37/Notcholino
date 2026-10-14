@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.1-alpha] - 2026-10-14
+
+### Removed
+- The iPhone option. macOS can't set an alarm on an iPhone, and a Reminder is only a notification and clutters the list, so it made no sense. Tomato no longer asks for Reminders access.
+
 ## [0.2.0-alpha] - 2026-10-14
 
 ### Changed
