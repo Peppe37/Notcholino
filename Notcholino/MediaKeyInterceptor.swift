@@ -46,6 +46,14 @@ final class MediaKeyInterceptor: ObservableObject {
         }
     }
 
+    /// Asks the system for the Accessibility permission now (the dialog with the "Open System Settings" button),
+    /// and keeps checking until it is granted
+    func askForAccess() {
+        let key = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+        _ = AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
+        start()
+    }
+
     private func installTap() -> Bool {
         isTrusted = AXIsProcessTrusted()
         guard isTrusted else { return false }

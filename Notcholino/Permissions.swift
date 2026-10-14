@@ -79,10 +79,24 @@ final class PermissionsManager: ObservableObject {
         }
     }
 
+    /// macOS ties the Accessibility permission to the exact signature of the app. After an update (or a reinstall)
+    /// the old entry still looks switched on in System Settings but doesn't apply to the new build, and toggling it
+    /// doesn't help. So first clear our entry, then ask again: the system adds a fresh one for this build.
     func requestAccessibility() {
         if accessibility { return }
-        MediaKeyInterceptor.shared.start()
-        openSettings(.accessibility)
+        resetAccessibilityEntry()
+        MediaKeyInterceptor.shared.askForAccess()
+    }
+
+    private func resetAccessibilityEntry() {
+        guard let id = Bundle.main.bundleIdentifier else { return }
+        let reset = Process()
+        reset.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+        reset.arguments = ["reset", "Accessibility", id]
+        reset.standardOutput = Pipe()
+        reset.standardError = Pipe()
+        try? reset.run()
+        reset.waitUntilExit()
     }
 
     enum Pane: String {

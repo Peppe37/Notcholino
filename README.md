@@ -122,7 +122,7 @@ That is normal for the alpha: see [First launch](#first-launch-allowing-the-app)
 macOS ties permissions to the app's signature, and updates are signed with a different one-off signature unless the maintainer has set up the fixed certificate. See [Releases](#releases-and-versioning).
 
 **The macOS volume or brightness HUD still shows next to the notch.**
-Allow Notcholino in **System Settings → Privacy & Security → Accessibility**. Without it the system HUD can't be hidden.
+Allow Notcholino in **System Settings → Privacy & Security → Accessibility**, or click **Authorize** in **Settings → Sound** or **Display**. Without it the system HUD can't be hidden. If it looks switched on there but the HUD still shows, it is a leftover entry from a previous version: click **Authorize** in Notcholino, which clears it and asks again (or run `tccutil reset Accessibility com.giuseppe.Notcholino` in the Terminal).
 
 **Spotify Like doesn't work.**
 Click **Connect** (in the notch next to the controls, or in **Settings → Now Playing**) and log in to Spotify. If you get an error saying your account is not allowed, the Spotify app used by Notcholino is in Spotify's development mode, which only works for accounts added on its dashboard: open an issue to be added, or use your own Client ID under **Settings → Now Playing → Advanced**.

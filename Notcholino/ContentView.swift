@@ -253,16 +253,12 @@ struct SystemHUDAccessSection: View {
                 Label("The macOS HUD may still show next to Notcholino's", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                 HStack {
-                    Button("Open Accessibility Settings") {
-                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                            NSWorkspace.shared.open(url)
-                        }
-                    }
-                    Button("Check again") { keys.start() }
+                    Button("Authorize") { PermissionsManager.shared.requestAccessibility() }
+                    Button("Open Settings") { PermissionsManager.shared.openSettings(.accessibility) }
                 }
             }
         } footer: {
-            Text("To hide the system HUD, Notcholino handles the volume and brightness keys itself, which needs access in System Settings → Privacy & Security → Accessibility. Without it, the keys keep working as usual.")
+            Text("To hide the system HUD, Notcholino handles the volume and brightness keys itself, which needs access in System Settings → Privacy & Security → Accessibility. Without it, the keys keep working as usual. If it looks switched on there but this still says it isn't, click Authorize: Notcholino clears the old entry left by a previous version and asks again.")
         }
     }
 }

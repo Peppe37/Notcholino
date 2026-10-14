@@ -89,7 +89,7 @@ struct PermissionsSection: View {
         } header: {
             Text("Permissions")
         } footer: {
-            Text("Notcholino only asks for what it needs. Controlling Spotify or Music can only be checked while that app is open.")
+            Text("Notcholino only asks for what it needs. Controlling Spotify or Music can only be checked while that app is open. If a permission looks switched on in System Settings but still says Authorize here, click Authorize: after an update the old entry no longer applies, and Notcholino clears it and asks again.")
         }
         .onAppear { permissions.refresh() }
         // The window can stay open while a permission is granted in System Settings: pick it up when coming back

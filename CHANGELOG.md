@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3-alpha] - 2026-10-14
+
+### Fixed
+- After an update or a reinstall the volume and brightness HUD of macOS came back even though Accessibility looked switched on in System Settings, and toggling it did not help: macOS ties that permission to the exact signature of each build, so the old entry no longer applies. The Authorize button for Accessibility now clears the old entry and asks again.
+
 ## [0.5.2-alpha] - 2026-10-14
 
 ### Fixed
@@ -131,7 +136,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.5.2-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.5.3-alpha...HEAD
+[0.5.3-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.2-alpha...v0.5.3-alpha
 [0.5.2-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.1-alpha...v0.5.2-alpha
 [0.5.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.0-alpha...v0.5.1-alpha
 [0.5.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.4.1-alpha...v0.5.0-alpha
