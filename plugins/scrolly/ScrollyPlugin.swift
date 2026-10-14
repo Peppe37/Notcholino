@@ -32,7 +32,7 @@ final class ScrollyPlugin: NSObject, NotcholinoPlugin {
     }
 
     var isActive: Bool { tap != nil }
-    var controlCenterIcon: String { "arrow.up.arrow.down" }
+    var controlCenterIcon: String { "computermouse" }
     /// Only said when something is needed; the button's color already tells on from off
     var statusText: String { (needsAccess && !AXIsProcessTrusted()) ? "Allow Notcholino in Accessibility, then tap again" : "" }
 

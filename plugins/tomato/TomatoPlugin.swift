@@ -57,7 +57,7 @@ final class TomatoPlugin: NSObject, NotcholinoPlugin {
     // MARK: Control Center
 
     var isActive: Bool { endDate != nil }
-    var controlCenterIcon: String { "timer" }
+    var controlCenterIcon: String { "stopwatch" }
     var controlCenterTintColor: String { isActive ? "#FF453A" : "" }
 
     var statusText: String {

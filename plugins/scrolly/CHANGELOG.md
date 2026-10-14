@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.2-alpha] - 2026-10-14
+
+### Changed
+- A mouse icon for the button, instead of two arrows.
+
 ## [0.1.1-alpha] - 2026-10-14
 
 ### Fixed

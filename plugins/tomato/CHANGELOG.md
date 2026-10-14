@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.1-alpha] - 2026-10-14
+
+### Changed
+- A stopwatch icon for the button.
+
 ## [0.1.0-alpha] - 2026-10-14
 
 ### Added
