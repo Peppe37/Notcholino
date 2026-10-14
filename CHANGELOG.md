@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1-alpha] - 2026-10-14
 ### Changed
 - The DMG now opens with a styled install window: gradient background, arrow and drag-to-Applications layout.
 
@@ -56,7 +57,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.2.0-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.2.1-alpha...HEAD
+[0.2.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.2.0-alpha...v0.2.1-alpha
 [0.2.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.1.1-alpha...v0.2.0-alpha
 [0.1.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.1.0-alpha...v0.1.1-alpha
 [0.1.0-alpha]: https://github.com/Peppe37/Notcholino/releases/tag/v0.1.0-alpha
