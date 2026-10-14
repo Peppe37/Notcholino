@@ -56,6 +56,18 @@ Notcholino is a free, open-source and non-commercial app that extends the hardwa
 - **Native settings**: a System Settings–style preferences window built with SwiftUI, plus launch at login.
 - **Gestures**: scroll or swipe horizontally to switch between panels, and reverse the direction with **Settings → General → Gestures → Invert swipe direction** if you prefer it the other way.
 
+## Screenshots
+
+*From the interactive preview on [the website](https://peppe37.github.io/Notcholino/), with made-up data.*
+
+<p align="center">
+  <img src="docs/assets/shots/control-center.png" alt="The Control Center panel with seven plugin buttons" width="640">
+</p>
+<p align="center">
+  <img src="docs/assets/shots/hotter.png" alt="Hotter: temperature graph" width="420">
+  <img src="docs/assets/shots/batlife.png" alt="BatLife: battery details" width="420">
+</p>
+
 ## Install
 
 **Requirements:** macOS 14 Sonoma or later.
@@ -191,7 +203,7 @@ scripts/benchmark.sh /path/to/Notcholino.app 30 --playing
 
 No dates, just direction. Vote with 👍 or suggest more in [Discussions](https://github.com/Peppe37/Notcholino/discussions) and [issues](https://github.com/Peppe37/Notcholino/issues).
 
-- **Live activities for** battery, connectivity (AirPods and others), Focus and lock screen: the settings exist, the notifications are not wired yet.
+- **Live activities for** battery, connectivity (AirPods and others), Focus and the lock screen: not built yet. Their settings pages were removed until they work.
 - **Quick actions** from the notch: create a note or reminder, open an app or a Safari window, start a call or a message.
 - **Calendar inside the notch**: open a day without leaving the notch, and create events, notes and reminders from it.
 - **More plugins** and an easier way to write them, and **Raycast** integration.

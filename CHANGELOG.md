@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Closing the notch: the content now fades as one piece and stays in place while the shape closes over it, instead of fading in layers.
+
+### Removed
+- Settings that did nothing: the Battery, Connectivity, Focus and Lock Screen pages, and "Hide in fullscreen apps", "Hide in Mission Control" and "Hide while gaming". They will come back when they actually work.
+
 ## [0.9.0-alpha] - 2026-10-14
 
 ### Changed

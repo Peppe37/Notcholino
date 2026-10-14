@@ -187,6 +187,7 @@ struct NotchContentView: View {
     /// Height of the hardware notch on this screen (0 on Macs without one)
     let topInset: CGFloat
     @State private var isHovering   = false
+    @State private var closing      = false
     @State private var activeTab: NotchTab = .music
     @State private var goingForward = true
     @State private var hoveredDot: NotchTab?
@@ -309,7 +310,9 @@ struct NotchContentView: View {
                                     if let tab = shownTab {
                                         tabContent(tab)
                                             .id(tab)
-                                            .transition(.asymmetric(
+                                            // While the notch closes only the whole content fades: a second, sliding
+                                            // fade of the tab would show as a ghost
+                                            .transition(closing ? .identity : .asymmetric(
                                                 insertion: .move(edge: goingForward ? .trailing : .leading).combined(with: .opacity),
                                                 removal:   .move(edge: goingForward ? .leading : .trailing).combined(with: .opacity)))
                                     }
@@ -324,14 +327,15 @@ struct NotchContentView: View {
                             }
                         }
                         .frame(width: expandW, height: expandH)
-                        .transition(.opacity)
+                        .transition(.asymmetric(insertion: .opacity, removal: .opacity.animation(.easeOut(duration: 0.14))))
                     } else if isPlayingCompact {
                         compactMusicContent
                             .frame(width: pillW, height: pillH)
                             .transition(.opacity)
                     }
                 }
-                .frame(width: curW, height: curH)
+                // Top aligned: the content stays put while the shape closes over it, instead of sliding up
+                .frame(width: curW, height: curH, alignment: .top)
                 // Perfect clipping to avoid ghosting
                 .clipShape(NotchShape(cornerRadius: isExpanded ? 28 : 10, flareRadius: flare))
             }
@@ -487,12 +491,19 @@ struct NotchContentView: View {
             // Permissions may have been granted in System Settings meanwhile
             PermissionsManager.shared.refresh()
             calMgr.refreshAccess()
+            closing = false
             withAnimation { isHovering = true }
         } else {
             collapseTask = Task {
                 try? await Task.sleep(nanoseconds: 400_000_000)
                 guard !Task.isCancelled else { return }
+                // One frame to let the view pick up the closing transition before the notch actually closes
+                await MainActor.run { closing = true }
+                try? await Task.sleep(nanoseconds: 20_000_000)
+                guard !Task.isCancelled else { await MainActor.run { closing = false }; return }
                 await MainActor.run { withAnimation { isHovering = false } }
+                try? await Task.sleep(nanoseconds: 700_000_000)
+                await MainActor.run { closing = false }
             }
         }
     }

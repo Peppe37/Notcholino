@@ -4,14 +4,10 @@ import EventKit
 // MARK: - Sidebar Items
 enum SidebarItem: String, Hashable, CaseIterable {
     case general     = "General"
-    case battery     = "Battery"
-    case connectivity = "Connectivity"
-    case focus       = "Focus"
     case display     = "Display"
     case sound       = "Sound"
     case nowPlaying  = "Now Playing"
     case calendar    = "Calendar"
-    case lockScreen  = "Lock Screen"
     case controlCenter = "Control Center"
     case license     = "License"
     case about       = "About"
@@ -19,14 +15,10 @@ enum SidebarItem: String, Hashable, CaseIterable {
     var icon: String {
         switch self {
         case .general:      return "gearshape.fill"
-        case .battery:      return "bolt.fill"
-        case .connectivity: return "headphones"
-        case .focus:        return "moon.fill"
         case .display:      return "sun.max.fill"
         case .sound:        return "speaker.wave.3.fill"
         case .nowPlaying:   return "music.note"
         case .calendar:     return "calendar"
-        case .lockScreen:   return "lock.fill"
         case .controlCenter: return "square.grid.2x2.fill"
         case .license:      return "checkmark.seal.fill"
         case .about:        return "info.circle.fill"
@@ -36,14 +28,10 @@ enum SidebarItem: String, Hashable, CaseIterable {
     var iconColor: Color {
         switch self {
         case .general:      return Color(NSColor.secondaryLabelColor)
-        case .battery:      return .orange
-        case .connectivity: return .green
-        case .focus:        return .indigo
         case .display:      return .yellow
         case .sound:        return .pink
         case .nowPlaying:   return .red
         case .calendar:     return .red
-        case .lockScreen:   return Color(NSColor.labelColor)
         case .controlCenter: return .purple
         case .license:      return .teal
         case .about:        return Color(NSColor.secondaryLabelColor)
@@ -65,13 +53,13 @@ struct ContentView: View {
                 }
 
                 Section("Notifications") {
-                    ForEach([SidebarItem.battery, .connectivity, .focus, .display, .sound], id: \.self) { item in
+                    ForEach([SidebarItem.display, .sound], id: \.self) { item in
                         NavigationLink(value: item) { SidebarLabel(item: item) }
                     }
                 }
 
                 Section("Live Activities") {
-                    ForEach([SidebarItem.controlCenter, .nowPlaying, .calendar, .lockScreen], id: \.self) { item in
+                    ForEach([SidebarItem.controlCenter, .nowPlaying, .calendar], id: \.self) { item in
                         NavigationLink(value: item) { SidebarLabel(item: item) }
                     }
                 }
@@ -96,14 +84,10 @@ struct ContentView: View {
     private func detailView(for item: SidebarItem?) -> some View {
         switch item {
         case .general:      GeneralSettingsView()
-        case .battery:      BatterySettingsView()
-        case .connectivity: ConnectivitySettingsView()
-        case .focus:        FocusSettingsView()
         case .display:      DisplaySettingsView()
         case .sound:        SoundSettingsView()
         case .nowPlaying:   NowPlayingSettingsView()
         case .calendar:     CalendarSettingsView()
-        case .lockScreen:   LockScreenSettingsView()
         case .controlCenter: ControlCenterSettingsView()
         case .license:      LicenseView()
         case .about:        AboutView()
@@ -137,9 +121,6 @@ struct GeneralSettingsView: View {
     @ObservedObject private var launchMgr = LaunchAtLoginManager.shared
     @AppStorage("displayScreens")       private var displayScreens = 0
 
-    @AppStorage("hideInFullscreen")     private var hideInFullscreen = true
-    @AppStorage("hideInMissionControl") private var hideInMissionControl = true
-    @AppStorage("hideWhileGaming")      private var hideWhileGaming = false
     @AppStorage("invertScroll")         private var invertScroll = false
     @AppStorage("hoverArea")            private var hoverArea = 0
     @AppStorage("notchWidth")           private var notchWidth: Double = 0
@@ -151,9 +132,6 @@ struct GeneralSettingsView: View {
 
             Section {
                 Toggle("Launch at login",            isOn: $launchMgr.isEnabled)
-                Toggle("Hide in fullscreen apps",    isOn: $hideInFullscreen)
-                Toggle("Hide in Mission Control",    isOn: $hideInMissionControl)
-                Toggle("Hide while gaming",          isOn: $hideWhileGaming)
             }
             
             Section {
@@ -192,72 +170,7 @@ struct GeneralSettingsView: View {
     }
 }
 
-// MARK: - Battery Settings
 
-struct BatterySettingsView: View {
-    @AppStorage("batteryEnabled")        private var enabled = true
-    @AppStorage("batteryDuration")       private var duration: Double = 5.0
-    @AppStorage("lowBatteryWarning")     private var lowWarning = true
-    @AppStorage("lowBatteryThreshold")   private var threshold: Double = 10.0
-
-    var body: some View {
-        Form {
-            Section {
-                Toggle("Show battery notifications", isOn: $enabled)
-                LabeledSlider(label: "Display duration", value: $duration, range: 1...15, unit: "s")
-            }
-            Section("Low Battery Warning") {
-                Toggle("Warn when battery is low", isOn: $lowWarning)
-                LabeledSlider(label: "Threshold", value: $threshold, range: 5...30, unit: "%", format: "%.0f")
-                    .disabled(!lowWarning)
-            }
-        }
-        .formStyle(.grouped)
-        .navigationTitle("Battery")
-    }
-}
-
-// MARK: - Connectivity Settings
-
-struct ConnectivitySettingsView: View {
-    @AppStorage("connectivityEnabled") private var enabled = true
-    @AppStorage("connDuration")        private var duration: Double = 5.0
-    @AppStorage("connStyle")           private var style = 1
-
-    var body: some View {
-        Form {
-            Section {
-                Toggle("Show connectivity notifications", isOn: $enabled)
-                LabeledSlider(label: "Display duration", value: $duration, range: 1...15, unit: "s")
-            }
-            Section("Style") {
-                Picker("Icon style", selection: $style) {
-                    Text("3D Models").tag(0)
-                    Text("SF Symbols").tag(1)
-                }
-                .pickerStyle(.segmented)
-            }
-        }
-        .formStyle(.grouped)
-        .navigationTitle("Connectivity")
-    }
-}
-
-// MARK: - Focus Settings (placeholder)
-
-struct FocusSettingsView: View {
-    @AppStorage("focusEnabled") private var enabled = true
-
-    var body: some View {
-        Form {
-            Section {
-                Toggle("Show Focus mode changes", isOn: $enabled)
-            }
-        }
-        .formStyle(.grouped)
-        .navigationTitle("Focus")
-    }
-}
 
 // MARK: - System HUD access
 
@@ -480,21 +393,6 @@ struct CalendarSettingsView: View {
     }
 }
 
-// MARK: - Lock Screen Settings (placeholder)
-
-struct LockScreenSettingsView: View {
-    @AppStorage("lockScreenEnabled") private var enabled = true
-
-    var body: some View {
-        Form {
-            Section {
-                Toggle("Show lock/unlock animations", isOn: $enabled)
-            }
-        }
-        .formStyle(.grouped)
-        .navigationTitle("Lock Screen")
-    }
-}
 
 // MARK: - Plugins
 struct ControlCenterSettingsView: View {
