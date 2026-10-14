@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1-alpha] - 2026-10-14
+
+### Fixed
+- On macOS 26 the system volume and brightness HUD still showed next to the one in the notch. Notcholino now handles those keys itself, so only the notch shows the change. This needs the Accessibility permission; without it the keys work as before and both HUDs show.
+
+### Added
+- A status and a shortcut to the Accessibility settings in the Sound and Display settings.
+- Shift + Option with the volume or brightness keys gives quarter steps, like macOS.
+
 ## [0.4.0-alpha] - 2026-10-14
 
 ### Added
@@ -82,7 +91,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.4.0-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.4.1-alpha...HEAD
+[0.4.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.4.0-alpha...v0.4.1-alpha
 [0.4.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.3.0-alpha...v0.4.0-alpha
 [0.3.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.2.1-alpha...v0.3.0-alpha
 [0.2.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.2.0-alpha...v0.2.1-alpha

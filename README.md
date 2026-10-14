@@ -87,6 +87,9 @@ Notcholino asks for what it needs, when it needs it:
 | --- | --- |
 | **Automation** (Apple Events) | To read and control Spotify and Apple Music. |
 | **Calendars** | To show your upcoming events. |
+| **Accessibility** | To handle the volume and brightness keys itself, so macOS doesn't show its own HUD next to the one in the notch. Optional: without it the keys keep working and both HUDs appear. |
+
+Because the app is not signed with a developer certificate, macOS may ask for these permissions again after an update.
 
 Spotify Like uses your Spotify account through the official Web API, and only if you click **Connect** in the settings.
 

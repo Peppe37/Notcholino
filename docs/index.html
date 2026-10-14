@@ -314,6 +314,7 @@
     </ol>
     <p data-i18n="glTerm">Prefer the Terminal? This removes the quarantine flag and does the same thing:</p>
     <pre><code>xattr -dr com.apple.quarantine /Applications/Notcholino.app</code></pre>
+    <p data-i18n="glAx">Volume and brightness: to show them only in the notch, allow Notcholino in <b>System Settings → Privacy &amp; Security → Accessibility</b>. It is optional: without it, macOS shows its own HUD too.</p>
     <p class="note" data-i18n="glTrust">Why trust it? Notcholino is fully open source: you can read every line of code in the <a href="https://github.com/Peppe37/Notcholino">repository</a>, or build the app yourself with Xcode and skip this warning altogether. The release is built automatically by GitHub Actions from the tagged source.</p>
   </section>
 </main>
@@ -374,6 +375,7 @@
       gl2: 'Open <b>System Settings → Privacy &amp; Security</b>.',
       gl3: 'Scroll down to the <b>Security</b> section. You will see “Notcholino.app was blocked”. Click <b>Open Anyway</b>.',
       gl4: 'Confirm with your password or Touch ID, then click <b>Open</b>. You only need to do this once.',
+      glAx: 'Volume and brightness: to show them only in the notch, allow Notcholino in <b>System Settings → Privacy &amp; Security → Accessibility</b>. It is optional: without it, macOS shows its own HUD too.',
       glTerm: 'Prefer the Terminal? This removes the quarantine flag and does the same thing:',
       glTrust: 'Why trust it? Notcholino is fully open source: you can read every line of code in the <a href="' + REPO + '">repository</a>, or build the app yourself with Xcode and skip this warning altogether. The release is built automatically by GitHub Actions from the tagged source.'
     },
@@ -420,6 +422,7 @@
       gl2: 'Apri <b>Impostazioni di Sistema → Privacy e sicurezza</b>.',
       gl3: 'Scorri fino alla sezione <b>Sicurezza</b>. Vedrai “Notcholino.app è stata bloccata”. Clicca <b>Apri comunque</b>.',
       gl4: 'Conferma con la password o Touch ID, poi clicca <b>Apri</b>. Lo devi fare una volta sola.',
+      glAx: 'Volume e luminosità: per vederli solo nel notch, consenti Notcholino in <b>Impostazioni di Sistema → Privacy e sicurezza → Accessibilità</b>. È facoltativo: senza, macOS mostra anche il suo HUD.',
       glTerm: 'Preferisci il Terminale? Questo comando rimuove il flag di quarantena e fa la stessa cosa:',
       glTrust: "Perché fidarsi? Notcholino è completamente open source: puoi leggere ogni riga di codice nel <a href=\"" + REPO + "\">repository</a>, oppure compilare l'app da solo con Xcode ed evitare del tutto questo avviso. La release è costruita automaticamente da GitHub Actions a partire dal codice taggato."
     }

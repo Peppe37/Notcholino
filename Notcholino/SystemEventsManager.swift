@@ -30,21 +30,36 @@ final class SystemEventsManager: ObservableObject {
 
     private var globalMonitor: Any?
     private var hudTimer:      Timer?
+    private var keyObservers: [NSObjectProtocol] = []
 
     init() {
         systemVolume = readVolume()
         brightness = readBrightness()
         setupGlobalMonitor()
-        
-        // Suppress native OSD if our HUDs are enabled
+
+        // When Notcholino takes over the volume/brightness keys (Accessibility permission), it tells us the new level
+        keyObservers.append(NotificationCenter.default.addObserver(forName: .mediaKeyVolume, object: nil, queue: .main) { [weak self] note in
+            guard let self, let level = note.object as? Float else { return }
+            self.systemVolume = level
+            self.showHUD(.volume(level))
+        })
+        keyObservers.append(NotificationCenter.default.addObserver(forName: .mediaKeyBrightness, object: nil, queue: .main) { [weak self] note in
+            guard let self, let level = note.object as? Float else { return }
+            self.brightness = level
+            self.showHUD(.brightness(level))
+        })
+
+        // Hide the native HUD if ours are enabled: take over the keys, or (older macOS) suspend the HUD helper
         let soundEnabled = UserDefaults.standard.object(forKey: "soundEnabled") as? Bool ?? true
         let displayEnabled = UserDefaults.standard.object(forKey: "displayEnabled") as? Bool ?? true
         if soundEnabled || displayEnabled {
             OSDManager.shared.startSuppressing()
+            MediaKeyInterceptor.shared.start()
         }
     }
 
     deinit {
+        keyObservers.forEach { NotificationCenter.default.removeObserver($0) }
         if let m = globalMonitor { NSEvent.removeMonitor(m) }
         hudTimer?.invalidate()
     }
@@ -53,6 +68,7 @@ final class SystemEventsManager: ObservableObject {
 
     private func setupGlobalMonitor() {
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .systemDefined) { [weak self] event in
+            // When the keys are taken over, this monitor never sees them
             guard let self, event.subtype.rawValue == 8 else { return }
             let data     = Int(event.data1)
             let keyCode  = (data & 0xFFFF0000) >> 16

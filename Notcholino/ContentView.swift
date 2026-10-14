@@ -236,6 +236,35 @@ struct FocusSettingsView: View {
     }
 }
 
+// MARK: - System HUD access
+
+/// Explains and fixes the Accessibility permission needed to hide the macOS volume/brightness HUD
+struct SystemHUDAccessSection: View {
+    @ObservedObject private var keys = MediaKeyInterceptor.shared
+
+    var body: some View {
+        Section {
+            if keys.isActive {
+                Label("The macOS volume and brightness HUD is hidden", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+            } else {
+                Label("The macOS HUD may still show next to Notcholino's", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                HStack {
+                    Button("Open Accessibility Settings") {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    Button("Check again") { keys.start() }
+                }
+            }
+        } footer: {
+            Text("To hide the system HUD, Notcholino handles the volume and brightness keys itself, which needs access in System Settings → Privacy & Security → Accessibility. Without it, the keys keep working as usual.")
+        }
+    }
+}
+
 // MARK: - Display Settings
 
 struct DisplaySettingsView: View {
@@ -249,6 +278,7 @@ struct DisplaySettingsView: View {
                 Toggle("Show display brightness changes", isOn: $enabled)
                     .onChange(of: enabled) { _ in updateOSDSuppression() }
             }
+            SystemHUDAccessSection()
             Section("Appearance") {
                 Picker("Theme", selection: $theme) {
                     Text("Monochrome").tag(0)
@@ -275,6 +305,7 @@ struct SoundSettingsView: View {
                 Toggle("Show volume changes", isOn: $enabled)
                     .onChange(of: enabled) { _ in updateOSDSuppression() }
             }
+            SystemHUDAccessSection()
             Section("Appearance") {
                 Picker("Theme", selection: $theme) {
                     Text("Monochrome").tag(0)
