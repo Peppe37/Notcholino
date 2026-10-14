@@ -54,7 +54,7 @@ Notcholino is a free, open-source and non-commercial app that extends the hardwa
 - **System HUDs**: volume and brightness feedback in the notch, replacing the native macOS HUD, with theme, label and decibel options.
 - **Control Center and plugins**: a third panel in the notch holds plugin buttons, installed from a built-in store. See [Plugins](#plugins).
 - **Native settings**: a System Settings–style preferences window built with SwiftUI, plus launch at login.
-- **Gestures**: scroll or swipe horizontally to switch between panels.
+- **Gestures**: scroll or swipe horizontally to switch between panels, and reverse the direction with **Settings → General → Gestures → Invert swipe direction** if you prefer it the other way.
 
 ## Install
 

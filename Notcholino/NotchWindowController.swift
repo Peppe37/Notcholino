@@ -178,6 +178,8 @@ struct NotchContentView: View {
     @AppStorage("nowPlayingEnabled")    private var nowPlayingEnabled    = true
     @AppStorage("calendarEnabled")      private var calendarEnabled      = true
     @AppStorage("controlCenterEnabled") private var controlCenterEnabled = true
+    /// Reverses the direction of the two-finger swipe (and of the mouse wheel)
+    @AppStorage("invertScroll")         private var invertScroll = false
 
     @StateObject private var music   = MusicManager()
     @StateObject private var sysEvt  = SystemEventsManager()
@@ -424,8 +426,8 @@ struct NotchContentView: View {
 
     private func handleScroll(dx: CGFloat, dy: CGFloat, phase: NSEvent.Phase, momentum: NSEvent.Phase, inverted: Bool) {
         if !momentum.isEmpty { return }   // ignore inertia after the fingers lift
-        // Direction of the fingers, whatever the "natural scrolling" setting
-        let finger = inverted ? dx : -dx
+        // Direction of the fingers, whatever the "natural scrolling" setting; the app setting can reverse it
+        let finger = (inverted ? dx : -dx) * (invertScroll ? -1 : 1)
 
         if phase.isEmpty {
             // Mouse wheel: no gesture phases, so debounce

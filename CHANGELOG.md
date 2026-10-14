@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0-alpha] - 2026-10-14
+
+### Added
+- Settings → General → Gestures → Invert swipe direction: reverses the two-finger swipe (and the mouse wheel) that moves between panels. Click and drag is not affected.
+
 ## [0.5.3-alpha] - 2026-10-14
 
 ### Fixed
@@ -136,7 +141,8 @@ First public alpha. Expect rough edges and breaking changes.
 - Volume and brightness synchronization.
 - Content clipping behind the physical notch on wide MacBook Pro models.
 
-[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.5.3-alpha...HEAD
+[Unreleased]: https://github.com/Peppe37/Notcholino/compare/v0.6.0-alpha...HEAD
+[0.6.0-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.3-alpha...v0.6.0-alpha
 [0.5.3-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.2-alpha...v0.5.3-alpha
 [0.5.2-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.1-alpha...v0.5.2-alpha
 [0.5.1-alpha]: https://github.com/Peppe37/Notcholino/compare/v0.5.0-alpha...v0.5.1-alpha

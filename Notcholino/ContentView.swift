@@ -140,6 +140,7 @@ struct GeneralSettingsView: View {
     @AppStorage("hideInFullscreen")     private var hideInFullscreen = true
     @AppStorage("hideInMissionControl") private var hideInMissionControl = true
     @AppStorage("hideWhileGaming")      private var hideWhileGaming = false
+    @AppStorage("invertScroll")         private var invertScroll = false
     @AppStorage("notchWidth")           private var notchWidth: Double = 0
     @AppStorage("notchHeight")          private var notchHeight: Double = 0
 
@@ -154,6 +155,14 @@ struct GeneralSettingsView: View {
                 Toggle("Hide while gaming",          isOn: $hideWhileGaming)
             }
             
+            Section {
+                Toggle("Invert swipe direction", isOn: $invertScroll)
+            } header: {
+                Text("Gestures")
+            } footer: {
+                Text("Reverses the two-finger swipe (and the mouse wheel) that moves between Control Center, Now Playing and Calendar. Click and drag is not affected.")
+            }
+
             Section("Monitors") {
                 Picker("Show notch on", selection: $displayScreens) {
                     Text("Main screen only").tag(0)
