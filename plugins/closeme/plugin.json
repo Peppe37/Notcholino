@@ -5,7 +5,7 @@
   "description": "Close the lid and keep the Mac running. The screen goes dark so it doesn't overheat.",
   "author": "Giuseppe",
   "icon": "laptopcomputer",
-  "version": "0.1.0-alpha",
+  "version": "0.2.0-alpha",
   "apiVersion": 1,
   "minAppVersion": "0.8.0"
 }

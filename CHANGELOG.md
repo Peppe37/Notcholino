@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1-alpha] - 2026-10-15
+
+### Fixed
+- **Leaving the Mac as if Notcholino had never run.** Whatever way the app ends (⌘Q, logout, an update, `kill`, a plugin removed), every plugin now gets to undo what it did: a plain `kill` used to end the app without any cleanup.
+- **CloseMe could leave `SleepDisabled` on** (the Sleep item greyed out, the lid not putting the Mac to sleep, an external display kept on with the lid closed). It is fixed in CloseMe 0.2.0, which only changes the setting when it was off, gives back what it found, installs a one-shot job that undoes it at boot, and offers **Restore sleep** if something is still left over after a crash. Espresso was checked and does not use that setting: it only holds power assertions, which end with the process.
+- Tidy (hide the Desktop icons) brings the icons back when Notcholino quits, and after a crash.
+
 ## [0.13.0-alpha] - 2026-10-15
 
 ### Changed

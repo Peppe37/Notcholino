@@ -48,6 +48,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupNotches()
+        catchTerminationSignals()
         SystemNowPlayingMonitor.shared.apply()
         UpdateChecker.shared.start()
         FocusMonitor.shared.start()
@@ -60,6 +61,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "displayScreens" {
             setupNotches()
+        }
+    }
+
+    /// Whatever way the app ends (⌘Q, logout, an update, `kill`), every plugin gets to put the Mac back as it found it
+    func applicationWillTerminate(_ notification: Notification) {
+        PluginManager.shared.loadedPlugins.forEach { $0.pluginWillUnload?() }
+    }
+
+    private var signalSources: [DispatchSourceSignal] = []
+
+    /// A plain `kill` (SIGTERM), a hang-up or an interrupt would end the process without any cleanup: turn them into a normal quit
+    private func catchTerminationSignals() {
+        for sig in [SIGTERM, SIGHUP, SIGINT] {
+            signal(sig, SIG_IGN)
+            let source = DispatchSource.makeSignalSource(signal: sig, queue: .main)
+            source.setEventHandler { NSApp.terminate(nil) }
+            source.resume()
+            signalSources.append(source)
         }
     }
 

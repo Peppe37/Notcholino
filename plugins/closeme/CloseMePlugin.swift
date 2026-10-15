@@ -8,11 +8,17 @@ import IOKit.ps
 /// close, so the display doesn't heat up shut inside the lid.
 ///
 /// macOS has no setting for this that works without admin rights: no power assertion stops the Mac from sleeping when the
-/// lid closes (Apple's own documentation says so). The one switch that does is `pmset disablesleep`, which needs an
-/// administrator password. It stays on until it is switched off again, so CloseMe never leaves it on by itself:
-/// a small watchdog, started together with it as root, switches it back off as soon as any of these happens:
-/// you turn CloseMe off, Notcholino quits or crashes, or 12 hours have passed. CloseMe also stops by itself when the
-/// battery is nearly empty and the Mac is not plugged in.
+/// lid closes on battery (Apple's own documentation says so). The one switch that does is `pmset disablesleep`, which needs
+/// an administrator password. It is a global setting that macOS keeps across restarts, so CloseMe is built so that it can
+/// never be left on:
+///
+/// - It only touches the setting if it was off, and it puts back exactly what it found (off).
+/// - A small watchdog, started as root together with it, switches it off again as soon as any of these happens: you turn
+///   CloseMe off, Notcholino quits (⌘Q, logout, update, a plugin removal) or crashes, or 12 hours have passed.
+/// - A one-shot job (a launch daemon) is installed with it and removed when it ends: if the Mac restarts while it is on,
+///   the job switches the setting off at boot.
+/// - If something still goes wrong, Notcholino notices at the next launch and the options offer "Restore sleep".
+/// CloseMe also stops by itself when the battery is nearly empty and the Mac is not plugged in.
 @objc(CloseMePlugin)
 final class CloseMePlugin: NSObject, NotcholinoPlugin {
 
@@ -41,6 +47,8 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
 
     private var active = false
     private var waitingForPassword = false
+    /// Whether this session switched the setting on (and so has to give it back)
+    private var ownsSetting = false
     private var endDate: Date?
     private var selected: String?
     private var lidClosed = false
@@ -51,6 +59,17 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
 
     private var flagPath: String { "/tmp/notcholino-closeme-\(getpid()).flag" }
 
+    private static let daemonPath = "/Library/LaunchDaemons/com.giuseppe.Notcholino.closeme-reset.plist"
+    private static var sessionFile: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Notcholino/closeme-session.json")
+    }
+    /// True when an earlier session left the setting on and nothing of ours is running: the options offer to fix it
+    private var orphaned = false
+    private var popup: (([String: Any]) -> Void)?
+
+    func setPopupHandler(_ handler: @escaping ([String: Any]) -> Void) { popup = handler }
+
     override init() {
         super.init()
         // If a previous run was cut short while the lid was closed, the brightness may still be at zero
@@ -60,6 +79,26 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
         }
         terminationObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.willTerminateNotification, object: nil, queue: nil) { [weak self] _ in self?.stop() }
+        checkLeftovers()
+    }
+
+    /// A session that was cut short (a crash, a force quit, a restart): did it leave the setting on?
+    private func checkLeftovers() {
+        guard let data = try? Data(contentsOf: Self.sessionFile),
+              let info = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        let pid = (info["pid"] as? Int).map(pid_t.init) ?? 0
+        if pid > 0, pid != getpid(), kill(pid, 0) == 0 { return }       // that session is still running
+        if Self.sleepIsDisabled() {
+            orphaned = true
+            // The watchdog normally fixed it already; if it is still on, say so
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
+                guard let self, self.orphaned else { return }
+                self.popup?(["title": "CloseMe left sleep switched off", "subtitle": "Open CloseMe and choose Restore sleep",
+                             "icon": "exclamationmark.triangle.fill", "color": "#FF9F0A", "seconds": 8.0])
+            }
+        } else {
+            try? FileManager.default.removeItem(at: Self.sessionFile)
+        }
     }
 
     // MARK: Control Center
@@ -78,9 +117,14 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
     }
 
     func menuItems() -> [[String: Any]] {
-        var items: [[String: Any]] = [["header": active
+        var items: [[String: Any]] = []
+        if orphaned && Self.sleepIsDisabled() {
+            items.append(["header": "An earlier session left sleep switched off (SleepDisabled)."])
+            items.append(["id": "restore", "title": "Restore sleep (needs your password)", "wide": true])
+        }
+        items.append(["header": active
             ? "Your Mac keeps running with the lid closed. Never put it in a bag like this."
-            : "Keep running with the lid closed for"]]
+            : "Keep running with the lid closed for. While on, it changes a macOS setting that is restored when you stop it or quit Notcholino."])
         for d in Self.durations {
             items.append(["id": d.id, "title": d.title, "checked": selected == d.id])
         }
@@ -91,6 +135,7 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
     func performMenuAction(_ id: String) {
         message = nil
         if id == "off" { stop(); return }
+        if id == "restore" { restoreSleep(); return }
         guard let d = Self.durations.first(where: { $0.id == id }) else { return }
         selected = id
         endDate = Date().addingTimeInterval(d.seconds)
@@ -103,14 +148,41 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
 
     private func start() {
         guard !waitingForPassword else { return }
+
+        // Already off by someone else (another app, or a leftover): not ours to change and not ours to restore
+        if Self.sleepIsDisabled() {
+            ownsSetting = false
+            active = true
+            lidClosed = Self.isLidClosed()
+            let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in self?.tick() }
+            RunLoop.main.add(t, forMode: .common)
+            timer = t
+            return
+        }
+
         waitingForPassword = true
+        ownsSetting = true
         FileManager.default.createFile(atPath: flagPath, contents: Data())
 
         let pid = getpid()
         let deadline = Int(Date().addingTimeInterval(Self.hardLimit).timeIntervalSince1970)
-        // Runs as root: switch sleep off, then leave a watchdog that switches it back on when it must
-        let watchdog = "while /bin/kill -0 \(pid) 2>/dev/null && [ -e \(flagPath) ] && [ $(/bin/date +%s) -lt \(deadline) ]; do /bin/sleep 2; done; /usr/bin/pmset -a disablesleep 0"
-        let shell = "/usr/bin/pmset -a disablesleep 1 && { /usr/bin/nohup /bin/sh -c '\(watchdog)' > /dev/null 2>&1 & }"
+        // A one-shot job for the next boot: if the Mac restarts while this is on, it switches the setting off and removes itself
+        let daemon = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0"><dict>
+        <key>Label</key><string>com.giuseppe.Notcholino.closeme-reset</string>
+        <key>RunAtLoad</key><true/>
+        <key>ProgramArguments</key><array><string>/bin/sh</string><string>-c</string>
+        <string>/usr/bin/pmset -a disablesleep 0; /bin/rm -f \(Self.daemonPath)</string></array>
+        </dict></plist>
+        """
+        let daemonSource = "/tmp/notcholino-closeme-\(pid).plist"
+        try? daemon.write(toFile: daemonSource, atomically: true, encoding: .utf8)
+        // Runs as root: put the boot job in place, switch sleep off, then leave a watchdog that switches it back on (and
+        // removes the boot job) when it must
+        let watchdog = "while /bin/kill -0 \(pid) 2>/dev/null && [ -e \(flagPath) ] && [ $(/bin/date +%s) -lt \(deadline) ]; do /bin/sleep 2; done; /usr/bin/pmset -a disablesleep 0; /bin/rm -f \(Self.daemonPath)"
+        let shell = "/usr/bin/install -m 644 -o root -g wheel \(daemonSource) \(Self.daemonPath) && /usr/bin/pmset -a disablesleep 1 && { /usr/bin/nohup /bin/sh -c '\(watchdog)' > /dev/null 2>&1 < /dev/null & }"
         let script = "do shell script \"\(shell)\" with prompt \"CloseMe keeps your Mac running when the lid is closed.\" with administrator privileges"
 
         let process = Process()
@@ -127,11 +199,13 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
             waitingForPassword = false
             message = "Could not ask for permission"
             try? FileManager.default.removeItem(atPath: flagPath)
+            try? FileManager.default.removeItem(atPath: daemonSource)
         }
     }
 
     private func didAskForPassword(success: Bool, errorText: String) {
         waitingForPassword = false
+        try? FileManager.default.removeItem(atPath: "/tmp/notcholino-closeme-\(getpid()).plist")
         guard success, Self.sleepIsDisabled() else {
             // -128 is "cancelled"
             message = errorText.contains("-128") ? nil : "Could not turn on"
@@ -142,9 +216,39 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
         }
         active = true
         lidClosed = Self.isLidClosed()
+        writeSession()
         let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in self?.tick() }
         RunLoop.main.add(t, forMode: .common)
         timer = t
+    }
+
+    /// Written while the setting is ours, removed when it is given back: it is how a later launch knows a session was cut short
+    private func writeSession() {
+        let info: [String: Any] = ["pid": Int(getpid()), "started": Date().timeIntervalSince1970, "previous": false]
+        if let data = try? JSONSerialization.data(withJSONObject: info) { try? data.write(to: Self.sessionFile, options: .atomic) }
+    }
+
+    /// Switches sleep back on by hand, for a setting an earlier session left behind
+    private func restoreSleep() {
+        let shell = "/usr/bin/pmset -a disablesleep 0; /bin/rm -f \(Self.daemonPath)"
+        let script = "do shell script \"\(shell)\" with prompt \"CloseMe puts your Mac's sleep back on.\" with administrator privileges"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", script]
+        process.standardOutput = Pipe()
+        process.standardError = Pipe()
+        process.terminationHandler = { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if Self.sleepIsDisabled() { self.message = "Could not restore sleep" }
+                else {
+                    self.orphaned = false
+                    try? FileManager.default.removeItem(at: Self.sessionFile)
+                    self.popup?(["title": "Sleep restored", "subtitle": "Your Mac can sleep again", "icon": "checkmark.circle.fill", "color": "#30D158"])
+                }
+            }
+        }
+        try? process.run()
     }
 
     // MARK: While it is on
@@ -186,6 +290,7 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
         timer = nil
         // The watchdog sees the flag is gone and switches sleep back on within two seconds
         try? FileManager.default.removeItem(atPath: flagPath)
+        if ownsSetting { try? FileManager.default.removeItem(at: Self.sessionFile); ownsSetting = false }
         if active { restoreBrightness() }
         active = false
         selected = nil

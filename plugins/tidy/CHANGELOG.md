@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.1-alpha] - 2026-10-15
+
+### Changed
+- The icons come back when Notcholino quits or the plugin is removed, and after a crash at the next launch, if it was Tidy that hid them: the Desktop is left as if Notcholino had never run.
+
 ## [0.1.0-alpha] - 2026-10-15
 
 ### Added
