@@ -186,6 +186,8 @@
     .notch, .notch .body, .pane, .tabs { transition-duration: .01s; }
     .wave i { animation: none; height: 10px; }
   }
+  pre.cmd { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; overflow-x:auto; margin:0 0 1em; font-size:.92rem; }
+  pre.cmd code { font-family: ui-monospace, "SF Mono", Menlo, monospace; user-select:all; -webkit-user-select:all; }
 </style>
 </head>
 <body>
@@ -345,6 +347,8 @@
   <section>
     <h2 data-i18n="instH">Install</h2>
     <p data-i18n="instP1">Requires macOS 14 or later. Download the latest build from the <a href="https://github.com/Peppe37/Notcholino/releases">Releases page</a>, open the DMG and drag Notcholino to Applications. Then follow the <a href="#first-launch">first launch guide</a> below: macOS will block the app the first time.</p>
+    <p data-i18n="instBrew">With Homebrew, one command (it also skips the first-launch warning):</p>
+    <pre class="cmd"><code>brew install --cask Peppe37/notcholino/notcholino</code></pre>
     <p data-i18n="instP2">Prefer building it yourself? Install <code>xcodegen</code>, run <code>xcodegen generate</code> and open <code>Notcholino.xcodeproj</code>. See the <a href="https://github.com/Peppe37/Notcholino#building-from-source">README</a>.</p>
   </section>
 
@@ -459,6 +463,7 @@
       esO: ['Indefinitely', '10 min', '30 min', '1 hour', '2 hours', '4 hours', '8 hours', '12 hours', 'Until…', 'Turn off'],
       instH: 'Install',
       instP1: 'Requires macOS 14 or later. Download the latest build from the <a href="' + REPO + '/releases">Releases page</a>, open the DMG and drag Notcholino to Applications. Then follow the <a href="#first-launch">first launch guide</a> below: macOS will block the app the first time.',
+      instBrew: 'With Homebrew, one command (it also skips the first-launch warning):',
       instP2: 'Prefer building it yourself? Install <code>xcodegen</code>, run <code>xcodegen generate</code> and open <code>Notcholino.xcodeproj</code>. See the <a href="' + REPO + '#building-from-source">README</a>.',
       license: 'Licensed under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0</a>',
       discussions: 'Discussions', contributing: 'Contributing', security: 'Security',
@@ -539,6 +544,7 @@
       esO: ['A tempo indefinito', '10 min', '30 min', '1 ora', '2 ore', '4 ore', '8 ore', '12 ore', 'Fino alle…', 'Disattiva'],
       instH: 'Installazione',
       instP1: "Richiede macOS 14 o successivo. Scarica l'ultima build dalla <a href=\"" + REPO + "/releases\">pagina delle Release</a>, apri il DMG e trascina Notcholino in Applicazioni. Poi segui la <a href=\"#first-launch\">guida al primo avvio</a> qui sotto: macOS bloccherà l'app la prima volta.",
+      instBrew: 'Con Homebrew, un solo comando (salta anche l\'avviso del primo avvio):',
       instP2: 'Preferisci compilarla tu? Installa <code>xcodegen</code>, esegui <code>xcodegen generate</code> e apri <code>Notcholino.xcodeproj</code>. Vedi il <a href="' + REPO + '#building-from-source">README</a>.',
       license: 'Licenza <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0</a>',
       discussions: 'Discussioni', contributing: 'Contribuire', security: 'Sicurezza',

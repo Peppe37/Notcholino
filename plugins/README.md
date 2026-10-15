@@ -20,6 +20,8 @@ Plugins are small compiled bundles (`.bundle`) that add buttons to the **Control
 | [Quicky](quicky) | Lock the screen, turn the display off or start the screen saver. |
 | [Tidy](tidy) | Hide the icons on your Desktop with one click. |
 
+New to this? Follow [the guide](GUIDE.md): you can have a plugin on your notch in ten minutes. Looking for an idea? See [IDEAS.md](IDEAS.md).
+
 ## Installing a plugin
 
 Open **Settings → Control Center → Plugin Store**, pick a plugin and click **Install**. Notcholino shows who made it, downloads the latest release from this repository, verifies its SHA-256 checksum and loads it. Plugins run inside the app with the same permissions as Notcholino, so only install ones you trust.
@@ -38,7 +40,7 @@ Since Notcholino 0.11.0 a plugin can also reach out of the Control Center (set `
 - `controlCenterHidden` removes the plugin's button, for one that only uses popups and icons.
 - A menu entry can have `"wide": true` to take a whole row instead of a small chip, for longer text. [Clippy](clippy) uses it.
 
-To add one:
+To add one, the quickest way is `scripts/new-plugin.sh <id> <Name>`, which creates all of this for you (see [the guide](GUIDE.md)). By hand:
 
 1. Create `plugins/<id>/` with your Swift source, a `plugin.json` and a `CHANGELOG.md`:
    ```json

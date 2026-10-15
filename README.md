@@ -5,9 +5,9 @@
 <h1 align="center">Notcholino</h1>
 
 <p align="center">
-  <b>A living Notch for macOS.</b><br>
-  Turn the notch of your MacBook into a dynamic hub for music, calendar, reminders and system feedback.<br>
-  Free, open source, and made with SwiftUI.
+  <b>A living notch for macOS.</b><br>
+  Music, calendar, a shelf for your files, device popups and a plugin store, in the notch of your MacBook.<br>
+  Free, open source (GPL-3.0), light on your Mac and with no telemetry.
 </p>
 
 <p align="center">
@@ -36,7 +36,14 @@
 
 > **Status: alpha.** Notcholino is in early development. Expect rough edges and breaking changes between versions. Feedback is very welcome.
 
-**Contents:** [What is it?](#what-is-it) · [Features](#features) · [Install](#install) · [Usage](#usage) · [Plugins](#plugins) · [FAQ](#faq) · [Privacy](#privacy) · [Performance](#performance) · [Roadmap](#roadmap) · [Support and contributing](#support-and-contributing) · [Building from source](#building-from-source) · [Releases](#releases-and-versioning) · [License](#license)
+**Contents:** [Why Notcholino](#why-notcholino) · [What is it?](#what-is-it) · [Features](#features) · [Install](#install) · [Usage](#usage) · [Plugins](#plugins) · [FAQ](#faq) · [Privacy](#privacy) · [Performance](#performance) · [Roadmap](#roadmap) · [Support and contributing](#support-and-contributing) · [Building from source](#building-from-source) · [Releases](#releases-and-versioning) · [License](#license)
+
+## Why Notcholino
+
+- **Plugins, with a store.** The Control Center page holds buttons made by plugins: temperature, battery, a Pomodoro timer, clipboard history, a color picker, copy text from the screen, microphone and camera alerts and more (15 today). Install them in one click from **Settings → Control Center**, and [write your own in ten minutes](plugins/GUIDE.md).
+- **Light.** About 46 MB of memory and 0.06 % of one CPU core when idle, [measured and repeatable](#performance). No accounts, no analytics, no telemetry.
+- **Made for the notch, not on top of it.** Hover to open, swipe between pages, drag a file in to keep it on the Shelf, and see device connections and Do Not Disturb without opening anything.
+- **Permissions that stay.** Every release is signed with the same certificate, so macOS doesn't ask for Calendar, Accessibility and the rest again after an update.
 
 ## What is it?
 
@@ -76,13 +83,23 @@ Notcholino is a free and open-source app that extends the hardware notch of your
 
 **Requirements:** macOS 14 Sonoma or later.
 
+### With Homebrew
+
+```sh
+brew install --cask Peppe37/notcholino/notcholino
+```
+
+Use the full name once: it also tells Homebrew to trust the [tap](https://github.com/Peppe37/homebrew-notcholino). Updates come with `brew upgrade --cask notcholino`. The cask opens the app without the warning described below.
+
+### From the DMG
+
 1. Download `Notcholino-<version>.dmg` from the [Releases page](https://github.com/Peppe37/Notcholino/releases/latest).
 2. Open the DMG and drag **Notcholino** to **Applications**.
 3. Launch it. macOS will block it the first time, see below.
 
-### First launch: allowing the app
+### First launch from the DMG: allowing the app
 
-Notcholino is not notarized by Apple yet (that requires a paid developer account), so macOS says it cannot verify the app. This is expected. To open it:
+*(Not needed if you installed with Homebrew.)* Notcholino is not notarized by Apple yet (that requires a paid developer account), so macOS says it cannot verify the app. This is expected. To open it:
 
 1. Open **Notcholino** from Applications. When the warning appears, click **Done** (not "Move to Trash").
 2. Open **System Settings → Privacy & Security**.

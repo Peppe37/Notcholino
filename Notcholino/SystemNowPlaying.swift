@@ -56,7 +56,12 @@ final class SystemNowPlayingMonitor: ObservableObject {
     private var terminationObserver: NSObjectProtocol?
     private var signalSources: [DispatchSourceSignal] = []
 
-    private var scriptURL: URL? { Bundle.main.url(forResource: "mediaremote-adapter", withExtension: "pl") }
+    private var scriptURL: URL? {
+        // For screenshots, videos and tests: a stand-in helper that reports a made-up song (scripts/demo)
+        if let path = ProcessInfo.processInfo.environment["NOTCHOLINO_NOW_PLAYING_SCRIPT"],
+           FileManager.default.isReadableFile(atPath: path) { return URL(fileURLWithPath: path) }
+        return Bundle.main.url(forResource: "mediaremote-adapter", withExtension: "pl")
+    }
     private var frameworkURL: URL? { Bundle.main.privateFrameworksURL?.appendingPathComponent("MediaRemoteAdapter.framework") }
 
     var isEnabled: Bool { UserDefaults.standard.object(forKey: Self.defaultsKey) as? Bool ?? true }
