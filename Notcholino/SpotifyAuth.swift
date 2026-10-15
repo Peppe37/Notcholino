@@ -274,7 +274,10 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
         var q = keychainQuery
         q[kSecReturnData as String] = true
         q[kSecMatchLimit as String] = kSecMatchLimitOne
-        if !interactive { q[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail }
+        // The old file-based Keychain ignores kSecUseAuthenticationUI and asks for the login password anyway when the item
+        // was made by another signature. Switching its user interaction off makes the read fail quietly instead.
+        if !interactive { SecKeychainSetUserInteractionAllowed(false) }
+        defer { if !interactive { SecKeychainSetUserInteractionAllowed(true) } }
         var out: CFTypeRef?
         guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess,
               let data = out as? Data else { return nil }

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.6-alpha] - 2026-10-16
+
+### Fixed
+- **No more Keychain password question at launch.** Spotify's token is stored in the old file-based Keychain, which asks for the login password when the item was made by a build with another signature, and ignores the setting meant to prevent it. Notcholino now switches the Keychain's user interaction off for its background reads, so they fail quietly; the question only appears when you click Like.
+
 ## [0.13.5-alpha] - 2026-10-16
 
 ### Changed

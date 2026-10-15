@@ -41,17 +41,19 @@ cover.level = NSWindow.Level(rawValue: 450)          // above the menu bar and t
 cover.isOpaque = true
 cover.hasShadow = false
 cover.ignoresMouseEvents = true
+cover.hidesOnDeactivate = false
+cover.canHide = false
 cover.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
 cover.contentView = Backdrop(frame: NSRect(origin: .zero, size: screen.frame.size))
 
 // MARK: Caption
 
 let caption = NSTextField(labelWithString: "")
-caption.font = .systemFont(ofSize: 34, weight: .semibold)
+caption.font = .systemFont(ofSize: 30, weight: .semibold)
 caption.textColor = NSColor.white.withAlphaComponent(0.95)
 caption.alignment = .center
 caption.alphaValue = 0
-caption.frame = NSRect(x: sw / 2 - 450, y: sh - 392, width: 900, height: 44)
+caption.frame = NSRect(x: sw / 2 - 440, y: sh - 392, width: 880, height: 44)
 let shadow = NSShadow(); shadow.shadowColor = NSColor.black.withAlphaComponent(0.35); shadow.shadowBlurRadius = 12; shadow.shadowOffset = .zero
 caption.shadow = shadow
 cover.contentView!.addSubview(caption)
@@ -69,17 +71,17 @@ func setCaption(_ text: String) {
 
 // MARK: End card
 
-let end = NSView(frame: NSRect(x: sw / 2 - 450, y: sh - 400, width: 900, height: 330))
+let end = NSView(frame: NSRect(x: sw / 2 - 440, y: sh - 420, width: 880, height: 300))
 end.alphaValue = 0
 func label(_ text: String, size: CGFloat, weight: NSFont.Weight, y: CGFloat, color: NSColor) -> NSTextField {
     let t = NSTextField(labelWithString: text)
     t.font = .systemFont(ofSize: size, weight: weight); t.textColor = color; t.alignment = .center
-    t.frame = NSRect(x: 0, y: y, width: 900, height: size * 1.3); return t
+    t.frame = NSRect(x: 0, y: y, width: 880, height: size * 1.3); return t
 }
-end.addSubview(label("Notcholino", size: 76, weight: .heavy, y: 190, color: .white))
-end.addSubview(label("Free and open source", size: 30, weight: .medium, y: 128, color: NSColor.white.withAlphaComponent(0.85)))
-end.addSubview(label("brew install --cask Peppe37/tap/notcholino", size: 24, weight: .regular, y: 70, color: NSColor.white.withAlphaComponent(0.75)))
-end.addSubview(label("github.com/Peppe37/Notcholino", size: 24, weight: .semibold, y: 28, color: NSColor(red: 0.55, green: 0.78, blue: 1, alpha: 1)))
+end.addSubview(label("Notcholino", size: 64, weight: .heavy, y: 190, color: .white))
+end.addSubview(label("Free and open source", size: 26, weight: .medium, y: 134, color: NSColor.white.withAlphaComponent(0.85)))
+end.addSubview(label("brew install --cask Peppe37/tap/notcholino", size: 21, weight: .regular, y: 82, color: NSColor.white.withAlphaComponent(0.75)))
+end.addSubview(label("github.com/Peppe37/Notcholino", size: 21, weight: .semibold, y: 46, color: NSColor(red: 0.55, green: 0.78, blue: 1, alpha: 1)))
 cover.contentView!.addSubview(end)
 
 // MARK: The screenshot thumbnail (what macOS shows after a screenshot), draggable like the real one
@@ -114,7 +116,7 @@ if CommandLine.arguments.count > 1, let image = NSImage(contentsOfFile: CommandL
     try? FileManager.default.createDirectory(atPath: "/tmp/notcholino-demo-stage", withIntermediateDirectories: true)
     let file = URL(fileURLWithPath: "/tmp/notcholino-demo-stage/Screenshot 2026-10-15 at 10.41.07.png")
     if let tiff = image.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) { try? png.write(to: file) }
-    let frame = NSRect(x: sw / 2 + 250, y: sh - 398, width: 190, height: 122)
+    let frame = NSRect(x: sw / 2 + 215, y: sh - 262, width: 190, height: 122)
     let w = KeyableWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
     w.level = NSWindow.Level(rawValue: 460)
     w.isOpaque = false; w.backgroundColor = .clear; w.hasShadow = false
@@ -134,12 +136,14 @@ func poll() {
     for line in lines[offset...] {
         if line.hasPrefix("caption:") { setCaption(String(line.dropFirst(8)).trimmingCharacters(in: .whitespaces)) }
         else if line == "thumb: show" {
+            thumbWindow?.ignoresMouseEvents = false
             NSApp.activate(ignoringOtherApps: true)
             thumbWindow?.makeKeyAndOrderFront(nil)
             NSAnimationContext.runAnimationGroup { ctx in ctx.duration = 0.4; thumbWindow?.animator().alphaValue = 1 }
         } else if line == "thumb: hide" {
-            NSAnimationContext.runAnimationGroup({ ctx in ctx.duration = 0.3; thumbWindow?.animator().alphaValue = 0 },
-                                                 completionHandler: { thumbWindow?.orderOut(nil) })
+            // Never order the window out: that would hand the focus to another app and let the Mac show through
+            NSAnimationContext.runAnimationGroup { ctx in ctx.duration = 0.3; thumbWindow?.animator().alphaValue = 0 }
+            thumbWindow?.ignoresMouseEvents = true
         } else if line == "end: show" {
             NSAnimationContext.runAnimationGroup { ctx in ctx.duration = 0.6; end.animator().alphaValue = 1 }
         } else if line == "end: hide" {
