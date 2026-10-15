@@ -121,12 +121,24 @@ final class DeviceMonitor: NSObject {
         connectNotification = IOBluetoothDevice.register(forConnectNotifications: self, selector: #selector(deviceConnected(_:device:)))
     }
 
+    /// The last popup shown for a device and what it said, so that the same news isn't told twice in a few seconds
+    private var lastNews: [String: (state: Bool, at: Date)] = [:]
+
+    private func isNew(_ address: String, connected: Bool) -> Bool {
+        if let last = lastNews[address], last.state == connected, Date().timeIntervalSince(last.at) < 6 { return false }
+        lastNews[address] = (connected, Date())
+        return true
+    }
+
     @objc private func deviceConnected(_ notification: IOBluetoothUserNotification, device: IOBluetoothDevice) {
         guard let address = device.addressString else { return }
+        // One disconnect notification per device: an old one still registered would tell every disconnection again
+        disconnectNotifications[address]?.unregister()
         disconnectNotifications[address] = device.register(forDisconnectNotification: self, selector: #selector(deviceDisconnected(_:device:)))
         // Devices that were already connected when the app started report themselves too: only show new connections
-        guard Date().timeIntervalSince(launched) > 8, enabled("devicePopupBluetooth") else { return }
+        guard Date().timeIntervalSince(launched) > 8, enabled("devicePopupBluetooth"), isNew(address, connected: true) else { return }
         let name = device.name ?? "Bluetooth device"
+        guard device.isConnected() else { return }
         PopupCenter.shared.show(icon: Self.symbol(for: device, name: name), title: name, subtitle: "Connected", tint: .white, seconds: duration)
         // The battery takes a moment to be known
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 3) {
@@ -136,10 +148,17 @@ final class DeviceMonitor: NSObject {
     }
 
     @objc private func deviceDisconnected(_ notification: IOBluetoothUserNotification, device: IOBluetoothDevice) {
-        if let address = device.addressString { disconnectNotifications[address] = nil }
+        guard let address = device.addressString else { return }
+        disconnectNotifications[address]?.unregister()
+        disconnectNotifications[address] = nil
         guard enabled("devicePopupBluetooth"), Date().timeIntervalSince(launched) > 8 else { return }
+        // A device that drops and comes back at once (or a notification that arrives late) is not a disconnection:
+        // look at the real state a moment later, and only say "Disconnected" if it still is
         let name = device.name ?? "Bluetooth device"
-        PopupCenter.shared.show(icon: Self.symbol(for: device, name: name), title: name, subtitle: "Disconnected", tint: .gray, seconds: duration)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            guard let self, !device.isConnected(), self.isNew(address, connected: false) else { return }
+            PopupCenter.shared.show(icon: Self.symbol(for: device, name: name), title: name, subtitle: "Disconnected", tint: .gray, seconds: self.duration)
+        }
     }
 
     private static func symbol(for device: IOBluetoothDevice, name: String) -> String {

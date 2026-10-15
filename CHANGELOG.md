@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.3-alpha] - 2026-10-16
+
+### Fixed
+- Bluetooth popups: "Disconnected" is only shown if the device is really disconnected a moment later (a device that drops and returns at once, or a late notification, no longer says it), and the same news is never shown twice in a few seconds. Each device now keeps a single disconnect notification instead of piling them up.
+
 ## [0.13.2-alpha] - 2026-10-15
 
 ### Fixed
