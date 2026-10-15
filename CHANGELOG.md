@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **License: from PolyForm Noncommercial 1.0.0 to the GNU GPL v3.0.** Notcholino is now really open source: you can use, study, modify and share it, and a modified version that is shared has to stay GPL-3.0 with its source. Versions up to 0.11.x keep the license they were released with.
+
 ## [0.11.0-alpha] - 2026-10-15
 
 ### Added

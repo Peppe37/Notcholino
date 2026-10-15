@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 import SwiftUI
 
 /// The shelf panel of the notch: a row of the files waiting there, to drag out whenever you like

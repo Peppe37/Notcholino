@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 import SwiftUI
 
 /// A small message that hangs under the closed notch for a few seconds ("AirPods connected", "Copied #FF8800").

@@ -16,7 +16,7 @@
   <a href="https://github.com/Peppe37/Notcholino/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Peppe37/Notcholino?style=flat&color=e0a82e"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-blue">
   <img alt="Swift" src="https://img.shields.io/badge/Swift-SwiftUI-orange">
-  <a href="LICENSE"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-lightgrey"></a>
+  <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue"></a>
   <a href="https://github.com/Peppe37/Notcholino/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/Peppe37/Notcholino"></a>
   <a href="https://github.com/Peppe37/Notcholino/issues"><img alt="Issues" src="https://img.shields.io/github/issues/Peppe37/Notcholino"></a>
   <a href="https://github.com/sponsors/Peppe37"><img alt="Sponsor" src="https://img.shields.io/badge/sponsor-%E2%9D%A4-ea4aaa"></a>
@@ -40,7 +40,7 @@
 
 ## What is it?
 
-Notcholino is a free, open-source and non-commercial app that extends the hardware notch of your MacBook with a fluid overlay. It stays out of the way as a small pill, and expands when you hover it to show what matters: what is playing, what is on your calendar, the reminders due today, and the volume and brightness you are changing.
+Notcholino is a free and open-source app that extends the hardware notch of your MacBook with a fluid overlay. It stays out of the way as a small pill, and expands when you hover it to show what matters: what is playing, what is on your calendar, the reminders due today, and the volume and brightness you are changing.
 
 ## Features
 
@@ -173,7 +173,7 @@ Notcholino shows what macOS itself lists in Control Center as playing. If the si
 It draws the same pill at the top of the screen, but Notcholino is built and tested on MacBooks with a notch.
 
 **Is it really free?**
-Yes. The source is open and you can use, modify and fork it for free under the [PolyForm Noncommercial](LICENSE) license, which does not allow commercial use or selling it.
+Yes. Notcholino is free and open source under the [GPL-3.0](LICENSE): you can use, study, modify and share it. If you share a modified version, it has to stay under the same license, with its source available.
 
 **How do I uninstall it?**
 Quit it from the menu bar icon, then drag **Notcholino** from Applications to the Trash. To also remove its data: delete `~/Library/Application Support/Notcholino`, run `defaults delete com.giuseppe.Notcholino`, and remove the `com.giuseppe.Notcholino.spotify` item in Keychain Access if you connected Spotify.
@@ -278,9 +278,10 @@ Reading the system "Now Playing" uses [mediaremote-adapter](https://github.com/u
 
 ## License
 
-Notcholino is released under the **PolyForm Noncommercial 1.0.0** license.
+Notcholino is free software, released under the **[GNU General Public License v3.0](LICENSE)**.
 
-- You **can** download, modify, fork and use Notcholino for free.
-- You **cannot** use it for commercial purposes or sell it.
+- You **can** use it, study the code, modify it and share it, for free.
+- If you share a modified version (or a program built on this code), it has to be released under the GPL-3.0 too, with its source.
+- Versions up to 0.11.x were released under the PolyForm Noncommercial 1.0.0 license; from 0.12.0 on, the project is GPL-3.0. Whoever got an older version keeps the terms it came with.
 
-See the [LICENSE](LICENSE) file for details.
+The vendored [mediaremote-adapter](third_party/mediaremote-adapter) is BSD-3-Clause, which is compatible with the GPL.

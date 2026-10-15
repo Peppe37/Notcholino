@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Notcholino – a living Notch for macOS</title>
-<meta name="description" content="Notcholino turns your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools. Free, open source, non-commercial.">
+<meta name="description" content="Notcholino turns your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools. Free and open source.">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="Notcholino">
-<meta property="og:description" content="A living Notch for macOS. Free, open source, non-commercial.">
+<meta property="og:description" content="A living Notch for macOS. Free and open source.">
 <meta property="og:image" content="https://peppe37.github.io/Notcholino/assets/social-preview.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://peppe37.github.io/Notcholino/">
@@ -17,7 +17,7 @@
 <meta name="twitter:image" content="https://peppe37.github.io/Notcholino/assets/social-preview.png">
 <link rel="canonical" href="https://peppe37.github.io/Notcholino/">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Notcholino","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 14 or later","description":"A living Notch for macOS: Now Playing, Calendar, Reminders, volume and brightness HUD and plugins. Free and open source.","url":"https://peppe37.github.io/Notcholino/","downloadUrl":"https://github.com/Peppe37/Notcholino/releases/latest","softwareVersion":"alpha","license":"https://polyformproject.org/licenses/noncommercial/1.0.0/","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Giuseppe","url":"https://github.com/Peppe37"}}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Notcholino","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 14 or later","description":"A living Notch for macOS: Now Playing, Calendar, Reminders, volume and brightness HUD and plugins. Free and open source.","url":"https://peppe37.github.io/Notcholino/","downloadUrl":"https://github.com/Peppe37/Notcholino/releases/latest","softwareVersion":"alpha","license":"https://www.gnu.org/licenses/gpl-3.0.html","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Giuseppe","url":"https://github.com/Peppe37"}}
 </script>
 <style>
   :root { --bg:#fff; --fg:#1d1d1f; --muted:#6e6e73; --card:#f5f5f7; --accent:#0071e3; --line:#d2d2d7; }
@@ -286,7 +286,7 @@
 
   <section>
     <h2 data-i18n="whatH">What is it?</h2>
-    <p data-i18n="whatP">Notcholino is a free, open-source and non-commercial notch app for macOS. It extends the hardware notch with a fluid overlay that expands on hover and shows what matters: now playing, upcoming events, volume and brightness, and more.</p>
+    <p data-i18n="whatP">Notcholino is a free and open-source notch app for macOS. It extends the hardware notch with a fluid overlay that expands on hover and shows what matters: now playing, upcoming events, volume and brightness, and more.</p>
     <p><span class="badge">Alpha</span> <span data-i18n="alphaP">Notcholino is in early development. Expect rough edges and breaking changes between versions.</span></p>
   </section>
 
@@ -370,7 +370,7 @@
     <details><summary data-i18n="faqQ4">Spotify Like doesn't work</summary><div data-i18n="faqA4">Click <b>Connect</b> next to the controls or in <b>Settings → Now Playing</b> and log in to Spotify. If it says your account is not allowed, open an issue to be added.</div></details>
     <details><summary data-i18n="faqQ5">YouTube or Netflix doesn't show up</summary><div data-i18n="faqA5">Notcholino shows what macOS lists as playing in Control Center. If the site or app isn't there, it doesn't report to the system. Check that <b>Settings → Now Playing → Detect any app</b> is on.</div></details>
     <details><summary data-i18n="faqQ6">What does it do with my data?</summary><div data-i18n="faqA6">Nothing leaves your Mac: no analytics, no telemetry, no accounts. It only contacts Spotify (if you connect it, and for cover art) and GitHub (plugins and the latest release). The Spotify token stays in your Keychain.</div></details>
-    <details><summary data-i18n="faqQ7">Is it really free?</summary><div data-i18n="faqA7">Yes. It is open source and free to use, modify and fork under the PolyForm Noncommercial license, which does not allow commercial use or selling it.</div></details>
+    <details><summary data-i18n="faqQ7">Is it really free?</summary><div data-i18n="faqA7">Yes. It is free and open source under the GPL-3.0: you can use, study, modify and share it. If you share a modified version, it has to stay under the same license, with its source available.</div></details>
   </section>
 
   <section id="support">
@@ -393,7 +393,7 @@
 </main>
 
 <footer>
-  <span data-i18n="license">Licensed under <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a></span> ·
+  <span data-i18n="license">Licensed under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0</a></span> ·
   <a href="https://github.com/Peppe37/Notcholino/blob/main/CHANGELOG.md" data-i18n="changelog">Changelog</a> ·
   <a href="https://github.com/Peppe37/Notcholino/releases" data-i18n="releases">Releases</a> ·
   <a href="https://github.com/Peppe37/Notcholino/issues" data-i18n="issues">Report an issue</a> ·
@@ -411,14 +411,14 @@
   var I18N = {
     en: {
       title: 'Notcholino – a living Notch for macOS',
-      desc: "Notcholino turns your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools. Free, open source, non-commercial.",
+      desc: "Notcholino turns your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools. Free and open source.",
       tagline: "Turn your MacBook's Notch into a dynamic hub for Live Activities, notifications and interactive tools.",
       download: 'Download', github: 'View on GitHub',
       latest: 'Latest release', prerelease: 'pre-release', allReleases: 'see all releases',
       hint: 'Interactive preview: hit skip, open the plugins in the Control Center, tap the dots or swipe with two fingers. Nothing actually plays.',
       allDay: 'All day',
       whatH: 'What is it?',
-      whatP: 'Notcholino is a free, open-source and non-commercial notch app for macOS. It extends the hardware notch with a fluid overlay that expands on hover and shows what matters: now playing, upcoming events, volume and brightness, and more.',
+      whatP: 'Notcholino is a free and open-source notch app for macOS. It extends the hardware notch with a fluid overlay that expands on hover and shows what matters: now playing, upcoming events, volume and brightness, and more.',
       alphaP: 'Notcholino is in early development. Expect rough edges and breaking changes between versions.',
       featH: 'Features',
       f1h: 'Dynamic Notch', f1p: 'A native overlay that blends with the hardware notch, with multi-monitor support.',
@@ -460,7 +460,7 @@
       instH: 'Install',
       instP1: 'Requires macOS 14 or later. Download the latest build from the <a href="' + REPO + '/releases">Releases page</a>, open the DMG and drag Notcholino to Applications. Then follow the <a href="#first-launch">first launch guide</a> below: macOS will block the app the first time.',
       instP2: 'Prefer building it yourself? Install <code>xcodegen</code>, run <code>xcodegen generate</code> and open <code>Notcholino.xcodeproj</code>. See the <a href="' + REPO + '#building-from-source">README</a>.',
-      license: 'Licensed under <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a>',
+      license: 'Licensed under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0</a>',
       discussions: 'Discussions', contributing: 'Contributing', security: 'Security',
       faqH: 'Questions',
       faqQ1: "macOS says it can't verify the app", faqA1: 'That is normal for the alpha: follow the <a href="#first-launch">first launch guide</a>. It takes four clicks, once.',
@@ -469,7 +469,7 @@
       faqQ4: "Spotify Like doesn't work", faqA4: 'Click <b>Connect</b> next to the controls or in <b>Settings → Now Playing</b> and log in to Spotify. If it says your account is not allowed, open an issue to be added.',
       faqQ5: "YouTube or Netflix doesn't show up", faqA5: "Notcholino shows what macOS lists as playing in Control Center. If the site or app isn't there, it doesn't report to the system. Check that <b>Settings → Now Playing → Detect any app</b> is on.",
       faqQ6: 'What does it do with my data?', faqA6: 'Nothing leaves your Mac: no analytics, no telemetry, no accounts. It only contacts Spotify (if you connect it, and for cover art) and GitHub (plugins and the latest release). The Spotify token stays in your Keychain.',
-      faqQ7: 'Is it really free?', faqA7: 'Yes. It is open source and free to use, modify and fork under the PolyForm Noncommercial license, which does not allow commercial use or selling it.',
+      faqQ7: 'Is it really free?', faqA7: 'Yes. It is free and open source under the GPL-3.0: you can use, study, modify and share it. If you share a modified version, it has to stay under the same license, with its source available.',
       spH: 'Support the project', spP: 'If Notcholino is useful to you, you can help keep it going. It pays for the time behind the project, and for the Apple Developer Program, which is what it takes to ship notarized builds with no warning at first launch.',
       sponsor: 'Sponsor',
       supH: 'Support & community', supP: 'Notcholino is a free project made by one person. Here is how to get help, and how you can help it grow.',
@@ -491,14 +491,14 @@
     },
     it: {
       title: 'Notcholino – un Notch vivo per macOS',
-      desc: 'Notcholino trasforma il Notch del tuo MacBook in un hub dinamico per Live Activities, notifiche e strumenti interattivi. Gratuito, open source, non commerciale.',
+      desc: 'Notcholino trasforma il Notch del tuo MacBook in un hub dinamico per Live Activities, notifiche e strumenti interattivi. Gratuito e open source.',
       tagline: 'Trasforma il Notch del tuo MacBook in un hub dinamico per Live Activities, notifiche e strumenti interattivi.',
       download: 'Scarica', github: 'Vedi su GitHub',
       latest: 'Ultima release', prerelease: 'pre-release', allReleases: 'vedi tutte le release',
       hint: "Anteprima interattiva: prova lo skip, apri i plugin nel Control Center, tocca i puntini o scorri con due dita. Non suona niente per davvero.",
       allDay: 'Tutto il giorno',
       whatH: "Cos'è?",
-      whatP: "Notcholino è un'app per il notch di macOS gratuita, open source e non commerciale. Estende il notch hardware con un overlay fluido che si espande al passaggio del mouse e mostra ciò che conta: la musica in riproduzione, i prossimi eventi, volume e luminosità, e altro ancora.",
+      whatP: "Notcholino è un'app per il notch di macOS gratuita e open source. Estende il notch hardware con un overlay fluido che si espande al passaggio del mouse e mostra ciò che conta: la musica in riproduzione, i prossimi eventi, volume e luminosità, e altro ancora.",
       alphaP: "Notcholino è in sviluppo iniziale. Aspettati qualche spigolo e modifiche non retrocompatibili tra una versione e l'altra.",
       featH: 'Funzionalità',
       f1h: 'Notch dinamico', f1p: "Un overlay nativo che si fonde con il notch hardware, con supporto multi-monitor.",
@@ -540,7 +540,7 @@
       instH: 'Installazione',
       instP1: "Richiede macOS 14 o successivo. Scarica l'ultima build dalla <a href=\"" + REPO + "/releases\">pagina delle Release</a>, apri il DMG e trascina Notcholino in Applicazioni. Poi segui la <a href=\"#first-launch\">guida al primo avvio</a> qui sotto: macOS bloccherà l'app la prima volta.",
       instP2: 'Preferisci compilarla tu? Installa <code>xcodegen</code>, esegui <code>xcodegen generate</code> e apri <code>Notcholino.xcodeproj</code>. Vedi il <a href="' + REPO + '#building-from-source">README</a>.',
-      license: 'Licenza <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a>',
+      license: 'Licenza <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0</a>',
       discussions: 'Discussioni', contributing: 'Contribuire', security: 'Sicurezza',
       faqH: 'Domande',
       faqQ1: "macOS dice che non può verificare l'app", faqA1: 'È normale nell\'alpha: segui la <a href="#first-launch">guida al primo avvio</a>. Bastano quattro clic, una volta sola.',
@@ -549,7 +549,7 @@
       faqQ4: 'Il Mi piace di Spotify non funziona', faqA4: 'Clicca <b>Connect</b> accanto ai controlli o in <b>Impostazioni → Now Playing</b> e accedi a Spotify. Se dice che il tuo account non è autorizzato, apri una issue per essere aggiunto.',
       faqQ5: 'YouTube o Netflix non compaiono', faqA5: "Notcholino mostra ciò che macOS elenca come in riproduzione nel Centro di Controllo. Se il sito o l'app non c'è, non si registra nel sistema. Controlla che <b>Impostazioni → Now Playing → Detect any app</b> sia attivo.",
       faqQ6: 'Cosa fa con i miei dati?', faqA6: 'Niente esce dal tuo Mac: nessuna analisi, nessuna telemetria, nessun account. Contatta solo Spotify (se lo colleghi, e per le copertine) e GitHub (plugin e ultima release). Il token Spotify resta nel tuo Portachiavi.',
-      faqQ7: 'È davvero gratuita?', faqA7: 'Sì. È open source e gratuita da usare, modificare e clonare con la licenza PolyForm Noncommercial, che non permette l\'uso commerciale né la vendita.',
+      faqQ7: 'È davvero gratuita?', faqA7: 'Sì. È gratuita e open source con licenza GPL-3.0: puoi usarla, studiarla, modificarla e condividerla. Se condividi una versione modificata, deve restare con la stessa licenza e con il codice disponibile.',
       spH: 'Sostieni il progetto', spP: "Se Notcholino ti è utile, puoi aiutarlo ad andare avanti. Finanzia il tempo dietro al progetto e l'Apple Developer Program, che serve per distribuire build notarizzate senza avvisi al primo avvio.",
       sponsor: 'Sostieni',
       supH: 'Supporto e community', supP: 'Notcholino è un progetto gratuito fatto da una persona. Ecco come avere aiuto, e come puoi aiutarlo a crescere.',

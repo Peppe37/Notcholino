@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 import SwiftUI
 import EventKit
 
@@ -625,7 +626,7 @@ struct LicenseView: View {
     var body: some View {
         Form {
             Section {
-                Text("Notcholino is released under the **PolyForm Noncommercial 1.0.0** license.\n\nYou are free to use, share, and modify this software for personal, non-commercial purposes. Commercial use requires a separate agreement.")
+                Text("Notcholino is free software, released under the **GNU General Public License v3.0**.\n\nYou are free to use, study, modify and share it. If you share a modified version, it has to be released under the same license, with its source.")
                     .font(.body)
                     .foregroundStyle(.primary)
                     .textSelection(.enabled)
@@ -658,7 +659,7 @@ struct AboutView: View {
             Section {
                 LabeledContent("Version", value: Self.versionString)
                 LabeledContent("Author",  value: "Giuseppe")
-                LabeledContent("License", value: "PolyForm Noncommercial 1.0.0")
+                LabeledContent("License", value: "GPL-3.0")
             }
             Section {
                 if let release = updates.available {

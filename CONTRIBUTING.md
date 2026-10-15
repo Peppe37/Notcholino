@@ -52,7 +52,7 @@ Releases are `0.x.y-alpha`: `x` goes up for features, `y` for fixes. The maintai
 
 ## A note on the license
 
-Notcholino is released under the [PolyForm Noncommercial 1.0.0](LICENSE) license. By sending a contribution you agree that it is licensed under the same terms.
+Notcholino is released under the [GPL-3.0](LICENSE) license. By sending a contribution you agree that it is licensed under the same terms.
 
 ## Being kind
 
