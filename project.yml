@@ -134,7 +134,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.plugin.tomato
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_NSPrincipalClass: TomatoPlugin
-        MARKETING_VERSION: "0.2.1-alpha"
+        MARKETING_VERSION: "0.3.0-alpha"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
