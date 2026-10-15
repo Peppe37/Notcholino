@@ -424,8 +424,9 @@ struct NotchContentView: View {
 
     private var curW: CGFloat {
         if isExpanded { return expandW }
-        // The strip is as wide as the notch, and wider only when its content doesn't fit
-        return max(pillW, (notchExtension?.contentWidth ?? 0) + flare * 2)
+        // The strip is exactly as wide as the notch (as the notch is right now: wider while music plays, say);
+        // a long text shrinks and is cut to fit, the notch never widens for it
+        return pillW
     }
     private var curH: CGFloat { isExpanded ? expandH : pillH + (notchExtension?.height ?? 0) }
 

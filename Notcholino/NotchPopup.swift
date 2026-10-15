@@ -59,19 +59,6 @@ enum NotchExtension: Equatable {
         case .text:         return 26
         }
     }
-
-    /// The width this content needs, to widen the notch when it doesn't fit (never narrower than the notch itself)
-    var contentWidth: CGFloat {
-        func width(_ s: String, _ font: NSFont) -> CGFloat { ceil((s as NSString).size(withAttributes: [.font: font]).width) }
-        switch self {
-        case .popup(let p):
-            let t = width(p.title, .systemFont(ofSize: 12, weight: .semibold))
-            let s = width(p.subtitle ?? "", .systemFont(ofSize: 10.5, weight: .medium))
-            return max(t, s) + (p.icon == nil ? 0 : 34) + 32
-        case .text(let s, _):
-            return width(s, .monospacedDigitSystemFont(ofSize: 12, weight: .semibold)) + 32
-        }
-    }
 }
 
 /// The content of the strip, drawn inside the notch's own black shape
@@ -93,16 +80,18 @@ struct NotchExtensionView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                     if let subtitle = popup.subtitle, !subtitle.isEmpty {
                         Text(subtitle)
                             .font(.system(size: 10.5, weight: .medium))
                             .foregroundStyle(.white.opacity(0.6))
                             .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                     }
                 }
             }
-            .fixedSize()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.horizontal, 12 + 12)      // the notch's own side curves (12) plus a margin
             .padding(.bottom, 4)
         case .text(let text, let color):
             Text(text)

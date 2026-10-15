@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.2-alpha] - 2026-10-15
+
+### Fixed
+- The strip under the closed notch (popups, Tomato's countdown) is now **exactly as wide as the notch**, and follows it when it is wider (while music plays, for instance). A long text shrinks and is cut to fit: the notch no longer widens for it.
+
 ## [0.13.1-alpha] - 2026-10-15
 
 ### Fixed
