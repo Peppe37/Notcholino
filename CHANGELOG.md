@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.12.0-alpha] - 2026-10-15
 
 ### Added
-- **Homebrew**: `brew install --cask Peppe37/notcholino/notcholino`, from the new [tap](https://github.com/Peppe37/homebrew-notcholino), which follows every release by itself and opens the app without the first-launch warning.
+- **Homebrew**: `brew install --cask Peppe37/tap/notcholino`, from the new [tap](https://github.com/Peppe37/homebrew-tap), which follows every release by itself and opens the app without the first-launch warning.
 - **Plugin tools**: a step-by-step guide (`plugins/GUIDE.md`), `scripts/new-plugin.sh` to create a plugin and its project target in one command, `scripts/dev-plugin.sh` to build and install it, `scripts/plugin-harness.swift` to try it without the app, and a list of ideas (`plugins/IDEAS.md`).
 
 ### Changed

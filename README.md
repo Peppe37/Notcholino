@@ -86,10 +86,10 @@ Notcholino is a free and open-source app that extends the hardware notch of your
 ### With Homebrew
 
 ```sh
-brew install --cask Peppe37/notcholino/notcholino
+brew install --cask Peppe37/tap/notcholino
 ```
 
-Use the full name once: it also tells Homebrew to trust the [tap](https://github.com/Peppe37/homebrew-notcholino). Updates come with `brew upgrade --cask notcholino`. The cask opens the app without the warning described below.
+Use the full name once: it also tells Homebrew to trust the [tap](https://github.com/Peppe37/homebrew-tap). Updates come with `brew upgrade --cask notcholino`. The cask opens the app without the warning described below.
 
 ### From the DMG
 

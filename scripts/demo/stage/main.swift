@@ -78,7 +78,7 @@ func label(_ text: String, size: CGFloat, weight: NSFont.Weight, y: CGFloat, col
 }
 end.addSubview(label("Notcholino", size: 76, weight: .heavy, y: 190, color: .white))
 end.addSubview(label("Free and open source", size: 30, weight: .medium, y: 128, color: NSColor.white.withAlphaComponent(0.85)))
-end.addSubview(label("brew install --cask Peppe37/notcholino/notcholino", size: 24, weight: .regular, y: 70, color: NSColor.white.withAlphaComponent(0.75)))
+end.addSubview(label("brew install --cask Peppe37/tap/notcholino", size: 24, weight: .regular, y: 70, color: NSColor.white.withAlphaComponent(0.75)))
 end.addSubview(label("github.com/Peppe37/Notcholino", size: 24, weight: .semibold, y: 28, color: NSColor(red: 0.55, green: 0.78, blue: 1, alpha: 1)))
 cover.contentView!.addSubview(end)
 
