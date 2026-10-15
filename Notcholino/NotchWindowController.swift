@@ -121,7 +121,11 @@ class NotchWindowController: NSWindowController {
 
         super.init(window: panel)
 
-        let root = AnyView(NotchContentView(notchID: notchID, topInset: screen.safeAreaInsets.top))
+        var notchWidth: CGFloat = 162      // a typical one, for Macs without a notch
+        if let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea {
+            notchWidth = screen.frame.width - left.width - right.width
+        }
+        let root = AnyView(NotchContentView(notchID: notchID, topInset: screen.safeAreaInsets.top, hardwareWidth: notchWidth))
         let hosting = NotchHostingView(rootView: root)
         hosting.notchID = notchID
         hosting.layer?.backgroundColor = NSColor.clear.cgColor
@@ -339,8 +343,11 @@ struct NotchContentView: View {
     @AppStorage("notchWidth")  private var tuningW: Double = 0
     @AppStorage("notchHeight") private var tuningH: Double = 0
 
-    // Collapsed pill (matches real MacBook notch ~162×32)
-    private let baseW: CGFloat = 162
+    /// Width of the hardware notch of this screen (185 pt on the 14" MacBook Pro), measured from the gap in the menu bar.
+    /// The closed pill, and the strip that grows under it, are exactly this wide so they line up with the real notch.
+    let hardwareWidth: CGFloat
+    // Collapsed pill: as wide and as tall as the real notch
+    private var baseW: CGFloat { hardwareWidth }
     private let baseH: CGFloat = 32
     private let flare: CGFloat = 12
 

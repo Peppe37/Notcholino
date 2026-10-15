@@ -29,19 +29,36 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
     /// login password when the app's signature changed, so we never read it more than once per launch.
     private var cachedRefreshToken: String?
 
+    /// Every Keychain call can wait for the user (a password question, hidden behind other windows) and so can take forever.
+    /// They all run here, one at a time, never on the main thread: the notch must never freeze because of a Keychain question.
+    /// `cachedRefreshToken` is only touched from this queue.
+    private let keychainQueue = DispatchQueue(label: "com.giuseppe.Notcholino.keychain", qos: .utility)
+
+    private func onKeychainQueue<T>(_ work: @escaping () -> T) async -> T {
+        await withCheckedContinuation { continuation in
+            keychainQueue.async { continuation.resume(returning: work()) }
+        }
+    }
+
     override init() {
         super.init()
         // Attributes only: this tells us a token exists without touching its secret, so no password prompt at launch
-        isConnected = keychainHasItem()
+        keychainQueue.async { [weak self] in
+            guard let self else { return }
+            let has = self.keychainHasItem()
+            DispatchQueue.main.async { self.isConnected = has }
+        }
     }
 
     /// - Parameter interactive: false (the default) never lets macOS ask for the login password: if the Keychain would
     ///   ask (the item was made by a build with another signature), it fails quietly and Spotify just stays unavailable
     ///   until the user does something that needs it. Only an explicit action (a click on Like) passes true.
-    private func refreshToken(interactive: Bool = false) -> String? {
-        if let cached = cachedRefreshToken { return cached }
-        cachedRefreshToken = keychainRead(interactive: interactive)
-        return cachedRefreshToken
+    private func refreshToken(interactive: Bool = false) async -> String? {
+        await onKeychainQueue { [self] in
+            if let cached = cachedRefreshToken { return cached }
+            cachedRefreshToken = keychainRead(interactive: interactive)
+            return cachedRefreshToken
+        }
     }
 
     /// Optional override from Settings > Advanced, otherwise the bundled one.
@@ -88,8 +105,10 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
     }
 
     func disconnect() {
-        keychainDelete()
-        cachedRefreshToken = nil
+        keychainQueue.async { [self] in
+            keychainDelete()
+            cachedRefreshToken = nil
+        }
         accessToken = nil
         accessExpiry = .distantPast
         DispatchQueue.main.async { self.isConnected = false }
@@ -135,9 +154,12 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
         }
         accessToken = token
         accessExpiry = Date().addingTimeInterval((json["expires_in"] as? Double) ?? 3600)
-        if let refresh = json["refresh_token"] as? String, refresh != cachedRefreshToken {
-            cachedRefreshToken = refresh
-            keychainWrite(refresh)
+        if let refresh = json["refresh_token"] as? String {
+            keychainQueue.async { [self] in
+                guard refresh != cachedRefreshToken else { return }
+                cachedRefreshToken = refresh
+                keychainWrite(refresh)
+            }
         }
         await MainActor.run { self.isConnected = true; self.lastError = nil }
         return true
@@ -145,7 +167,7 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
 
     private func validToken(interactive: Bool) async -> String? {
         if let t = accessToken, accessExpiry > Date().addingTimeInterval(30) { return t }
-        guard let refresh = refreshToken(interactive: interactive) else { return nil }
+        guard let refresh = await refreshToken(interactive: interactive) else { return nil }
         guard await tokenRequest([
             "grant_type": "refresh_token",
             "refresh_token": refresh,

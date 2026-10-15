@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.4-alpha] - 2026-10-16
+
+### Fixed
+- **The notch is now as wide as the real one.** The closed notch, and the strip that grows under it for popups and Tomato's countdown, were drawn 162 pt wide while the hardware notch of a 14" MacBook Pro is 185 pt: the strip looked narrower than the notch above it. Notcholino now measures the hardware notch of each screen and uses its width. (Screenshots don't show the hardware notch, which is why they looked right.)
+- **Keychain questions can no longer freeze the app.** Reading Spotify's token from the Keychain could wait for the login password on the main thread, with the whole notch (popups included) stuck behind it. Every Keychain call now runs in the background.
+
 ## [0.13.3-alpha] - 2026-10-16
 
 ### Fixed
