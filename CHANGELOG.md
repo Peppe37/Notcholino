@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.5-alpha] - 2026-10-16
+
+### Changed
+- The drawn notch is 4 pt wider than the gap macOS leaves in the menu bar (189 pt on a 14" MacBook Pro): the black of the real notch is a little wider than that gap, and the drawn one now covers it.
+- **Settings → General → Notch Size Tuning** shows a sample strip under the notch while you move the sliders, so you can match the drawn notch to the real one by eye, and has a **Reset** button. 0 is the measured size.
+
 ## [0.13.4-alpha] - 2026-10-16
 
 ### Fixed

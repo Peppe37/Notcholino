@@ -135,6 +135,11 @@ struct GeneralSettingsView: View {
     @AppStorage("notchWidth")           private var notchWidth: Double = 0
     @AppStorage("notchHeight")          private var notchHeight: Double = 0
 
+    /// While the sliders move, a strip hangs under the notch: it shows how wide and tall the notch is drawn
+    private func showSizeSample() {
+        PopupCenter.shared.show(icon: "arrow.left.and.right", title: "Notch size", subtitle: "Match the real notch", seconds: 3)
+    }
+
     var body: some View {
         Form {
             PermissionsSection()
@@ -169,9 +174,17 @@ struct GeneralSettingsView: View {
                 }
             }
 
-            Section("Notch Size Tuning") {
+            Section {
                 LabeledSlider(label: "Width",  value: $notchWidth,  range: -50...50,  unit: "px", format: "%.0f")
+                    .onChange(of: notchWidth) { _ in showSizeSample() }
                 LabeledSlider(label: "Height", value: $notchHeight, range: -20...20, unit: "px", format: "%.0f")
+                    .onChange(of: notchHeight) { _ in showSizeSample() }
+                Button("Reset") { notchWidth = 0; notchHeight = 0 }
+                    .disabled(notchWidth == 0 && notchHeight == 0)
+            } header: {
+                Text("Notch Size Tuning")
+            } footer: {
+                Text("Notcholino draws its notch as wide as the one of your MacBook. If the black you see on the real notch is a bit wider or narrower than the one it draws, move the sliders: a sample strip appears under the notch so you can match them. 0 is the measured size.")
             }
         }
         .formStyle(.grouped)

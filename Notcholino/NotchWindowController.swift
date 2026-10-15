@@ -347,7 +347,9 @@ struct NotchContentView: View {
     /// The closed pill, and the strip that grows under it, are exactly this wide so they line up with the real notch.
     let hardwareWidth: CGFloat
     // Collapsed pill: as wide and as tall as the real notch
-    private var baseW: CGFloat { hardwareWidth }
+    /// The black of the real notch is a little wider than the gap macOS leaves in the menu bar (the curve of its sides), so
+    /// the drawn one is 4 pt wider than the gap: that is what makes the two look like one
+    private var baseW: CGFloat { hardwareWidth + 4 }
     private let baseH: CGFloat = 32
     private let flare: CGFloat = 12
 
