@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 import SwiftUI
 
-/// A small message that hangs under the closed notch for a few seconds ("AirPods connected", "Copied #FF8800").
+/// A small message that grows out of the closed notch for a few seconds ("AirPods connected", "Copied #FF8800").
 struct NotchPopup: Identifiable, Equatable {
     let id = UUID()
     var icon: String?
@@ -47,37 +47,70 @@ final class PopupCenter: ObservableObject {
     }
 }
 
-/// The popup itself: a black tab hanging from the bottom of the notch, with the same curved joins as the notch
-struct NotchPopupView: View {
-    let popup: NotchPopup
-    private let flare: CGFloat = 10
+/// What the closed notch shows in the strip that grows under it: a popup, or the text of a plugin (a countdown)
+enum NotchExtension: Equatable {
+    case popup(NotchPopup)
+    case text(String, Color)
+
+    /// How much taller the notch gets
+    var height: CGFloat {
+        switch self {
+        case .popup(let p): return (p.subtitle?.isEmpty == false) ? 40 : 30
+        case .text:         return 26
+        }
+    }
+
+    /// The width this content needs, to widen the notch when it doesn't fit (never narrower than the notch itself)
+    var contentWidth: CGFloat {
+        func width(_ s: String, _ font: NSFont) -> CGFloat { ceil((s as NSString).size(withAttributes: [.font: font]).width) }
+        switch self {
+        case .popup(let p):
+            let t = width(p.title, .systemFont(ofSize: 12, weight: .semibold))
+            let s = width(p.subtitle ?? "", .systemFont(ofSize: 10.5, weight: .medium))
+            return max(t, s) + (p.icon == nil ? 0 : 34) + 32
+        case .text(let s, _):
+            return width(s, .monospacedDigitSystemFont(ofSize: 12, weight: .semibold)) + 32
+        }
+    }
+}
+
+/// The content of the strip, drawn inside the notch's own black shape
+struct NotchExtensionView: View {
+    let content: NotchExtension
 
     var body: some View {
-        HStack(spacing: 10) {
-            if let icon = popup.icon {
-                Image(systemName: icon)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(popup.tint)
-                    .frame(width: 24)
-            }
-            VStack(alignment: .leading, spacing: 1) {
-                Text(popup.title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                if let subtitle = popup.subtitle, !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.system(size: 10.5, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
+        switch content {
+        case .popup(let popup):
+            HStack(spacing: 10) {
+                if let icon = popup.icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(popup.tint)
+                        .frame(width: 24)
+                }
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(popup.title)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white)
                         .lineLimit(1)
+                    if let subtitle = popup.subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
                 }
             }
+            .fixedSize()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.bottom, 4)
+        case .text(let text, let color):
+            Text(text)
+                .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                .foregroundStyle(color)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.bottom, 4)
         }
-        .fixedSize()
-        .padding(.horizontal, flare + 14)
-        .padding(.top, 6)
-        .frame(height: 48)
-        .frame(minWidth: 170)
-        .background(NotchShape(cornerRadius: 18, flareRadius: flare).fill(Color.black))
     }
 }

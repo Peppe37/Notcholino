@@ -35,9 +35,12 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
         isConnected = keychainHasItem()
     }
 
-    private func refreshToken() -> String? {
+    /// - Parameter interactive: false (the default) never lets macOS ask for the login password: if the Keychain would
+    ///   ask (the item was made by a build with another signature), it fails quietly and Spotify just stays unavailable
+    ///   until the user does something that needs it. Only an explicit action (a click on Like) passes true.
+    private func refreshToken(interactive: Bool = false) -> String? {
         if let cached = cachedRefreshToken { return cached }
-        cachedRefreshToken = keychainRead()
+        cachedRefreshToken = keychainRead(interactive: interactive)
         return cachedRefreshToken
     }
 
@@ -140,9 +143,9 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
         return true
     }
 
-    private func validToken() async -> String? {
+    private func validToken(interactive: Bool) async -> String? {
         if let t = accessToken, accessExpiry > Date().addingTimeInterval(30) { return t }
-        guard let refresh = refreshToken() else { return nil }
+        guard let refresh = refreshToken(interactive: interactive) else { return nil }
         guard await tokenRequest([
             "grant_type": "refresh_token",
             "refresh_token": refresh,
@@ -154,21 +157,22 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
     // MARK: - Library API
 
     /// nil = unknown (not connected / request failed)
-    func isSaved(trackURI: String) async -> Bool? {
-        guard let (data, status) = await libraryCall("GET", uri: trackURI, contains: true), status == 200,
+    func isSaved(trackURI: String, interactive: Bool = false) async -> Bool? {
+        guard let (data, status) = await libraryCall("GET", uri: trackURI, contains: true, interactive: interactive), status == 200,
               let arr = try? JSONSerialization.jsonObject(with: data) as? [Bool] else { return nil }
         return arr.first
     }
 
     @discardableResult
     func setSaved(_ saved: Bool, trackURI: String, legacy: Bool = false) async -> Bool {
-        guard let (_, status) = await libraryCall(saved ? "PUT" : "DELETE", uri: trackURI, contains: false, legacyOnly: legacy) else { return false }
+        // A click on Like is the user asking: this one may show the Keychain question
+        guard let (_, status) = await libraryCall(saved ? "PUT" : "DELETE", uri: trackURI, contains: false, legacyOnly: legacy, interactive: true) else { return false }
         return (200..<300).contains(status)
     }
 
     /// Uses the newer /me/library endpoints and falls back to the legacy /me/tracks ones.
-    private func libraryCall(_ method: String, uri: String, contains: Bool, legacyOnly: Bool = false) async -> (Data, Int)? {
-        guard let token = await validToken() else { return nil }
+    private func libraryCall(_ method: String, uri: String, contains: Bool, legacyOnly: Bool = false, interactive: Bool = false) async -> (Data, Int)? {
+        guard let token = await validToken(interactive: interactive) else { return nil }
         let id = uri.components(separatedBy: ":").last ?? uri
 
         let newPath = "/v1/me/library" + (contains ? "/contains" : "")
@@ -244,10 +248,11 @@ final class SpotifyAuth: NSObject, ObservableObject, ASWebAuthenticationPresenta
         return SecItemCopyMatching(q as CFDictionary, nil) == errSecSuccess
     }
 
-    private func keychainRead() -> String? {
+    private func keychainRead(interactive: Bool) -> String? {
         var q = keychainQuery
         q[kSecReturnData as String] = true
         q[kSecMatchLimit as String] = kSecMatchLimitOne
+        if !interactive { q[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail }
         var out: CFTypeRef?
         guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess,
               let data = out as? Data else { return nil }

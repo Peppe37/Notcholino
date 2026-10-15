@@ -146,6 +146,9 @@ final class PluginManager: ObservableObject {
 
     struct SideIcon: Equatable { let symbol: String; let colorHex: String }
     @Published private(set) var sideIcons: [SideIcon] = []
+    /// The text of a plugin that wants the closed notch to grow a strip (a countdown), with its color
+    struct ExtensionText: Equatable { let text: String; let colorHex: String }
+    @Published private(set) var extensionText: ExtensionText?
     private var sideTimer: Timer?
 
     /// The plugins that have a Control Center button (a plugin can be only popups and side icons)
@@ -153,7 +156,9 @@ final class PluginManager: ObservableObject {
 
     /// Plugins change their side icon on their own, so it is read once a second, but only if some plugin offers one
     private func startSideIconWatch() {
-        guard sideTimer == nil, loadedPlugins.contains(where: { $0.responds(to: Selector(("notchSideIcon"))) }) else { return }
+        guard sideTimer == nil, loadedPlugins.contains(where: {
+            $0.responds(to: Selector(("notchSideIcon"))) || $0.responds(to: Selector(("notchExtensionText")))
+        }) else { return }
         let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in self?.refreshSideIcons() }
         t.tolerance = 0.5
         RunLoop.main.add(t, forMode: .common)
@@ -166,6 +171,11 @@ final class PluginManager: ObservableObject {
             return SideIcon(symbol: symbol, colorHex: p.notchSideIconColor ?? "")
         }
         if icons != sideIcons { sideIcons = icons }
+        let ext = loadedPlugins.lazy.compactMap { p -> ExtensionText? in
+            guard let text = p.notchExtensionText, !text.isEmpty else { return nil }
+            return ExtensionText(text: text, colorHex: p.notchExtensionColor ?? "")
+        }.first
+        if ext != extensionText { extensionText = ext }
     }
 
     // MARK: Order of the buttons

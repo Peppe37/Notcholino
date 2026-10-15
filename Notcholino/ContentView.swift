@@ -297,6 +297,11 @@ struct DevicesSettingsView: View {
             Section {
                 Toggle("Show a moon beside the notch", isOn: $focusMoon)
                     .onChange(of: focusMoon) { _ in focus.refresh() }
+                if focus.authorization == .authorized && focus.notShared {
+                    Label("Allowed, but macOS isn't sharing the Focus status yet. Open System Settings → Focus and allow Notcholino to see it.", systemImage: "info.circle.fill")
+                        .foregroundStyle(.orange)
+                        .font(.callout)
+                }
                 if focus.authorization != .authorized {
                     HStack {
                         Label(focus.authorization == .notDetermined ? "Notcholino needs your permission to see if a Focus is on" : "Focus status is not allowed",

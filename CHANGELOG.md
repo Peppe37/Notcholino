@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0-alpha] - 2026-10-15
+
+### Changed
+- **Popups come out of the notch**: a popup (AirPods, charger, disk, or a plugin's) is now part of the notch itself, which grows a strip as wide as the notch, instead of a separate tab hanging under it.
+- Plugins can make the closed notch grow a strip too, for a countdown (`notchExtensionText`). Tomato uses it, so its clock is the same width as the notch.
+- The moon and the plugins' side icons now sit right next to the notch row and stay there when a strip grows. The Focus status is checked every 2 seconds, and Settings says when macOS is not sharing it.
+
+### Fixed
+- Spotify's Keychain item could make macOS ask for the login password at launch when it had been made by a build with another signature. Notcholino now reads it quietly in the background and only lets macOS ask when you click Like.
+
 ## [0.12.0-alpha] - 2026-10-15
 
 ### Added

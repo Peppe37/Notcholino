@@ -478,12 +478,12 @@ final class MusicManager: NSObject, ObservableObject {
                 _ = await auth.setSaved(target, trackURI: uri)
                 // Trust the server, not the optimistic toggle: verify, retry once on legacy endpoints
                 try? await Task.sleep(nanoseconds: 400_000_000)
-                var actual = await auth.isSaved(trackURI: uri)
+                var actual = await auth.isSaved(trackURI: uri, interactive: true)
                 if actual != target {
                     print("Spotify like mismatch (wanted \(target), got \(String(describing: actual))), retrying on legacy endpoint")
                     _ = await auth.setSaved(target, trackURI: uri, legacy: true)
                     try? await Task.sleep(nanoseconds: 400_000_000)
-                    actual = await auth.isSaved(trackURI: uri)
+                    actual = await auth.isSaved(trackURI: uri, interactive: true)
                 }
                 guard let actual else { return }
                 await MainActor.run { if self.spotifyTrackURI == uri { self.isLiked = actual } }

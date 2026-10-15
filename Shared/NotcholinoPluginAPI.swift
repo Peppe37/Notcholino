@@ -72,4 +72,9 @@ public protocol NotcholinoPlugin: NSObjectProtocol {
     @objc optional var notchSideIcon: String { get }
     /// Its color as "#RRGGBB". Defaults to white.
     @objc optional var notchSideIconColor: String { get }
+    /// A short text (a countdown, say) shown while it is not empty in a strip that makes the closed notch a little longer,
+    /// as part of the notch itself. Read about once a second. (Notcholino 0.13.0 and later.)
+    @objc optional var notchExtensionText: String { get }
+    /// Its color as "#RRGGBB". Defaults to white.
+    @objc optional var notchExtensionColor: String { get }
 }

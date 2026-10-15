@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.0-alpha] - 2026-10-15
+
+### Changed
+- The countdown is now drawn by the app as part of the notch itself: the notch grows a strip, exactly as wide as the notch, instead of a separate tab under it. The break is still green with a cup. Needs Notcholino 0.13.0 or later.
+
 ## [0.2.1-alpha] - 2026-10-14
 
 ### Removed

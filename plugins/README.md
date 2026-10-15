@@ -9,7 +9,7 @@ Plugins are small compiled bundles (`.bundle`) that add buttons to the **Control
 | [Hotter](hotter) | The temperature of your Mac as the button itself, from green to red, with a small graph. Apple silicon only. |
 | [CloseMe](closeme) | *Experimental.* Keeps the Mac running with the lid closed, with the screen off. Asks for your administrator password. |
 | [BatLife](batlife) | Battery level as the button, with health, cycles, power and time left. |
-| [Tomato](tomato) | A Pomodoro timer with work and break minutes of your choice, a small clock under the notch and a sound. |
+| [Tomato](tomato) | A Pomodoro timer with work and break minutes of your choice, a countdown that grows out of the notch and a sound. |
 | [Dusty](dusty) | Clean mode: black screen and a locked keyboard and trackpad for 5 to 60 seconds. ⌘⇧C ends it. |
 | [Clippy](clippy) | The last 10 things you copied, to copy again with a click. Kept in memory only. |
 | [Watcher](watcher) | No button: an icon beside the notch while the microphone or the camera is in use, and a popup when it starts. |
@@ -37,6 +37,7 @@ Since Notcholino 0.11.0 a plugin can also reach out of the Control Center (set `
 
 - `setPopupHandler(_:)` gives the plugin a function to call whenever it has something to say: it shows a small popup under the closed notch with a `title`, an optional `subtitle`, an SF Symbol `icon`, a `color` and the number of `seconds`. [Picker](picker) and [Reader](reader) use it to say what they copied.
 - `notchSideIcon` and `notchSideIconColor` draw an SF Symbol beside the closed notch while the name isn't empty. [Watcher](watcher) uses it while the microphone or the camera is on.
+- `notchExtensionText` and `notchExtensionColor` (0.13.0) make the closed notch grow a strip with a short text, such as a countdown, as part of the notch. [Tomato](tomato) uses it.
 - `controlCenterHidden` removes the plugin's button, for one that only uses popups and icons.
 - A menu entry can have `"wide": true` to take a whole row instead of a small chip, for longer text. [Clippy](clippy) uses it.
 

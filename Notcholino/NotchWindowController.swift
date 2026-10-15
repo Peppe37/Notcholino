@@ -414,8 +414,20 @@ struct NotchContentView: View {
         return hoverExpands || isSystemHudActive
     }
 
-    private var curW: CGFloat { isExpanded ? expandW : pillW }
-    private var curH: CGFloat { isExpanded ? expandH : pillH }
+    /// What grows under the closed notch (a popup, or a plugin's countdown), as part of the notch itself
+    private var notchExtension: NotchExtension? {
+        guard !isExpanded else { return nil }
+        if let popup = popups.current { return .popup(popup) }
+        if let ext = pluginManager.extensionText { return .text(ext.text, Color(hex: ext.colorHex) ?? .white) }
+        return nil
+    }
+
+    private var curW: CGFloat {
+        if isExpanded { return expandW }
+        // The strip is as wide as the notch, and wider only when its content doesn't fit
+        return max(pillW, (notchExtension?.contentWidth ?? 0) + flare * 2)
+    }
+    private var curH: CGFloat { isExpanded ? expandH : pillH + (notchExtension?.height ?? 0) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -458,10 +470,21 @@ struct NotchContentView: View {
                         }
                         .frame(width: expandW, height: expandH)
                         .transition(.asymmetric(insertion: .opacity, removal: .opacity.animation(.easeOut(duration: 0.14))))
-                    } else if isPlayingCompact {
-                        compactMusicContent
-                            .frame(width: pillW, height: pillH)
-                            .transition(.opacity)
+                    } else if isPlayingCompact || notchExtension != nil {
+                        VStack(spacing: 0) {
+                            if isPlayingCompact {
+                                compactMusicContent.frame(width: pillW, height: pillH)
+                            } else {
+                                Color.clear.frame(height: pillH)
+                            }
+                            if let ext = notchExtension {
+                                NotchExtensionView(content: ext)
+                                    .frame(height: ext.height)
+                                    .transition(.opacity)
+                            }
+                        }
+                        .frame(width: curW)
+                        .transition(.opacity)
                     }
                 }
                 // Top aligned: the content stays put while the shape closes over it, instead of sliding up
@@ -469,29 +492,25 @@ struct NotchContentView: View {
                 // Perfect clipping to avoid ghosting
                 .clipShape(NotchShape(cornerRadius: isExpanded ? 28 : 10, flareRadius: flare))
             }
-            // A small message from the app or a plugin, hanging under the closed notch
+            // Icons beside the closed notch: Do Not Disturb on the left, plugins on the right. They are placed from the
+            // middle of the notch row, so they stay put when the notch grows a strip underneath.
             .overlay(alignment: .top) {
-                if let popup = popups.current, !isExpanded {
-                    NotchPopupView(popup: popup)
-                        .offset(y: curH - 2)
-                        .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: -10)), removal: .opacity))
-                }
-            }
-            // Icons beside the closed notch: Do Not Disturb on the left, plugins on the right
-            .overlay(alignment: .topLeading) {
-                if !isExpanded, focusOn { SideIcon(symbol: "moon.fill", color: Color(red: 0.62, green: 0.55, blue: 1)).offset(x: -26, y: (curH - 14) / 2) }
-            }
-            .overlay(alignment: .topTrailing) {
-                if !isExpanded, !pluginManager.sideIcons.isEmpty {
-                    HStack(spacing: 6) {
-                        ForEach(Array(pluginManager.sideIcons.enumerated()), id: \.offset) { _, icon in
+                let half = (pillW - flare * 2) / 2 + 18
+                ZStack {
+                    if !isExpanded, focusOn {
+                        SideIcon(symbol: "moon.fill", color: Color(red: 0.62, green: 0.55, blue: 1))
+                            .offset(x: -half)
+                    }
+                    if !isExpanded {
+                        ForEach(Array(pluginManager.sideIcons.enumerated()), id: \.offset) { i, icon in
                             SideIcon(symbol: icon.symbol, color: Color(hex: icon.colorHex) ?? .white)
+                                .offset(x: half + CGFloat(i) * 20)
                         }
                     }
-                    .offset(x: 26 + CGFloat(pluginManager.sideIcons.count - 1) * 20, y: (curH - 14) / 2)
                 }
+                .frame(height: pillH)
             }
-            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: popups.current)
+            .animation(.spring(response: 0.38, dampingFraction: 0.78), value: notchExtension)
             .animation(.easeInOut(duration: 0.2), value: focusOn)
             .animation(.easeInOut(duration: 0.2), value: pluginManager.sideIcons)
             .background(
@@ -510,6 +529,7 @@ struct NotchContentView: View {
             .onChange(of: sysEvt.currentMode) { _ in publishLayout() }
             .onChange(of: music.isPlaying) { _ in publishLayout() }
             .onChange(of: shownTab) { _ in publishLayout() }
+            .onChange(of: notchExtension) { _ in publishLayout() }
             .onReceive(NotificationCenter.default.publisher(for: .notchDropTargeted)) { notif in
                 if (notif.object as? UUID) == notchID { dropTargeted = notif.userInfo?["on"] as? Bool ?? false }
             }
