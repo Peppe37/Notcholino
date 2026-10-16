@@ -7,5 +7,13 @@
   "icon": "text.viewfinder",
   "version": "0.1.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.11.0"
+  "minAppVersion": "0.11.0",
+  "details": "Copy the text out of anything you can see: an image, a video, a PDF, a window that doesn't let you select. Click the button, drag over the text and it is in your clipboard, read on your Mac with the built-in text recognition. The picture is deleted at once and nothing leaves your Mac.",
+  "features": [
+    "Copy text from any part of the screen",
+    "On-device text recognition",
+    "Nothing is sent anywhere",
+    "A popup says how many words it found"
+  ],
+  "permissions": "macOS asks for Screen Recording the first time."
 }

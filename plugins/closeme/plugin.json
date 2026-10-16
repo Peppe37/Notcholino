@@ -7,5 +7,13 @@
   "icon": "laptopcomputer",
   "version": "0.2.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.8.0"
+  "minAppVersion": "0.8.0",
+  "details": "Keep the Mac running with the lid closed, and have the screen go dark so it doesn't heat up shut inside the lid. Experimental: it needs your administrator password, switches itself off after at most 12 hours, when Notcholino quits, or when the battery is nearly empty, and it gives back the setting it changed.",
+  "features": [
+    "Lid closed, Mac awake, screen at zero",
+    "Always put back: on quit, on a crash, after a restart",
+    "Stops by itself on a low battery",
+    "Restore button if something is ever left over"
+  ],
+  "permissions": "Asks for your administrator password to change a macOS power setting."
 }

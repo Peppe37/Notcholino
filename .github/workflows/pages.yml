@@ -3,7 +3,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main]
-    paths: [docs/**, plugins/**/plugin.json, scripts/gen_plugins_manifest.py, .github/workflows/pages.yml]
+    paths: [docs/**, plugins/**/plugin.json, plugins/**/media/**, plugins/**/CHANGELOG.md, scripts/gen_plugins_manifest.py, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:

@@ -7,5 +7,13 @@
   "icon": "eye",
   "version": "0.1.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.11.0"
+  "minAppVersion": "0.11.0",
+  "details": "Know when the microphone or the camera is in use. A small icon appears beside the closed notch, orange for the microphone and green for the camera, and a popup says when it starts, with the apps that are recording when macOS names them. It never records or reads anything.",
+  "features": [
+    "Icon beside the notch while in use",
+    "A popup when it starts",
+    "Names the apps using the microphone",
+    "No button: it only watches"
+  ],
+  "permissions": "No permission needed."
 }

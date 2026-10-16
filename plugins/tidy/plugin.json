@@ -7,5 +7,12 @@
   "icon": "menubar.dock.rectangle",
   "version": "0.1.1-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.8.0"
+  "minAppVersion": "0.8.0",
+  "details": "Hide the icons on your Desktop with one click, for a clean screen when you share or record it, and show them again with another. The files stay where they are. They come back by themselves when Notcholino quits.",
+  "features": [
+    "One switch to hide or show the icons",
+    "Files stay where they are",
+    "Icons come back when the app quits"
+  ],
+  "permissions": "Finder restarts for a second to apply the change."
 }

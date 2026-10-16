@@ -7,5 +7,13 @@
   "icon": "network",
   "version": "0.1.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.8.0"
+  "minAppVersion": "0.8.0",
+  "details": "How fast your connection answers. The button is the latency in milliseconds, green when quick and red when slow (OFF when nothing answers). Open it for a graph of the last minutes, the average, the packets lost and whether a VPN is on.",
+  "features": [
+    "Latency as the button, green to red",
+    "Graph, average and lost packets",
+    "VPN on or off",
+    "Measure to 1.1.1.1, 8.8.8.8 or apple.com"
+  ],
+  "permissions": "Opens one small connection every five seconds. No permission needed."
 }

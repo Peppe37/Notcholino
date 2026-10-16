@@ -7,5 +7,13 @@
   "icon": "doc.on.clipboard",
   "version": "0.1.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.11.0"
+  "minAppVersion": "0.11.0",
+  "details": "A short memory for the things you copy. Clippy keeps the last ten texts, images and files, and copies any of them again with a click. It never writes them to disk and forgets everything when Notcholino quits; what password managers mark as secret is never kept.",
+  "features": [
+    "The last 10 copies: text, images, files",
+    "One click to copy again",
+    "In memory only, never on disk",
+    "Skips what password managers mark as secret"
+  ],
+  "permissions": "Reads the clipboard. No permission needed."
 }

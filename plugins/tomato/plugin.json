@@ -7,5 +7,13 @@
   "icon": "stopwatch",
   "version": "0.3.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.13.0"
+  "minAppVersion": "0.13.0",
+  "details": "A Pomodoro timer in the notch. Choose the minutes of work and of break, press Start, and it repeats until you stop it. The countdown grows out of the notch itself, the break is green with a cup, and a sound plays at each switch.",
+  "features": [
+    "Your own work and break minutes",
+    "Repeats until you stop it",
+    "The countdown grows out of the notch",
+    "A sound at each switch (can be turned off)"
+  ],
+  "permissions": "No permission needed."
 }

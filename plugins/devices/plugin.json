@@ -7,5 +7,13 @@
   "icon": "airpodspro",
   "version": "0.1.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.8.0"
+  "minAppVersion": "0.8.0",
+  "details": "The battery of everything Bluetooth, in one place. The button shows the lowest one, colored by how low it is; open it for AirPods (each earbud and the case), the mouse, the keyboard, the trackpad and the controller.",
+  "features": [
+    "Lowest battery as the button",
+    "Each earbud and the case",
+    "Mouse, keyboard, trackpad, controllers",
+    "Read in the background, never slows the notch"
+  ],
+  "permissions": "Reads the Bluetooth report from macOS. No permission needed."
 }

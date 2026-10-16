@@ -7,5 +7,13 @@
   "icon": "thermometer.medium",
   "version": "0.1.1-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.8.0"
+  "minAppVersion": "0.8.0",
+  "details": "The temperature of your Mac, as the button itself: green when cool, red as it heats up. Open it for the average or the highest reading, °C or °F, and a graph of the last minutes. Apple silicon only.",
+  "features": [
+    "Temperature as the button, green to red",
+    "Average or highest sensor",
+    "°C or °F",
+    "Graph of the last minutes"
+  ],
+  "permissions": "Reads the temperature sensors. No permission needed."
 }

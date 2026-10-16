@@ -15,6 +15,13 @@ struct RemotePlugin: Decodable, Identifiable {
     let sha256: String
     /// Oldest Notcholino that can run it, e.g. "0.8.0"
     let minAppVersion: String?
+    // The store page (all optional: an older manifest has none of it)
+    let details: String?
+    let features: [String]?
+    let permissions: String?
+    let whatsNew: [String]?
+    let screenshots: [URL]?
+    let video: URL?
 
     /// True if this version of the app is new enough
     var isCompatible: Bool {
@@ -121,6 +128,26 @@ final class PluginStore: ObservableObject {
         return alert.runModal() == .alertFirstButtonReturn
     }
 
+    private func confirmRestart(for plugin: RemotePlugin) -> Bool {
+        let alert = NSAlert()
+        alert.messageText = "Restart Notcholino to finish updating \(plugin.name)?"
+        alert.informativeText = "\(plugin.name) \(plugin.version) is installed. Notcholino restarts in about a second, and everything comes back as it was."
+        alert.addButton(withTitle: "Restart now")
+        alert.addButton(withTitle: "Later")
+        NSApp.activate(ignoringOtherApps: true)
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
+    /// Opens the app again once this one has quit (quitting also lets every plugin undo what it did)
+    private func relaunch() {
+        let path = Bundle.main.bundlePath
+        let helper = Process()
+        helper.executableURL = URL(fileURLWithPath: "/bin/sh")
+        helper.arguments = ["-c", "sleep 1.5; /usr/bin/open \"$0\"", path]
+        try? helper.run()
+        NSApp.terminate(nil)
+    }
+
     private func performInstall(_ plugin: RemotePlugin) async throws {
         guard plugin.url.absoluteString.hasPrefix(Self.allowedPrefix) else {
             throw StoreError.message("Refusing to download from an unknown location.")
@@ -160,7 +187,10 @@ final class PluginStore: ObservableObject {
 
         if wasLoaded {
             // The old code stays in memory until the app restarts
-            message = "\(plugin.name) was updated. Restart Notcholino to use version \(plugin.version)."
+            // The old code stays in memory until the app restarts (two copies of a plugin's class can't live together),
+            // so offer to restart right now: one click instead of quitting and reopening by hand
+            message = "\(plugin.name) \(plugin.version) is installed and starts when Notcholino restarts."
+            if confirmRestart(for: plugin) { relaunch() }
             return
         }
         guard let loaded = pluginManager.load(bundleAt: destination), loaded.pluginIdentifier == plugin.id else {

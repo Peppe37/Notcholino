@@ -7,5 +7,13 @@
   "icon": "eyedropper",
   "version": "0.1.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.11.0"
+  "minAppVersion": "0.11.0",
+  "details": "A color picker for anything on your screen. Click Pick a color, point at a pixel and click: the color is copied as HEX, RGB or HSL, and the last ones stay in the options to copy again.",
+  "features": [
+    "Pick from anywhere on the screen",
+    "HEX, RGB or HSL",
+    "The last 8 colors to copy again",
+    "A popup confirms the copy"
+  ],
+  "permissions": "No permission needed."
 }

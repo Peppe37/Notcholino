@@ -7,5 +7,13 @@
   "icon": "battery.100",
   "version": "0.1.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.9.0"
+  "minAppVersion": "0.9.0",
+  "details": "Everything your battery knows, one click away. The button is the charge level, colored by how full it is (blue while charging); open it for the health of the battery, the charge cycles, the power in use, the time left and the temperature.",
+  "features": [
+    "Charge level as the button, green to red",
+    "Battery health and cycle count",
+    "Power in use and time to empty or full",
+    "A small graph of the last minutes"
+  ],
+  "permissions": "Reads the battery from macOS. No permission needed."
 }

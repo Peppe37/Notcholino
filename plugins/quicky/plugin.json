@@ -7,5 +7,12 @@
   "icon": "lock.display",
   "version": "0.1.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.8.0"
+  "minAppVersion": "0.8.0",
+  "details": "Three things macOS hides in menus, in one click: lock the screen now, turn the display off, or start the screen saver.",
+  "features": [
+    "Lock the screen",
+    "Turn the display off",
+    "Start the screen saver"
+  ],
+  "permissions": "No permission needed."
 }

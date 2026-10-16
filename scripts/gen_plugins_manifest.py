@@ -7,6 +7,8 @@ GitHub release whose tag is "<id>-v<version>". Needs the `gh` CLI (GH_TOKEN set)
 import hashlib
 import json
 import os
+import re
+import shutil
 import subprocess
 import urllib.request
 
@@ -26,6 +28,21 @@ def sha256_of(asset):
     # Older releases have no digest field: hash the download
     with urllib.request.urlopen(asset["browser_download_url"]) as resp:
         return hashlib.sha256(resp.read()).hexdigest()
+
+
+SITE = "https://peppe37.github.io/Notcholino"
+
+
+def latest_changes(path, version):
+    """The bullet points of the CHANGELOG section for `version` (as plain sentences)"""
+    try:
+        text = open(path, encoding="utf-8").read()
+    except OSError:
+        return []
+    m = re.search(r"^## \[%s\][^\n]*\n(.*?)(?=^## \[|\Z)" % re.escape(version), text, re.S | re.M)
+    if not m:
+        return []
+    return [re.sub(r"[`*]", "", l[2:].strip()) for l in m.group(1).splitlines() if l.startswith("- ")][:4]
 
 
 def main():
@@ -55,6 +72,23 @@ def main():
             "sha256": sha256_of(asset),
             **({"minAppVersion": meta["minAppVersion"]} if meta.get("minAppVersion") else {}),
         })
+        # Store page: the long text, the features, the permissions, what is new, and the screenshots in plugins/<id>/media
+        entry = plugins[-1]
+        for key in ("details", "features", "permissions", "video"):
+            if meta.get(key):
+                entry[key] = meta[key]
+        entry["whatsNew"] = latest_changes(os.path.join(plugins_dir, name, "CHANGELOG.md"), entry["version"])
+        media = os.path.join(plugins_dir, name, "media")
+        if os.path.isdir(media):
+            out = os.path.join(ROOT, "docs", "plugins", meta["id"])
+            os.makedirs(out, exist_ok=True)
+            shots = []
+            for f in sorted(os.listdir(media)):
+                if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                    shutil.copy2(os.path.join(media, f), os.path.join(out, f))
+                    shots.append(f"{SITE}/plugins/{meta['id']}/{f}")
+            if shots:
+                entry["screenshots"] = shots
         print(f"{meta['id']} {plugins[-1]['version']}")
 
     out_path = os.path.join(ROOT, "docs", "plugins.json")

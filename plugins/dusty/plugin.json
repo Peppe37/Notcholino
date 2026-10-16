@@ -7,5 +7,13 @@
   "icon": "sparkles",
   "version": "0.1.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.9.0"
+  "minAppVersion": "0.9.0",
+  "details": "A clean mode for wiping the keyboard and the trackpad without pressing anything by mistake. Pick 5 to 60 seconds: the screen goes black and the keyboard, trackpad and mouse stop answering. ⌘⇧C ends it at once.",
+  "features": [
+    "5 to 60 seconds of black screen",
+    "Keyboard, trackpad and mouse locked",
+    "⌘⇧C always ends it",
+    "Refuses to start if it can't lock the keyboard"
+  ],
+  "permissions": "Needs the Accessibility permission, to be able to ignore the keyboard and the pointer."
 }

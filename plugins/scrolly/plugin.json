@@ -7,5 +7,12 @@
   "icon": "computermouse",
   "version": "0.1.2-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.8.0"
+  "minAppVersion": "0.8.0",
+  "details": "Reverse the vertical scroll of your mouse wheel without touching the trackpad. A switch in the Control Center: on, the wheel scrolls the other way; the trackpad and horizontal scrolling stay as they are.",
+  "features": [
+    "Mouse wheel reversed, trackpad untouched",
+    "Works with smooth-scrolling mice",
+    "One switch in the Control Center"
+  ],
+  "permissions": "Needs the Accessibility permission, to see and change scroll events."
 }

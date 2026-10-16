@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0-alpha] - 2026-10-16
+
+### Added
+- **A real plugin store.** Each plugin has its own page, opened by clicking its row in **Settings → Control Center**: screenshots, a longer description, what it does, what it needs (permissions) and what is new in its latest version, with **Get**, **Update** and **Installed** in the same place. The pages are built from `plugin.json`, the plugin's `CHANGELOG.md` and the pictures in `plugins/<id>/media`, so a plugin author only edits those files.
+
+### Changed
+- **Updating a plugin no longer needs a manual restart.** After an update the app asks "Restart now?" and reopens itself in a second, with everything as it was (two copies of one plugin's code can't live together in a running app, so a restart is the only safe way to load the new one).
+
 ## [0.13.6-alpha] - 2026-10-16
 
 ### Fixed

@@ -6,5 +6,13 @@
   "author": "Giuseppe",
   "icon": "cup.and.saucer.fill",
   "version": "0.1.0-alpha",
-  "apiVersion": 1
+  "apiVersion": 1,
+  "details": "Keep your Mac and its screen awake, like a coffee for your computer. Indefinitely, for 10 minutes up to 12 hours, or until a time you pick. It only holds power assertions, which macOS releases by itself when Notcholino stops.",
+  "features": [
+    "Awake for as long as you choose",
+    "The screen stays on too",
+    "Nothing is left behind when it stops",
+    "Same effect as the caffeinate command"
+  ],
+  "permissions": "No permission needed."
 }

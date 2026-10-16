@@ -526,6 +526,7 @@ struct ControlCenterSettingsView: View {
     @AppStorage("controlCenterEnabled") private var enabled = true
     @ObservedObject private var pluginManager = PluginManager.shared
     @ObservedObject private var store = PluginStore.shared
+    @State private var detail: RemotePlugin?
 
     var body: some View {
         Form {
@@ -604,6 +605,9 @@ struct ControlCenterSettingsView: View {
         .formStyle(.grouped)
         .navigationTitle("Control Center")
         .task { await store.refresh() }
+        .sheet(item: $detail) { plugin in
+            PluginDetailView(plugin: plugin) { detail = nil }
+        }
     }
 
     @ViewBuilder
@@ -611,30 +615,22 @@ struct ControlCenterSettingsView: View {
         let installed = store.installedVersion(of: plugin.id)
         HStack(spacing: 12) {
             Image(systemName: plugin.icon)
-                .frame(width: 24)
+                .font(.system(size: 18))
+                .frame(width: 40, height: 40)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.accentColor.opacity(0.14)))
             VStack(alignment: .leading, spacing: 2) {
                 Text(plugin.name).font(.headline)
-                Text("v\(plugin.version) by \(plugin.author)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 Text(plugin.description)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
             Spacer()
-            if store.busyID == plugin.id {
-                ProgressView().controlSize(.small)
-            } else if !plugin.isCompatible {
-                Text("Needs Notcholino \(plugin.minAppVersion ?? "")+").font(.caption).foregroundStyle(.secondary)
-            } else if installed == nil {
-                Button("Install") { Task { await store.install(plugin) } }
-            } else if installed != plugin.version {
-                Button("Update") { Task { await store.install(plugin) } }
-            } else {
-                Text("Installed").foregroundStyle(.secondary)
-            }
+            StoreButton(plugin: plugin, installed: installed)
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onTapGesture { detail = plugin }
     }
 }
 
@@ -770,6 +766,122 @@ final class LaunchAtLoginManager: ObservableObject {
             DispatchQueue.main.async {
                 self.isEnabled = SMAppService.mainApp.status == .enabled
             }
+        }
+    }
+}
+
+
+// MARK: - Plugin store: button and detail page
+
+/// Install, Update or Installed, the same everywhere in the store
+struct StoreButton: View {
+    let plugin: RemotePlugin
+    let installed: String?
+    @ObservedObject private var store = PluginStore.shared
+
+    var body: some View {
+        if store.busyID == plugin.id {
+            ProgressView().controlSize(.small)
+        } else if !plugin.isCompatible {
+            Text("Needs Notcholino \(plugin.minAppVersion ?? "")+").font(.caption).foregroundStyle(.secondary)
+        } else if installed == nil {
+            Button("Get") { Task { await store.install(plugin) } }.buttonStyle(.borderedProminent).controlSize(.small)
+        } else if installed != plugin.version {
+            Button("Update") { Task { await store.install(plugin) } }.buttonStyle(.borderedProminent).controlSize(.small)
+        } else {
+            Text("Installed").font(.callout).foregroundStyle(.secondary)
+        }
+    }
+}
+
+/// One plugin's page: what it is, screenshots, features, what it needs and what changed
+struct PluginDetailView: View {
+    let plugin: RemotePlugin
+    let close: () -> Void
+    @ObservedObject private var store = PluginStore.shared
+
+    var body: some View {
+        let installed = store.installedVersion(of: plugin.id)
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: plugin.icon)
+                    .font(.system(size: 28))
+                    .frame(width: 64, height: 64)
+                    .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.accentColor.opacity(0.16)))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(plugin.name).font(.title.bold())
+                    Text("by \(plugin.author) · v\(plugin.version)")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+                Spacer()
+                StoreButton(plugin: plugin, installed: installed)
+                Button { close() } label: { Image(systemName: "xmark.circle.fill").font(.title3).foregroundStyle(.secondary) }
+                    .buttonStyle(.plain)
+            }
+            .padding(20)
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    if let shots = plugin.screenshots, !shots.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(shots, id: \.self) { url in
+                                    AsyncImage(url: url) { image in
+                                        image.resizable().scaledToFit()
+                                    } placeholder: {
+                                        RoundedRectangle(cornerRadius: 12).fill(Color.secondary.opacity(0.12))
+                                            .overlay(ProgressView().controlSize(.small))
+                                    }
+                                    .frame(height: 210)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.secondary.opacity(0.2)))
+                                }
+                            }
+                        }
+                    }
+                    if let video = plugin.video {
+                        Link(destination: video) { Label("Watch the video", systemImage: "play.circle.fill") }
+                    }
+
+                    Text(plugin.details ?? plugin.description)
+                        .font(.body)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if let features = plugin.features, !features.isEmpty {
+                        section("What it does") {
+                            ForEach(features, id: \.self) { f in
+                                Label(f, systemImage: "checkmark.circle.fill").foregroundStyle(.primary, .green)
+                            }
+                        }
+                    }
+                    if let permissions = plugin.permissions, !permissions.isEmpty {
+                        section("What it needs") { Text(permissions).foregroundStyle(.secondary) }
+                    }
+                    if let news = plugin.whatsNew, !news.isEmpty {
+                        section("What's new in \(plugin.version)") {
+                            ForEach(news, id: \.self) { n in Text("• \(n)").foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                        }
+                    }
+                    if let message = store.message {
+                        Text(message).font(.caption).foregroundStyle(.orange)
+                    }
+                    HStack(spacing: 14) {
+                        Text("Needs Notcholino \(plugin.minAppVersion ?? "any version")").font(.caption).foregroundStyle(.secondary)
+                        Link("Source on GitHub", destination: URL(string: "https://github.com/Peppe37/Notcholino/tree/main/plugins/\(plugin.id)")!).font(.caption)
+                    }
+                }
+                .padding(20)
+            }
+        }
+        .frame(width: 600, height: 560)
+    }
+
+    private func section<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.headline)
+            content()
         }
     }
 }
