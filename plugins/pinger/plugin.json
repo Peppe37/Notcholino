@@ -15,5 +15,15 @@
     "VPN on or off",
     "Measure to 1.1.1.1, 8.8.8.8 or apple.com"
   ],
-  "permissions": "Opens one small connection every five seconds. No permission needed."
+  "permissions": "Opens one small connection every five seconds. No permission needed.",
+  "category": "Network",
+  "tags": [
+    "network",
+    "latency",
+    "ping",
+    "vpn",
+    "internet",
+    "connection",
+    "wifi"
+  ]
 }

@@ -15,5 +15,15 @@
     "Power in use and time to empty or full",
     "A small graph of the last minutes"
   ],
-  "permissions": "Reads the battery from macOS. No permission needed."
+  "permissions": "Reads the battery from macOS. No permission needed.",
+  "category": "System",
+  "tags": [
+    "battery",
+    "power",
+    "charging",
+    "health",
+    "cycles",
+    "energy",
+    "watt"
+  ]
 }

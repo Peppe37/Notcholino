@@ -15,5 +15,14 @@
     "Names the apps using the microphone",
     "No button: it only watches"
   ],
-  "permissions": "No permission needed."
+  "permissions": "No permission needed.",
+  "category": "Privacy",
+  "tags": [
+    "microphone",
+    "camera",
+    "privacy",
+    "recording",
+    "webcam",
+    "indicator"
+  ]
 }

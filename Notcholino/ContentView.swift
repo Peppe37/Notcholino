@@ -12,6 +12,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
     case nowPlaying  = "Now Playing"
     case calendar    = "Calendar"
     case controlCenter = "Control Center"
+    case pluginStore = "Plugin Store"
     case license     = "License"
     case about       = "About"
 
@@ -25,6 +26,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .nowPlaying:   return "music.note"
         case .calendar:     return "calendar"
         case .controlCenter: return "square.grid.2x2.fill"
+        case .pluginStore:  return "bag.fill"
         case .license:      return "checkmark.seal.fill"
         case .about:        return "info.circle.fill"
         }
@@ -40,6 +42,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .nowPlaying:   return .red
         case .calendar:     return .red
         case .controlCenter: return .purple
+        case .pluginStore:  return .blue
         case .license:      return .teal
         case .about:        return Color(NSColor.secondaryLabelColor)
         }
@@ -66,7 +69,7 @@ struct ContentView: View {
                 }
 
                 Section("Live Activities") {
-                    ForEach([SidebarItem.controlCenter, .shelf, .nowPlaying, .calendar], id: \.self) { item in
+                    ForEach([SidebarItem.controlCenter, .pluginStore, .shelf, .nowPlaying, .calendar], id: \.self) { item in
                         NavigationLink(value: item) { SidebarLabel(item: item) }
                     }
                 }
@@ -83,6 +86,7 @@ struct ContentView: View {
             detailView(for: selection)
         }
         .frame(minWidth: 680, minHeight: 560)
+        .onReceive(NotificationCenter.default.publisher(for: .openPluginStore)) { _ in selection = .pluginStore }
         // Native window title
         .navigationTitle("Notcholino")
     }
@@ -98,6 +102,7 @@ struct ContentView: View {
         case .nowPlaying:   NowPlayingSettingsView()
         case .calendar:     CalendarSettingsView()
         case .controlCenter: ControlCenterSettingsView()
+        case .pluginStore:  PluginStoreView()
         case .license:      LicenseView()
         case .about:        AboutView()
         case nil:           EmptyView()
@@ -526,7 +531,6 @@ struct ControlCenterSettingsView: View {
     @AppStorage("controlCenterEnabled") private var enabled = true
     @ObservedObject private var pluginManager = PluginManager.shared
     @ObservedObject private var store = PluginStore.shared
-    @State private var detail: RemotePlugin?
 
     var body: some View {
         Form {
@@ -582,66 +586,19 @@ struct ControlCenterSettingsView: View {
             }
 
             Section {
-                if store.isLoading && store.available.isEmpty {
-                    HStack { ProgressView().controlSize(.small); Text("Loading…").foregroundStyle(.secondary) }
+                Button {
+                    NotificationCenter.default.post(name: .openPluginStore, object: nil)
+                } label: {
+                    Label("Browse the Plugin Store", systemImage: "bag.fill")
                 }
-                if !store.updates.isEmpty {
-                    HStack {
-                        Label("\(store.updates.count) update\(store.updates.count == 1 ? "" : "s") available", systemImage: "arrow.down.circle.fill")
-                            .foregroundStyle(Color.accentColor)
-                        Spacer()
-                        Button("Update all") { Task { await store.updateAll() } }
-                            .buttonStyle(.borderedProminent).controlSize(.small)
-                            .disabled(store.busyID != nil)
-                    }
-                }
-                ForEach(store.available) { plugin in
-                    storeRow(plugin)
-                }
-                if let message = store.message {
-                    Text(message).font(.caption).foregroundStyle(.orange)
-                }
-                HStack {
-                    Spacer()
-                    Button("Refresh") { Task { await store.refresh() } }
-                        .disabled(store.isLoading)
-                }
-            } header: {
-                Text("Plugin Store")
             } footer: {
-                Text("Plugins are downloaded from the Notcholino releases on GitHub, always at their latest version.")
+                Text("Find, install and update plugins in the Plugin Store.")
             }
         }
         .formStyle(.grouped)
         .navigationTitle("Control Center")
-        .task { await store.refresh() }
-        .sheet(item: $detail) { plugin in
-            PluginDetailView(plugin: plugin) { detail = nil }
-        }
     }
 
-    @ViewBuilder
-    private func storeRow(_ plugin: RemotePlugin) -> some View {
-        let installed = store.installedVersion(of: plugin.id)
-        HStack(spacing: 12) {
-            Image(systemName: plugin.icon)
-                .font(.system(size: 18))
-                .frame(width: 40, height: 40)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.accentColor.opacity(0.14)))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(plugin.name).font(.headline)
-                Text(plugin.description)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-            Spacer()
-            StoreButton(plugin: plugin, installed: installed)
-        }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onTapGesture { detail = plugin }
-    }
 }
 
 // MARK: - License
@@ -893,5 +850,129 @@ struct PluginDetailView: View {
             Text(title).font(.headline)
             content()
         }
+    }
+}
+
+
+extension Notification.Name {
+    static let openPluginStore = Notification.Name("openPluginStore")
+}
+
+// MARK: - Plugin Store (a grid, with search)
+
+struct PluginStoreView: View {
+    @ObservedObject private var store = PluginStore.shared
+    @State private var query = ""
+    @State private var category = "All"
+    @State private var detail: RemotePlugin?
+
+    private var categories: [String] {
+        ["All"] + Array(Set(store.available.compactMap(\.category))).sorted()
+    }
+
+    private var shown: [RemotePlugin] {
+        store.available.filter { (category == "All" || $0.category == category) && $0.matches(query) }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                if !store.updates.isEmpty {
+                    HStack {
+                        Label("\(store.updates.count) update\(store.updates.count == 1 ? "" : "s") available", systemImage: "arrow.down.circle.fill")
+                            .foregroundStyle(Color.accentColor)
+                        Spacer()
+                        Button("Update all") { Task { await store.updateAll() } }
+                            .buttonStyle(.borderedProminent).controlSize(.small)
+                            .disabled(store.busyID != nil)
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.accentColor.opacity(0.1)))
+                }
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(categories, id: \.self) { c in
+                            Button(c) { category = c }
+                                .buttonStyle(.plain)
+                                .font(.callout.weight(.medium))
+                                .padding(.horizontal, 12).padding(.vertical, 5)
+                                .background(Capsule().fill(category == c ? Color.accentColor : Color.secondary.opacity(0.15)))
+                                .foregroundStyle(category == c ? Color.white : Color.primary)
+                        }
+                    }
+                }
+
+                if store.isLoading && store.available.isEmpty {
+                    HStack { ProgressView().controlSize(.small); Text("Loading…").foregroundStyle(.secondary) }
+                } else if shown.isEmpty {
+                    VStack(spacing: 6) {
+                        Image(systemName: "magnifyingglass").font(.largeTitle).foregroundStyle(.secondary)
+                        Text(query.isEmpty ? "No plugins here yet." : "No plugin matches \"\(query)\".").foregroundStyle(.secondary)
+                        Text("Search looks at names, descriptions, what a plugin does and its keywords.").font(.caption).foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity).padding(.top, 50)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 190, maximum: 260), spacing: 14)], spacing: 14) {
+                        ForEach(shown) { plugin in
+                            PluginCard(plugin: plugin) { detail = plugin }
+                        }
+                    }
+                }
+
+                if let message = store.message {
+                    Text(message).font(.caption).foregroundStyle(.orange)
+                }
+                Text("Plugins are downloaded from the Notcholino releases on GitHub, always at their latest version, after a checksum check.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding(20)
+        }
+        .searchable(text: $query, placement: .toolbar, prompt: "Search plugins, features, keywords")
+        .navigationTitle("Plugin Store")
+        .task { await store.refresh() }
+        .toolbar {
+            ToolbarItem { Button { Task { await store.refresh() } } label: { Image(systemName: "arrow.clockwise") }.disabled(store.isLoading).help("Refresh the list") }
+        }
+        .sheet(item: $detail) { plugin in
+            PluginDetailView(plugin: plugin) { detail = nil }
+        }
+    }
+}
+
+/// A plugin in the grid: a big icon, its name, a line about it and the button
+private struct PluginCard: View {
+    let plugin: RemotePlugin
+    let open: () -> Void
+    @ObservedObject private var store = PluginStore.shared
+
+    var body: some View {
+        let installed = store.installedVersion(of: plugin.id)
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: plugin.icon)
+                .font(.system(size: 26))
+                .frame(width: 56, height: 56)
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.accentColor.opacity(0.16)))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(plugin.name).font(.headline)
+                Text(plugin.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            HStack {
+                if let category = plugin.category { Text(category).font(.caption2).foregroundStyle(.tertiary) }
+                Spacer()
+                StoreButton(plugin: plugin, installed: installed)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 190, alignment: .topLeading)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.secondary.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.secondary.opacity(0.14)))
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onTapGesture(perform: open)
     }
 }

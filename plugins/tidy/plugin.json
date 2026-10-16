@@ -14,5 +14,14 @@
     "Files stay where they are",
     "Icons come back when the app quits"
   ],
-  "permissions": "Finder restarts for a second to apply the change."
+  "permissions": "Finder restarts for a second to apply the change.",
+  "category": "Utilities",
+  "tags": [
+    "desktop",
+    "icons",
+    "hide",
+    "screen sharing",
+    "recording",
+    "clean"
+  ]
 }

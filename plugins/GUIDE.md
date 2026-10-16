@@ -71,11 +71,30 @@ When you use something added after 0.8.0, set `minAppVersion` in `plugin.json`, 
 - **Keep data local.** Nothing leaves the Mac unless the user asked for it. Say clearly in the plugin's description what it reads.
 - **Permissions belong to the app.** A plugin runs with Notcholino's permissions. If you need one the app doesn't declare yet (a new usage description), open an issue first.
 
-## 6. Share it
+## 6. Make its store page
 
-1. Make sure `plugin.json` is right (`version`, `minAppVersion`, `icon`) and `CHANGELOG.md` has a section for the version.
-2. Open a pull request that adds `plugins/<id>/` and the target in `project.yml`. Say what the plugin does and which Macs it was tried on.
-3. Once it is merged, a release tagged `<id>-v<version>` builds it, publishes it and adds it to the in-app store (see [Releasing a plugin](README.md#releasing-a-plugin)). The store only installs plugins from this repository's releases, and checks their checksum.
+The Plugin Store shows each plugin as a card in a grid and, when you open it, a page with pictures and text. Everything on it comes from files in your plugin's folder, so there is no form to fill in:
+
+| Where | What it shows |
+| --- | --- |
+| `plugin.json` → `description` | The one line on the card (under 140 characters) |
+| `plugin.json` → `category` | The shelf: System, Productivity, Utilities, Network, Privacy, Media or Fun |
+| `plugin.json` → `tags` | The words the store search looks for (at least 3, lowercase): think of what a person would type to find it, such as `battery`, `clipboard`, `timer` |
+| `plugin.json` → `details` | The paragraph on the page |
+| `plugin.json` → `features` | The "What it does" list (2 to 5 short points) |
+| `plugin.json` → `permissions` | "What it needs": say it plainly, even if it is "No permission needed." |
+| `CHANGELOG.md` | "What's new": the section of the current version |
+| `media/` | The pictures, in alphabetical order (PNG or JPEG, under 600 KB each). Take them in the notch: the Control Center with your button, and its options |
+| `plugin.json` → `video` | Optional: a link to a short video |
+
+`python3 scripts/check_plugins.py` checks all of it, and so does the pull request.
+
+## 7. Share it
+
+1. Make sure `plugin.json` is right (`version`, `minAppVersion`, `icon`, and the store fields above) and `CHANGELOG.md` has a section for the version.
+2. Run `python3 scripts/check_plugins.py`.
+3. Open a pull request that adds `plugins/<id>/` and the target in `project.yml`. Say what the plugin does and which Macs it was tried on.
+4. Once it is merged, a release tagged `<id>-v<version>` builds it, publishes it and adds it to the in-app store (see [Releasing a plugin](README.md#releasing-a-plugin)). The store only installs plugins from this repository's releases, and checks their checksum.
 
 Plugins live in the same repository as the app, so they are under the same license, the [GPL-3.0](../LICENSE). By sending one you agree to that.
 

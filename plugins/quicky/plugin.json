@@ -14,5 +14,13 @@
     "Turn the display off",
     "Start the screen saver"
   ],
-  "permissions": "No permission needed."
+  "permissions": "No permission needed.",
+  "category": "Utilities",
+  "tags": [
+    "lock",
+    "screen saver",
+    "display off",
+    "sleep",
+    "shortcut"
+  ]
 }

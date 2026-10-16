@@ -1,0 +1,19 @@
+name: Plugins check
+
+# Every plugin has what the store needs (fields of plugin.json, changelog section, pictures, a target in project.yml)
+on:
+  pull_request:
+    paths: [plugins/**, project.yml, scripts/check_plugins.py]
+  push:
+    branches: [main]
+    paths: [plugins/**, project.yml, scripts/check_plugins.py]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/check_plugins.py

@@ -22,6 +22,21 @@ struct RemotePlugin: Decodable, Identifiable {
     let whatsNew: [String]?
     let screenshots: [URL]?
     let video: URL?
+    /// One of the shelves of the store ("System", "Productivity"...), and the words people may search for
+    let category: String?
+    let tags: [String]?
+
+    /// What the store search looks at: name, description, features, category and tags
+    var searchText: String {
+        ([name, description, details ?? "", category ?? ""] + (features ?? []) + (tags ?? [])).joined(separator: " ").lowercased()
+    }
+
+    func matches(_ query: String) -> Bool {
+        let words = query.lowercased().split(separator: " ").map(String.init)
+        guard !words.isEmpty else { return true }
+        let text = searchText
+        return words.allSatisfy { text.contains($0) }
+    }
 
     /// True if this version of the app is new enough
     var isCompatible: Bool {

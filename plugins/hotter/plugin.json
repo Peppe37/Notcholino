@@ -15,5 +15,15 @@
     "°C or °F",
     "Graph of the last minutes"
   ],
-  "permissions": "Reads the temperature sensors. No permission needed."
+  "permissions": "Reads the temperature sensors. No permission needed.",
+  "category": "System",
+  "tags": [
+    "temperature",
+    "thermal",
+    "heat",
+    "cpu",
+    "sensor",
+    "graph",
+    "celsius"
+  ]
 }

@@ -14,5 +14,14 @@
     "Nothing is left behind when it stops",
     "Same effect as the caffeinate command"
   ],
-  "permissions": "No permission needed."
+  "permissions": "No permission needed.",
+  "category": "System",
+  "tags": [
+    "awake",
+    "caffeinate",
+    "sleep",
+    "keep awake",
+    "coffee",
+    "display"
+  ]
 }

@@ -15,5 +15,14 @@
     "In memory only, never on disk",
     "Skips what password managers mark as secret"
   ],
-  "permissions": "Reads the clipboard. No permission needed."
+  "permissions": "Reads the clipboard. No permission needed.",
+  "category": "Productivity",
+  "tags": [
+    "clipboard",
+    "copy",
+    "paste",
+    "history",
+    "text",
+    "snippets"
+  ]
 }

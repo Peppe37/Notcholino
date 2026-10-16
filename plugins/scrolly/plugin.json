@@ -14,5 +14,14 @@
     "Works with smooth-scrolling mice",
     "One switch in the Control Center"
   ],
-  "permissions": "Needs the Accessibility permission, to see and change scroll events."
+  "permissions": "Needs the Accessibility permission, to see and change scroll events.",
+  "category": "Utilities",
+  "tags": [
+    "scroll",
+    "mouse",
+    "wheel",
+    "trackpad",
+    "natural scrolling",
+    "reverse"
+  ]
 }

@@ -15,5 +15,14 @@
     "The countdown grows out of the notch",
     "A sound at each switch (can be turned off)"
   ],
-  "permissions": "No permission needed."
+  "permissions": "No permission needed.",
+  "category": "Productivity",
+  "tags": [
+    "pomodoro",
+    "timer",
+    "focus",
+    "work",
+    "break",
+    "countdown"
+  ]
 }

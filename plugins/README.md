@@ -41,7 +41,7 @@ Since Notcholino 0.11.0 a plugin can also reach out of the Control Center (set `
 - `controlCenterHidden` removes the plugin's button, for one that only uses popups and icons.
 - A menu entry can have `"wide": true` to take a whole row instead of a small chip, for longer text. [Clippy](clippy) uses it.
 
-Each plugin has a page in the store, made from its `plugin.json` (`details`, `features`, `permissions`, optionally `video`), the section of its `CHANGELOG.md` for the current version, and the pictures in `plugins/<id>/media/` (PNG or JPEG, shown in alphabetical order).
+Each plugin has a card and a page in the store, made from its `plugin.json` (`category`, `tags` for the search, `details`, `features`, `permissions`, optionally `video`), the section of its `CHANGELOG.md` for the current version, and the pictures in `plugins/<id>/media/` (PNG or JPEG, shown in alphabetical order).
 
 To add one, the quickest way is `scripts/new-plugin.sh <id> <Name>`, which creates all of this for you (see [the guide](GUIDE.md)). By hand:
 

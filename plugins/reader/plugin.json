@@ -15,5 +15,14 @@
     "Nothing is sent anywhere",
     "A popup says how many words it found"
   ],
-  "permissions": "macOS asks for Screen Recording the first time."
+  "permissions": "macOS asks for Screen Recording the first time.",
+  "category": "Productivity",
+  "tags": [
+    "ocr",
+    "text",
+    "scan",
+    "screenshot",
+    "copy text",
+    "vision"
+  ]
 }

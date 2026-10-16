@@ -15,5 +15,15 @@
     "⌘⇧C always ends it",
     "Refuses to start if it can't lock the keyboard"
   ],
-  "permissions": "Needs the Accessibility permission, to be able to ignore the keyboard and the pointer."
+  "permissions": "Needs the Accessibility permission, to be able to ignore the keyboard and the pointer.",
+  "category": "Utilities",
+  "tags": [
+    "clean",
+    "wipe",
+    "lock",
+    "keyboard",
+    "trackpad",
+    "screen",
+    "black"
+  ]
 }

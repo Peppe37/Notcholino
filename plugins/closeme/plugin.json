@@ -15,5 +15,14 @@
     "Stops by itself on a low battery",
     "Restore button if something is ever left over"
   ],
-  "permissions": "Asks for your administrator password to change a macOS power setting."
+  "permissions": "Asks for your administrator password to change a macOS power setting.",
+  "category": "System",
+  "tags": [
+    "lid",
+    "clamshell",
+    "sleep",
+    "awake",
+    "external display",
+    "dark"
+  ]
 }

@@ -15,5 +15,14 @@
     "The last 8 colors to copy again",
     "A popup confirms the copy"
   ],
-  "permissions": "No permission needed."
+  "permissions": "No permission needed.",
+  "category": "Productivity",
+  "tags": [
+    "color",
+    "eyedropper",
+    "hex",
+    "rgb",
+    "design",
+    "pixel"
+  ]
 }

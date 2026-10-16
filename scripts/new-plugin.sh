@@ -95,7 +95,12 @@ cat > "plugins/$id/plugin.json" <<JSON
   "icon": "puzzlepiece.extension",
   "version": "0.1.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "$min_app"
+  "minAppVersion": "$min_app",
+  "category": "Utilities",
+  "tags": ["replace", "with", "words", "people", "search"],
+  "details": "A paragraph for the plugin's page in the store: what it is for, what you see, how you use it. At least a few sentences.",
+  "features": ["The first thing it does", "The second thing it does"],
+  "permissions": "No permission needed."
 }
 JSON
 
@@ -135,6 +140,10 @@ s = s[:m.start() + 1] + block + s[m.start() + 1:]
 open("project.yml", "w").write(s)
 PY
 
+mkdir -p "plugins/$id/media"
+echo "Add one or two screenshots of the plugin in plugins/$id/media (PNG or JPEG): they are the pictures of its store page." > "plugins/$id/media/README.txt"
+
 echo
 echo "Created plugins/$id and the $name target."
 echo "Next:  scripts/dev-plugin.sh $name     (builds it and installs it for Notcholino to load)"
+echo "Then fill in plugins/$id/plugin.json (category, tags, details, features, permissions) and run:  python3 scripts/check_plugins.py"

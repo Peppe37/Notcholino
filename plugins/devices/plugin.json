@@ -15,5 +15,15 @@
     "Mouse, keyboard, trackpad, controllers",
     "Read in the background, never slows the notch"
   ],
-  "permissions": "Reads the Bluetooth report from macOS. No permission needed."
+  "permissions": "Reads the Bluetooth report from macOS. No permission needed.",
+  "category": "System",
+  "tags": [
+    "bluetooth",
+    "airpods",
+    "mouse",
+    "keyboard",
+    "battery",
+    "earbuds",
+    "controller"
+  ]
 }

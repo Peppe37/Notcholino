@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0-alpha] - 2026-10-16
+
+### Added
+- **The Plugin Store is a grid, with search.** It has its own page in the settings: cards with a big icon, the name, a line about the plugin and **Get / Update / Installed**, shelves by category, and a search field that looks at names, descriptions, what a plugin does and its **keywords** (`tags` in `plugin.json`). Clicking a card opens the plugin's page. The installed plugins (order, remove) stay in **Control Center**.
+- **For plugin authors:** `category` and `tags` in `plugin.json`, a store-page section in `plugins/GUIDE.md`, a template in `scripts/new-plugin.sh` that already has all the store fields, and `scripts/check_plugins.py` (also run on every pull request) that checks them.
+
+### Changed
+- **Icons now live inside the black of the notch.** The moon and the icons of plugins such as Watcher (microphone, camera) used to sit outside it, on the menu bar. The closed notch now widens to hold them, as it does for the album art and the waveform, and the icons sit beside the hardware notch.
+
 ## [0.14.1-alpha] - 2026-10-16
 
 ### Added

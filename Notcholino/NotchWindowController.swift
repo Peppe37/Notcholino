@@ -390,9 +390,21 @@ struct NotchContentView: View {
         }
     }
 
+    /// Icons that live inside the black, beside the hardware notch: the moon on the left, plugins' icons on the right
+    private var leftIconCount: Int { focusOn && !isExpanded ? 1 : 0 }
+    private var rightIconCount: Int { isExpanded ? 0 : pluginManager.sideIcons.count }
+    private let iconSlot: CGFloat = 22
+
+    /// Room the icons need on each side of the hardware notch (the same on both, so the notch stays centered)
+    private var iconWing: CGFloat {
+        let n = max(leftIconCount, rightIconCount)
+        return n == 0 ? 0 : CGFloat(n) * iconSlot + 8
+    }
+
     private var pillW: CGFloat {
         let base = baseW + CGFloat(tuningW) + flare * 2
-        return isPlayingCompact ? base + 130 : base // Extra width to clear wide MacBook Pro hardware notches
+        let music: CGFloat = isPlayingCompact ? 130 : 0 // Extra width to clear wide MacBook Pro hardware notches
+        return base + music + iconWing * 2
     }
 
     private var pillH: CGFloat { baseH + CGFloat(tuningH) }
@@ -502,27 +514,26 @@ struct NotchContentView: View {
                 // Perfect clipping to avoid ghosting
                 .clipShape(NotchShape(cornerRadius: isExpanded ? 28 : 10, flareRadius: flare))
             }
-            // Icons beside the closed notch: Do Not Disturb on the left, plugins on the right. They are placed from the
-            // middle of the notch row, so they stay put when the notch grows a strip underneath.
+            // Icons beside the closed notch, inside its black: the notch grows a little wider to hold them (like it does for the
+            // album art and the waveform). Placed from the middle, next to the hardware notch.
             .overlay(alignment: .top) {
-                let half = (pillW - flare * 2) / 2 + 18
+                let edge = (baseW + CGFloat(tuningW)) / 2 + 4
                 ZStack {
-                    if !isExpanded, focusOn {
+                    if leftIconCount > 0 {
                         SideIcon(symbol: "moon.fill", color: Color(red: 0.62, green: 0.55, blue: 1))
-                            .offset(x: -half)
+                            .offset(x: -(edge + 4 + iconSlot / 2))
                     }
-                    if !isExpanded {
-                        ForEach(Array(pluginManager.sideIcons.enumerated()), id: \.offset) { i, icon in
+                    ForEach(Array(pluginManager.sideIcons.enumerated()), id: \.offset) { i, icon in
+                        if !isExpanded {
                             SideIcon(symbol: icon.symbol, color: Color(hex: icon.colorHex) ?? .white)
-                                .offset(x: half + CGFloat(i) * 20)
+                                .offset(x: edge + 4 + iconSlot / 2 + CGFloat(i) * iconSlot)
                         }
                     }
                 }
                 .frame(height: pillH)
             }
             .animation(.spring(response: 0.38, dampingFraction: 0.78), value: notchExtension)
-            .animation(.easeInOut(duration: 0.2), value: focusOn)
-            .animation(.easeInOut(duration: 0.2), value: pluginManager.sideIcons)
+            .animation(.spring(response: 0.38, dampingFraction: 0.78), value: iconWing)
             .background(
                 // Background and Shadow Layer
                 NotchShape(cornerRadius: isExpanded ? 28 : 10, flareRadius: flare)
