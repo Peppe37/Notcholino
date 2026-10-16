@@ -32,6 +32,11 @@
   <a href="#support-the-project">Sponsor ❤️</a>
 </p>
 
+<p align="center">
+  <a href="https://peppe37.github.io/Notcholino/assets/notcholino-demo.mp4"><img src="docs/assets/notcholino-demo.gif" alt="Notcholino demo: music, plugins, a timer that grows out of the notch, and the Shelf" width="640"></a><br>
+  <sub>Click for the full 50-second video</sub>
+</p>
+
 ---
 
 > **Status: alpha.** Notcholino is in early development. Expect rough edges and breaking changes between versions. Feedback is very welcome.
