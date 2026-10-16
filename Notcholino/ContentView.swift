@@ -585,6 +585,16 @@ struct ControlCenterSettingsView: View {
                 if store.isLoading && store.available.isEmpty {
                     HStack { ProgressView().controlSize(.small); Text("Loading…").foregroundStyle(.secondary) }
                 }
+                if !store.updates.isEmpty {
+                    HStack {
+                        Label("\(store.updates.count) update\(store.updates.count == 1 ? "" : "s") available", systemImage: "arrow.down.circle.fill")
+                            .foregroundStyle(Color.accentColor)
+                        Spacer()
+                        Button("Update all") { Task { await store.updateAll() } }
+                            .buttonStyle(.borderedProminent).controlSize(.small)
+                            .disabled(store.busyID != nil)
+                    }
+                }
                 ForEach(store.available) { plugin in
                     storeRow(plugin)
                 }

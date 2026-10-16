@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1-alpha] - 2026-10-16
+
+### Added
+- **Plugin updates in one place.** The store says how many updates there are and **Update all** installs them all with one question at the start and a single restart at the end. The menu bar menu shows "Plugin updates available" when there is one. The list is read once at launch and once a day (the same switch as the update notice: **Settings → About → Check for new versions**).
+
 ## [0.14.0-alpha] - 2026-10-16
 
 ### Added

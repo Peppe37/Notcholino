@@ -88,6 +88,17 @@ final class PluginStore: ObservableObject {
     }
 
     /// Asks for confirmation, then downloads, verifies and installs the plugin
+    /// Plugins installed here with a newer version in the store that this app can run
+    var updates: [RemotePlugin] {
+        available.filter { p in
+            guard let v = installedVersion(of: p.id) else { return false }
+            return v != p.version && p.isCompatible
+        }
+    }
+
+    /// Set while an update is on disk but the old code still runs: the app has to restart to use it
+    private var needsRestart: [String] = []
+
     func install(_ plugin: RemotePlugin) async {
         guard busyID == nil else { return }
         guard plugin.isCompatible else {
@@ -99,9 +110,44 @@ final class PluginStore: ObservableObject {
         defer { busyID = nil }
         do {
             try await performInstall(plugin)
+            if !needsRestart.isEmpty { finishUpdates() }
         } catch {
             message = (error as? StoreError)?.text ?? "Installing \(plugin.name) failed: \(error.localizedDescription)"
         }
+    }
+
+    /// Updates every plugin that has a newer version, with one question at the start and one restart at the end
+    func updateAll() async {
+        let list = updates
+        guard !list.isEmpty, busyID == nil else { return }
+        let alert = NSAlert()
+        alert.messageText = "Update \(list.count) plugin\(list.count == 1 ? "" : "s")?"
+        alert.informativeText = list.map { "• \($0.name) \($0.version)" }.joined(separator: "\n")
+            + "\n\nThey are downloaded from the Notcholino releases on GitHub and checked against their published checksums. Notcholino restarts afterwards (about a second)."
+        alert.addButton(withTitle: "Update and restart")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        var failed: [String] = []
+        for plugin in list {
+            busyID = plugin.id
+            do { try await performInstall(plugin) } catch { failed.append(plugin.name) }
+        }
+        busyID = nil
+        if !failed.isEmpty { message = "Could not update: \(failed.joined(separator: ", "))." }
+        if !needsRestart.isEmpty { relaunch() }
+    }
+
+    private func finishUpdates() {
+        let names = needsRestart
+        needsRestart = []
+        let alert = NSAlert()
+        alert.messageText = "Restart Notcholino to finish updating \(names.joined(separator: ", "))?"
+        alert.informativeText = "The new version is installed. Notcholino restarts in about a second, and everything comes back as it was."
+        alert.addButton(withTitle: "Restart now")
+        alert.addButton(withTitle: "Later")
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn { relaunch() }
     }
 
     func remove(identifier: String) {
@@ -124,16 +170,6 @@ final class PluginStore: ObservableObject {
         """
         alert.addButton(withTitle: "Install")
         alert.addButton(withTitle: "Cancel")
-        NSApp.activate(ignoringOtherApps: true)
-        return alert.runModal() == .alertFirstButtonReturn
-    }
-
-    private func confirmRestart(for plugin: RemotePlugin) -> Bool {
-        let alert = NSAlert()
-        alert.messageText = "Restart Notcholino to finish updating \(plugin.name)?"
-        alert.informativeText = "\(plugin.name) \(plugin.version) is installed. Notcholino restarts in about a second, and everything comes back as it was."
-        alert.addButton(withTitle: "Restart now")
-        alert.addButton(withTitle: "Later")
         NSApp.activate(ignoringOtherApps: true)
         return alert.runModal() == .alertFirstButtonReturn
     }
@@ -190,7 +226,7 @@ final class PluginStore: ObservableObject {
             // The old code stays in memory until the app restarts (two copies of a plugin's class can't live together),
             // so offer to restart right now: one click instead of quitting and reopening by hand
             message = "\(plugin.name) \(plugin.version) is installed and starts when Notcholino restarts."
-            if confirmRestart(for: plugin) { relaunch() }
+            needsRestart.append(plugin.name)
             return
         }
         guard let loaded = pluginManager.load(bundleAt: destination), loaded.pluginIdentifier == plugin.id else {

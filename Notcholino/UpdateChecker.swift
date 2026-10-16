@@ -43,6 +43,8 @@ final class UpdateChecker: ObservableObject {
         guard timer == nil else { return }
         // A short wait, so the check never competes with the app starting up
         DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in self?.checkIfDue() }
+        // The store is read once at launch too, so that the menu bar can say if a plugin has an update
+        if isEnabled { DispatchQueue.main.asyncAfter(deadline: .now() + 25) { Task { await PluginStore.shared.refresh() } } }
         let t = Timer(timeInterval: 3600, repeats: true) { [weak self] _ in self?.checkIfDue() }
         t.tolerance = 600
         RunLoop.main.add(t, forMode: .common)
@@ -52,7 +54,11 @@ final class UpdateChecker: ObservableObject {
     private func checkIfDue() {
         guard isEnabled else { return }
         if let last = lastChecked, Date().timeIntervalSince(last) < Self.interval { return }
-        Task { await check() }
+        Task {
+            await check()
+            // The plugin list is one small file from the project's site: looked at on the same schedule
+            await PluginStore.shared.refresh()
+        }
     }
 
     /// Asks GitHub now (also used by the "Check now" button)

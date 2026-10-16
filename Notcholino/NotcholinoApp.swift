@@ -18,10 +18,18 @@ struct NotcholinoApp: App {
 
 struct MenuBarContent: View {
     @ObservedObject private var updates = UpdateChecker.shared
+    @ObservedObject private var pluginStore = PluginStore.shared
 
     var body: some View {
         if let release = updates.available {
             Button("Update available: \(release.version)…") { NSWorkspace.shared.open(release.url) }
+            Divider()
+        }
+        if !pluginStore.updates.isEmpty {
+            Button("Plugin updates available: \(pluginStore.updates.count)…") {
+                NSApp.activate(ignoringOtherApps: true)
+                Task { await pluginStore.updateAll() }
+            }
             Divider()
         }
         OpenSettingsButton()
