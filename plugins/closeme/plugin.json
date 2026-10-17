@@ -24,6 +24,5 @@
     "awake",
     "external display",
     "dark"
-  ],
-  "warning": "Known problem, fixed in 0.3.0: CloseMe 0.2.0 and earlier could leave your Mac unable to sleep after you turned it off (the Sleep item greyed out, the lid not putting the Mac to sleep, an external display kept on). If that happens, open Terminal and run:  sudo pmset -a disablesleep 0   (then  sudo rm -f /Library/LaunchDaemons/com.giuseppe.Notcholino.closeme-reset.plist ). Or open CloseMe and choose Restore sleep."
+  ]
 }
