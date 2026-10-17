@@ -35,6 +35,7 @@ for name in sorted(os.listdir(PLUGINS)):
     if m.get("category") not in CATEGORIES: fail(name, f"category must be one of {sorted(CATEGORIES)}")
     tags = m.get("tags") or []
     if len(tags) < 3 or any(not isinstance(t, str) or t != t.lower() for t in tags): fail(name, "tags: at least 3 lowercase keywords people may search for")
+    if "warning" in m and len(m["warning"]) < 20: fail(name, "warning: say what the problem is and how to get out of it")
     if len(m.get("details", "")) < 80: fail(name, "details: a paragraph about the plugin (at least 80 characters)")
     if len(m.get("features") or []) < 2: fail(name, "features: at least 2 short points")
     if not m.get("permissions"): fail(name, "permissions: say what it needs (\"No permission needed.\" is an answer)")

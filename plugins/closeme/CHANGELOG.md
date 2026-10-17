@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0-alpha] - 2026-10-17
+
+### Fixed
+- **Turning CloseMe off could still leave sleep switched off.** The watchdog that puts sleep back on was started by the password dialog, and macOS ended it as soon as the dialog was done: nothing was left to undo the setting. It is now a launchd job, which macOS keeps running and starts again at boot. If sleep is still off a few seconds after turning CloseMe off, a popup says so and the options offer **Restore sleep**, which is now shown whenever sleep is switched off and CloseMe is not running.
+- If starting fails halfway, sleep is put back at once.
+
+### If your Mac is stuck
+Open Terminal and run `sudo pmset -a disablesleep 0`, then `sudo rm -f /Library/LaunchDaemons/com.giuseppe.Notcholino.closeme-reset.plist`. You can check with `pmset -g | grep SleepDisabled`: it must say 0.
+
 ## [0.2.0-alpha] - 2026-10-15
 
 ### Fixed

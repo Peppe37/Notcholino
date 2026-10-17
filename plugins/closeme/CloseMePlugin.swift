@@ -59,6 +59,7 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
 
     private var flagPath: String { "/tmp/notcholino-closeme-\(getpid()).flag" }
 
+    private static let daemonLabel = "com.giuseppe.Notcholino.closeme-reset"
     private static let daemonPath = "/Library/LaunchDaemons/com.giuseppe.Notcholino.closeme-reset.plist"
     private static var sessionFile: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -118,8 +119,8 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
 
     func menuItems() -> [[String: Any]] {
         var items: [[String: Any]] = []
-        if orphaned && Self.sleepIsDisabled() {
-            items.append(["header": "An earlier session left sleep switched off (SleepDisabled)."])
+        if !active && !waitingForPassword && Self.sleepIsDisabled() {
+            items.append(["header": "Sleep is switched off on this Mac (SleepDisabled). If CloseMe is off, this is a leftover."])
             items.append(["id": "restore", "title": "Restore sleep (needs your password)", "wide": true])
         }
         items.append(["header": active
@@ -166,23 +167,25 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
 
         let pid = getpid()
         let deadline = Int(Date().addingTimeInterval(Self.hardLimit).timeIntervalSince1970)
-        // A one-shot job for the next boot: if the Mac restarts while this is on, it switches the setting off and removes itself
+        // The watchdog is a launchd job, not a background process started by the password dialog: macOS ends the processes
+        // that dialog starts as soon as it is done, which left sleep switched off with nothing to switch it back on.
+        // launchd keeps the job alive, and starts it again at boot: after a restart the flag in /tmp is gone, so it switches
+        // sleep back on at once.
+        let loop = "while /bin/kill -0 \(pid) 2>/dev/null && [ -e \(flagPath) ] && [ $(/bin/date +%s) -lt \(deadline) ]; do /bin/sleep 2; done; /usr/bin/pmset -a disablesleep 0; /bin/rm -f \(Self.daemonPath); /bin/launchctl bootout system/\(Self.daemonLabel)"
         let daemon = """
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0"><dict>
-        <key>Label</key><string>com.giuseppe.Notcholino.closeme-reset</string>
+        <key>Label</key><string>\(Self.daemonLabel)</string>
         <key>RunAtLoad</key><true/>
         <key>ProgramArguments</key><array><string>/bin/sh</string><string>-c</string>
-        <string>/usr/bin/pmset -a disablesleep 0; /bin/rm -f \(Self.daemonPath)</string></array>
+        <string>\(loop)</string></array>
         </dict></plist>
         """
         let daemonSource = "/tmp/notcholino-closeme-\(pid).plist"
         try? daemon.write(toFile: daemonSource, atomically: true, encoding: .utf8)
-        // Runs as root: put the boot job in place, switch sleep off, then leave a watchdog that switches it back on (and
-        // removes the boot job) when it must
-        let watchdog = "while /bin/kill -0 \(pid) 2>/dev/null && [ -e \(flagPath) ] && [ $(/bin/date +%s) -lt \(deadline) ]; do /bin/sleep 2; done; /usr/bin/pmset -a disablesleep 0; /bin/rm -f \(Self.daemonPath)"
-        let shell = "/usr/bin/install -m 644 -o root -g wheel \(daemonSource) \(Self.daemonPath) && /usr/bin/pmset -a disablesleep 1 && { /usr/bin/nohup /bin/sh -c '\(watchdog)' > /dev/null 2>&1 < /dev/null & }"
+        // As root: put the job in place, switch sleep off, start the job. If anything fails, sleep is put back at once.
+        let shell = "/usr/bin/install -m 644 -o root -g wheel \(daemonSource) \(Self.daemonPath) && /usr/bin/pmset -a disablesleep 1 && /bin/launchctl bootstrap system \(Self.daemonPath) || { /usr/bin/pmset -a disablesleep 0; /bin/rm -f \(Self.daemonPath); exit 1; }"
         let script = "do shell script \"\(shell)\" with prompt \"CloseMe keeps your Mac running when the lid is closed.\" with administrator privileges"
 
         let process = Process()
@@ -230,7 +233,7 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
 
     /// Switches sleep back on by hand, for a setting an earlier session left behind
     private func restoreSleep() {
-        let shell = "/usr/bin/pmset -a disablesleep 0; /bin/rm -f \(Self.daemonPath)"
+        let shell = "/usr/bin/pmset -a disablesleep 0; /bin/launchctl bootout system/\(Self.daemonLabel) 2>/dev/null; /bin/rm -f \(Self.daemonPath)"
         let script = "do shell script \"\(shell)\" with prompt \"CloseMe puts your Mac's sleep back on.\" with administrator privileges"
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
@@ -290,7 +293,17 @@ final class CloseMePlugin: NSObject, NotcholinoPlugin {
         timer = nil
         // The watchdog sees the flag is gone and switches sleep back on within two seconds
         try? FileManager.default.removeItem(atPath: flagPath)
+        let owned = ownsSetting
         if ownsSetting { try? FileManager.default.removeItem(at: Self.sessionFile); ownsSetting = false }
+        if owned {
+            // Trust, but check: if sleep is still off a few seconds later, say so and offer the button to put it back
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
+                guard let self, !self.active, Self.sleepIsDisabled() else { return }
+                self.orphaned = true
+                self.popup?(["title": "Sleep is still switched off", "subtitle": "Open CloseMe and choose Restore sleep",
+                             "icon": "exclamationmark.triangle.fill", "color": "#FF9F0A", "seconds": 10.0])
+            }
+        }
         if active { restoreBrightness() }
         active = false
         selected = nil

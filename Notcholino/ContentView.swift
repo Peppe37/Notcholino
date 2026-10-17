@@ -812,6 +812,16 @@ struct PluginDetailView: View {
                         Link(destination: video) { Label("Watch the video", systemImage: "play.circle.fill") }
                     }
 
+                    if let warning = plugin.warning {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Label("Known problem", systemImage: "exclamationmark.triangle.fill").font(.headline).foregroundStyle(.orange)
+                            Text(warning).font(.callout).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.orange.opacity(0.14)))
+                    }
+
                     Text(plugin.details ?? plugin.description)
                         .font(.body)
                         .fixedSize(horizontal: false, vertical: true)
@@ -963,7 +973,9 @@ private struct PluginCard: View {
             }
             Spacer(minLength: 0)
             HStack {
-                if let category = plugin.category { Text(category).font(.caption2).foregroundStyle(.tertiary) }
+                if plugin.warning != nil {
+                    Label("Known problem", systemImage: "exclamationmark.triangle.fill").font(.caption2).foregroundStyle(.orange)
+                } else if let category = plugin.category { Text(category).font(.caption2).foregroundStyle(.tertiary) }
                 Spacer()
                 StoreButton(plugin: plugin, installed: installed)
             }

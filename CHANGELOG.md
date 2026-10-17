@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1-alpha] - 2026-10-17
+
+### Added
+- **Known problems in the store.** A plugin can carry a `warning` in `plugin.json`: it shows in orange on its card ("Known problem") and at the top of its page, with how to get out of it.
+- CloseMe 0.2.0 and earlier are marked with one: they could leave the Mac unable to sleep (SleepDisabled) after being turned off. The fix, `sudo pmset -a disablesleep 0`, is in the warning and in the CloseMe options.
+
 ## [0.15.0-alpha] - 2026-10-16
 
 ### Added

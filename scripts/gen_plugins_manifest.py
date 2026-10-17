@@ -74,7 +74,7 @@ def main():
         })
         # Store page: the long text, the features, the permissions, what is new, and the screenshots in plugins/<id>/media
         entry = plugins[-1]
-        for key in ("details", "features", "permissions", "video", "category", "tags"):
+        for key in ("details", "features", "permissions", "video", "category", "tags", "warning"):
             if meta.get(key):
                 entry[key] = meta[key]
         entry["whatsNew"] = latest_changes(os.path.join(plugins_dir, name, "CHANGELOG.md"), entry["version"])

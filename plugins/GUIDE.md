@@ -86,6 +86,7 @@ The Plugin Store shows each plugin as a card in a grid and, when you open it, a 
 | `CHANGELOG.md` | "What's new": the section of the current version |
 | `media/` | The pictures, in alphabetical order (PNG or JPEG, under 600 KB each). Take them in the notch: the Control Center with your button, and its options |
 | `plugin.json` → `video` | Optional: a link to a short video |
+| `plugin.json` → `warning` | Optional: a known problem, in orange on the card and the page, with how to get out of it. Use it when a plugin can leave the Mac in a state the user must fix |
 
 `python3 scripts/check_plugins.py` checks all of it, and so does the pull request.
 

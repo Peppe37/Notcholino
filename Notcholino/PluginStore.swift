@@ -24,6 +24,8 @@ struct RemotePlugin: Decodable, Identifiable {
     let video: URL?
     /// One of the shelves of the store ("System", "Productivity"...), and the words people may search for
     let category: String?
+    /// A known problem, shown in orange on the plugin's card and page
+    let warning: String?
     let tags: [String]?
 
     /// What the store search looks at: name, description, features, category and tags

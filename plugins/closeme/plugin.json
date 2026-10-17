@@ -5,10 +5,10 @@
   "description": "Close the lid and keep the Mac running. The screen goes dark so it doesn't overheat.",
   "author": "Giuseppe",
   "icon": "laptopcomputer",
-  "version": "0.2.0-alpha",
+  "version": "0.3.0-alpha",
   "apiVersion": 1,
   "minAppVersion": "0.8.0",
-  "details": "Keep the Mac running with the lid closed, and have the screen go dark so it doesn't heat up shut inside the lid. Experimental: it needs your administrator password, switches itself off after at most 12 hours, when Notcholino quits, or when the battery is nearly empty, and it gives back the setting it changed.",
+  "details": "Keep the Mac running with the lid closed, and have the screen go dark so it doesn't heat up shut inside the lid. Experimental: it needs your administrator password, switches itself off after at most 12 hours, when Notcholino quits, or when the battery is nearly empty, and it gives back the setting it changed. It changes a global macOS setting, so treat it as experimental and check that sleep works after you use it.",
   "features": [
     "Lid closed, Mac awake, screen at zero",
     "Always put back: on quit, on a crash, after a restart",
@@ -24,5 +24,6 @@
     "awake",
     "external display",
     "dark"
-  ]
+  ],
+  "warning": "Known problem, fixed in 0.3.0: CloseMe 0.2.0 and earlier could leave your Mac unable to sleep after you turned it off (the Sleep item greyed out, the lid not putting the Mac to sleep, an external display kept on). If that happens, open Terminal and run:  sudo pmset -a disablesleep 0   (then  sudo rm -f /Library/LaunchDaemons/com.giuseppe.Notcholino.closeme-reset.plist ). Or open CloseMe and choose Restore sleep."
 }
