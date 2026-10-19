@@ -29,6 +29,29 @@ final class ExtensionManager: ObservableObject {
     private var wingViews: [String: NSView] = [:]
     /// Set by the notch, which owns the music player
     var musicPlaying = false
+    /// An extension asked the notch to stay open on its page (`setNotchOpen`), on the display with this number
+    struct ForcedOpen: Equatable { let id: String; let screen: UInt32 }
+    @Published private(set) var forcedOpen: ForcedOpen?
+
+    func setForcedOpen(_ open: Bool, id: String) {
+        if open {
+            let mouse = NSEvent.mouseLocation
+            let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
+            let number = (screen?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
+            forcedOpen = ForcedOpen(id: id, screen: number)
+            selectedID = id
+        } else if forcedOpen?.id == id {
+            forcedOpen = nil
+        }
+    }
+
+    /// The pages to show: the ones switched on, plus the one an extension asked for even if it keeps itself off the list
+    var pagesShown: [NotcholinoExtension] {
+        var list = pages
+        if let id = forcedOpen?.id, !list.contains(where: { $0.extensionIdentifier == id }),
+           let ext = loaded.first(where: { $0.extensionIdentifier == id }) { list.append(ext) }
+        return list
+    }
 
     let directory: URL
     /// Where the store puts what it installs (never loaded from by developer mode, and the other way round)
@@ -126,7 +149,7 @@ final class ExtensionManager: ObservableObject {
         if on { enabledIDs.insert(id) } else { enabledIDs.remove(id) }
         UserDefaults.standard.set(Array(enabledIDs), forKey: "extensionsEnabled")
         if on { loaded.first { $0.extensionIdentifier == id }?.extensionDidEnable?() }
-        else { loaded.first { $0.extensionIdentifier == id }?.extensionWillUnload?(); setWingVisible(false, id) }
+        else { loaded.first { $0.extensionIdentifier == id }?.extensionWillUnload?(); setWingVisible(false, id); setForcedOpen(false, id: id) }
     }
 
     // MARK: What the app offers (NotcholinoHost)
@@ -233,6 +256,10 @@ final class ExtensionHost: NSObject, NotcholinoHost {
         DispatchQueue.main.async { PopupCenter.shared.show(from: info) }
     }
 
+    func setNotchOpen(_ open: Bool) {
+        DispatchQueue.main.async { ExtensionManager.shared.setForcedOpen(open, id: self.id) }
+    }
+
     func dismissPopup() { DispatchQueue.main.async { PopupCenter.shared.dismiss() } }
 
     func hasCalendarAccess() -> Bool { onMain { CalendarManager.shared.hasAccess || CalendarManager.shared.hasRemindersAccess } }
@@ -292,7 +319,7 @@ struct ExtensionNotchView: View {
     @ObservedObject private var manager = ExtensionManager.shared
 
     var body: some View {
-        let pages = manager.pages
+        let pages = manager.pagesShown
         let current = pages.first { $0.extensionIdentifier == manager.selectedID } ?? pages.first
         VStack(spacing: 6) {
             if pages.count > 1 {

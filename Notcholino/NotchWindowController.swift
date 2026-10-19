@@ -125,7 +125,8 @@ class NotchWindowController: NSWindowController {
         if let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea {
             notchWidth = screen.frame.width - left.width - right.width
         }
-        let root = AnyView(NotchContentView(notchID: notchID, topInset: screen.safeAreaInsets.top, hardwareWidth: notchWidth))
+        let number = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
+        let root = AnyView(NotchContentView(notchID: notchID, screenNumber: number, topInset: screen.safeAreaInsets.top, hardwareWidth: notchWidth))
         let hosting = NotchHostingView(rootView: root)
         hosting.notchID = notchID
         hosting.layer?.backgroundColor = NSColor.clear.cgColor
@@ -318,11 +319,14 @@ enum NotchTab: Int, CaseIterable {
 
 struct NotchContentView: View {
     let notchID: UUID
+    /// The display this notch is on, so an extension that asks the notch to open (Snap) opens the one the pointer is on
+    var screenNumber: UInt32 = 0
     /// Height of the hardware notch on this screen (0 on Macs without one)
     let topInset: CGFloat
     @State private var isHovering   = false
     @State private var closing      = false
     @State private var activeTab: NotchTab = .music
+    @State private var savedTab: NotchTab?
     @State private var goingForward = true
     @State private var hoveredDot: NotchTab?
     @State private var scrollAcc: CGFloat = 0
@@ -370,7 +374,7 @@ struct NotchContentView: View {
             case .shelf:         return shelfEnabled && (!shelf.items.isEmpty || shelf.pending > 0 || shelf.dragActive)
             case .music:         return nowPlayingEnabled
             case .calendar:      return calendarEnabled
-            case .extensions:    return !extensionManager.pages.isEmpty
+            case .extensions:    return !extensionManager.pages.isEmpty || forcedOpen
             }
         }
     }
@@ -382,7 +386,10 @@ struct NotchContentView: View {
         return tabs.contains(.music) ? .music : tabs.first
     }
 
-    private var hoverExpands: Bool { (isHovering || (shelfEnabled && shelf.dragActive)) && !enabledTabs.isEmpty }
+    /// An extension asked for the notch to be open (Snap, while a window is dragged) on this display
+    private var forcedOpen: Bool { extensionManager.forcedOpen.map { $0.screen == screenNumber || screenNumber == 0 } ?? false }
+
+    private var hoverExpands: Bool { (isHovering || (shelfEnabled && shelf.dragActive) || forcedOpen) && !enabledTabs.isEmpty }
 
     /// Space reserved above the tab dots so they clear the hardware notch
     private var topPad: CGFloat { topInset > 0 ? topInset + 2 : 24 }
@@ -580,6 +587,12 @@ struct NotchContentView: View {
                 guard (notif.object as? UUID) == notchID else { return }
                 setHovering(true)            // stay open after the drop, as long as the pointer is on the notch
                 shelf.dragActive = false
+            }
+            .onChange(of: forcedOpen) { open in
+                // Open on the extension's page, and go back to the page that was showing when it closes
+                if open { savedTab = activeTab; goingForward = false; activeTab = .extensions }
+                else if activeTab == .extensions, let back = savedTab { activeTab = back }
+                publishLayout()
             }
             .onChange(of: shelf.dragActive) { dragging in
                 // Something is being dragged to the notch: open on the shelf

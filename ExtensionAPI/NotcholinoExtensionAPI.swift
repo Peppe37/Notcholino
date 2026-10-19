@@ -82,6 +82,10 @@ public protocol NotcholinoHost: NSObjectProtocol {
     func showPopup(_ info: [String: Any])
     /// Show or hide the extension's wing view (`makeWingView`) beside the closed notch
     func setWingVisible(_ visible: Bool)
+    /// Open the notch on this extension's page (on the display the pointer is on) and keep it open until called with `false`, for
+    /// something that happens while the user is busy elsewhere, like dragging a window. The page is shown even if
+    /// `pageVisible` is false.
+    func setNotchOpen(_ open: Bool)
     /// Hide a popup this extension is showing
     func dismissPopup()
     /// True if the user allowed Notcholino to read Calendar or Reminders

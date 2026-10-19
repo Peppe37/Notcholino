@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0-alpha] - 2026-10-19
+
+### Added
+- **Snap**, a new extension (install it from the Plugin Store): grab a window by its title bar and the notch opens with a small screen drawn in it, an arrow at the middle of each side and a dot in the centre. Bring the pointer to an arrow and the window goes to that half of the screen, to a corner and it takes that quarter, to the dot and it fills the screen. The nine cells are not drawn: the one under the pointer grows a little, with a soft preview of where the window will land. Let go to place it. Works on every display. It uses Accessibility, which Notcholino already has for the volume HUD.
+- The extension API lets an extension open the notch on its page and keep it open (`setNotchOpen`), for things that happen while you are busy elsewhere.
+
 ## [0.26.0-alpha] - 2026-10-19
 
 ### Changed
