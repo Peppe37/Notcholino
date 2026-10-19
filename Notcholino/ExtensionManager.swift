@@ -39,7 +39,6 @@ final class ExtensionManager: ObservableObject {
             let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
             let number = (screen?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
             forcedOpen = ForcedOpen(id: id, screen: number)
-            selectedID = id
         } else if forcedOpen?.id == id {
             forcedOpen = nil
         }
@@ -315,14 +314,28 @@ struct ExtensionViewHost: NSViewRepresentable {
     func updateNSView(_ view: NSView, context: Context) {}
 }
 
-/// The notch page that shows the extension the user picked
+/// The notch page of an extension. While an extension has opened the notch for itself (Snap, with a window in hand) only its page is
+/// shown, with nothing to pick from; otherwise it is the page the user chose, with a small row of names when there are several.
 struct ExtensionNotchView: View {
+    /// The extension that opened the notch, if one did
+    var forcedID: String?
     @ObservedObject private var manager = ExtensionManager.shared
 
     var body: some View {
-        let pages = manager.pagesShown
+        if let id = forcedID, let ext = manager.loaded.first(where: { $0.extensionIdentifier == id }) {
+            ExtensionViewHost { ext.makePageView() }
+                .id(id)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.top, 6)
+        } else {
+            chooser
+        }
+    }
+
+    private var chooser: some View {
+        let pages = manager.pages
         let current = pages.first { $0.extensionIdentifier == manager.selectedID } ?? pages.first
-        VStack(spacing: 6) {
+        return VStack(spacing: 6) {
             if pages.count > 1 {
                 HStack(spacing: 6) {
                     ForEach(pages, id: \.extensionIdentifier) { ext in
@@ -443,18 +456,20 @@ struct ExtensionManageView: View {
     }
 }
 
-/// Settings → Extensions: the settings of each installed extension, on a page of their own
+/// Settings → Extensions: the installed extensions in a list, each with its own switch; pick one and its page opens beside the list,
+/// with what it is, whether it is on, and its own settings.
 struct ExtensionsSettingsView: View {
     @ObservedObject private var manager = ExtensionManager.shared
 
     private var installed: [NotcholinoExtension] {
         manager.loaded.filter { manager.storeIDs.contains($0.extensionIdentifier) || manager.developerMode }
+            .sorted { $0.extensionName.localizedCaseInsensitiveCompare($1.extensionName) == .orderedAscending }
     }
 
     var body: some View {
         let list = installed
         let current = list.first { $0.extensionIdentifier == manager.settingsID } ?? list.first
-        VStack(spacing: 0) {
+        Group {
             if list.isEmpty {
                 VStack(spacing: 10) {
                     Image(systemName: "puzzlepiece.extension").font(.system(size: 40)).foregroundStyle(.secondary)
@@ -463,23 +478,76 @@ struct ExtensionsSettingsView: View {
                     Button("Open the Plugin Store") { NotificationCenter.default.post(name: .openPluginStore, object: nil) }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let current {
-                if list.count > 1 {
-                    Picker("", selection: Binding(get: { current.extensionIdentifier }, set: { manager.settingsID = $0 })) {
-                        ForEach(list, id: \.extensionIdentifier) { Label($0.extensionName, systemImage: $0.extensionSymbol).tag($0.extensionIdentifier) }
+            } else {
+                HStack(spacing: 0) {
+                    List(selection: Binding(get: { current?.extensionIdentifier }, set: { manager.settingsID = $0 })) {
+                        ForEach(list, id: \.extensionIdentifier) { ext in
+                            HStack(spacing: 10) {
+                                Image(systemName: ext.extensionSymbol).frame(width: 22)
+                                Text(ext.extensionName)
+                                Spacer()
+                                Toggle("", isOn: Binding(get: { manager.isEnabled(ext.extensionIdentifier) },
+                                                         set: { manager.setEnabled($0, ext.extensionIdentifier) }))
+                                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                            }
+                            .padding(.vertical, 3)
+                            .tag(ext.extensionIdentifier)
+                        }
                     }
-                    .pickerStyle(.segmented).labelsHidden().padding(.horizontal, 20).padding(.top, 12)
-                }
-                if current.responds(to: Selector(("makeSettingsView"))) {
-                    ExtensionViewHost { current.makeSettingsView?() ?? NSView() }
-                        .id(current.extensionIdentifier)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    Text("\(current.extensionName) has no settings.").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .listStyle(.sidebar)
+                    .frame(width: 230)
+                    Divider()
+                    if let current { ExtensionDetail(ext: current).id(current.extensionIdentifier) }
                 }
             }
         }
         .navigationTitle("Extensions")
+    }
+}
+
+/// One extension on the Extensions page: who and what it is, on or off, its permissions, removal, and its settings
+private struct ExtensionDetail: View {
+    let ext: NotcholinoExtension
+    @ObservedObject private var manager = ExtensionManager.shared
+
+    var body: some View {
+        let id = ext.extensionIdentifier
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: ext.extensionSymbol).font(.title2).frame(width: 48, height: 48)
+                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.secondary.opacity(0.16)))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(ext.extensionName).font(.title2.weight(.semibold))
+                    Text("v\(ext.extensionVersion) · \(ext.extensionAuthor)").font(.caption).foregroundStyle(.secondary)
+                    Text(ext.extensionDescription).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Toggle("", isOn: Binding(get: { manager.isEnabled(id) }, set: { manager.setEnabled($0, id) }))
+                    .labelsHidden().toggleStyle(.switch)
+            }
+            .padding(20)
+
+            HStack(spacing: 16) {
+                if !(ext.isAssistant ?? false) {
+                    Toggle("Allow it to use Notchy's AI (it never sees your keys)", isOn: Binding(get: { manager.isAIAllowed(id) }, set: { manager.setAIAllowed($0, id) }))
+                        .font(.callout)
+                }
+                Spacer()
+                if manager.storeIDs.contains(id) {
+                    Button("Remove", role: .destructive) { PluginStore.shared.remove(identifier: id) }
+                }
+            }
+            .padding(.horizontal, 20).padding(.bottom, 12)
+            Divider()
+            if ext.responds(to: Selector(("makeSettingsView"))) {
+                ExtensionViewHost { ext.makeSettingsView?() ?? NSView() }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .disabled(!manager.isEnabled(id))
+                    .opacity(manager.isEnabled(id) ? 1 : 0.45)
+            } else {
+                Text("\(ext.extensionName) has no settings.").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
     }
 }
 

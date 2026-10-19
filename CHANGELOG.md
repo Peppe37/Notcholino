@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.3-alpha] - 2026-10-19
+
+### Changed
+- **Settings → Extensions** is now a list of your extensions, each with its own on/off switch, and a page beside it for the one you pick: what it is, whether it is on, its AI permission, Remove, and its own settings. Before, the settings of every extension shared one page and an extension could only be switched on or off from the store.
+
+### Fixed
+- While Snap's page is open (a window in your hand) the notch no longer changes page when you scroll sideways or swipe. It only locks while that page is showing.
+- While Snap's page is open the notch shows only that page: the small row of extension names (Notchy, Snap) that appeared on it is gone, and Notchy's page no longer flashes for a moment when the notch closes after a snap.
+
 ## [0.27.2-alpha] - 2026-10-19
 
 ### Added

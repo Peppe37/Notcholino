@@ -327,6 +327,8 @@ struct NotchContentView: View {
     @State private var closing      = false
     @State private var activeTab: NotchTab = .music
     @State private var savedTab: NotchTab?
+    /// The extension whose page is still on screen while the notch closes after it opened it (so the page does not change under the animation)
+    @State private var lingerForcedID: String?
     /// After an extension closes the notch (Snap, once the window is placed) the pointer is still over it: for a moment it must not
     /// open again on its own just because of that
     @State private var hoverBlockedUntil = Date.distantPast
@@ -377,7 +379,7 @@ struct NotchContentView: View {
             case .shelf:         return shelfEnabled && (!shelf.items.isEmpty || shelf.pending > 0 || shelf.dragActive)
             case .music:         return nowPlayingEnabled
             case .calendar:      return calendarEnabled
-            case .extensions:    return !extensionManager.pages.isEmpty || forcedOpen
+            case .extensions:    return !extensionManager.pages.isEmpty || forcedOpen || lingerForcedID != nil
             }
         }
     }
@@ -593,9 +595,20 @@ struct NotchContentView: View {
             }
             .onChange(of: forcedOpen) { open in
                 // Open on the extension's page, and go back to the page that was showing when it closes
-                if open { savedTab = activeTab; goingForward = false; activeTab = .extensions }
-                else {
-                    if activeTab == .extensions, let back = savedTab { activeTab = back }
+                if open {
+                    savedTab = activeTab; goingForward = false; activeTab = .extensions
+                    lingerForcedID = extensionManager.forcedOpen?.id
+                } else {
+                    // Closing: the page stays as it is while the notch folds away, then the notch goes back to the page it was on
+                    // (never to another extension's page, which would show for a moment)
+                    let back: NotchTab = (savedTab == .extensions ? .music : savedTab) ?? .music
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 700_000_000)
+                        if !forcedOpen {
+                            lingerForcedID = nil
+                            if activeTab == .extensions { activeTab = back }
+                        }
+                    }
                     // Done: close, and stay closed even though the pointer is still on the notch
                     hoverBlockedUntil = Date().addingTimeInterval(1.0)
                     collapseTask?.cancel()
@@ -626,7 +639,7 @@ struct NotchContentView: View {
             .simultaneousGesture(
                 DragGesture(minimumDistance: 20, coordinateSpace: .local)
                     .onEnded { val in
-                        guard isExpanded, isMusicMode else { return }
+                        guard isExpanded, isMusicMode, !pageIsLocked else { return }
                         if val.translation.width < -30 {
                             step(1)
                         } else if val.translation.width > 30 {
@@ -636,7 +649,7 @@ struct NotchContentView: View {
             )
             // Two-finger horizontal swipe on the trackpad: same direction as the drag
             .onReceive(NotificationCenter.default.publisher(for: .notchScrollWheel)) { notif in
-                guard (notif.object as? UUID) == notchID, isExpanded, isMusicMode,
+                guard (notif.object as? UUID) == notchID, isExpanded, isMusicMode, !pageIsLocked,
                       let info = notif.userInfo,
                       let dx = info["dx"] as? CGFloat,
                       let dy = info["dy"] as? CGFloat else { return }
@@ -661,7 +674,7 @@ struct NotchContentView: View {
         case .shelf:         ShelfNotchView(dropTargeted: dropTargeted)
         case .music:         NowPlayingNotchView(music: music)
         case .calendar:      CalendarNotchView()
-        case .extensions:    ExtensionNotchView()
+        case .extensions:    ExtensionNotchView(forcedID: forcedOpen ? extensionManager.forcedOpen?.id : lingerForcedID)
         }
     }
 
@@ -691,7 +704,12 @@ struct NotchContentView: View {
     }
 
     /// Move one panel forward (+1) or back (-1) among the enabled ones
+    /// An extension has opened the notch for itself (Snap, while a window is being dragged): swiping or scrolling sideways must not
+    /// change the page under it. Only while that page is showing.
+    private var pageIsLocked: Bool { forcedOpen || lingerForcedID != nil }
+
     private func step(_ delta: Int) {
+        guard !pageIsLocked else { return }
         let tabs = enabledTabs
         guard tabs.count > 1, let shown = shownTab, let i = tabs.firstIndex(of: shown) else { return }
         let n = max(0, min(tabs.count - 1, i + delta))
