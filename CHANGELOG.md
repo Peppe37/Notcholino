@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0-alpha] - 2026-10-19
+
+### Added
+- **Notchy**, the first extension (extensions are bigger than plugins: they can have their own page, their own settings and use AI). A small glass cube that lives in the notch, with black eyes and moods that change its glow. It is off by default: turn it on in **Settings → Notchy**.
+- A hidable Notchy page in the notch, and a cube that peeks out beside the notch now and then or when you have been in one app for a long time. Three levels: Silent, Normal (default) and Lively. The rules run on your Mac, with coarse timers and no AI.
+- **Settings → Notchy**: pick a provider and model for text, for images and screen, and for voice-to-text, from Anthropic, Gemini, OpenAI, Ollama and vLLM (local or remote). Keys are kept only in the macOS Keychain and read only when you use Notchy, and each provider has a Test button.
+- Coming next: Send to Notchy from the right-click menu, file summaries, day planning, and email and voice.
+
 ## [0.15.1-alpha] - 2026-10-17
 
 ### Added

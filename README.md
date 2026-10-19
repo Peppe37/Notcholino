@@ -68,6 +68,7 @@ Notcholino is a free and open-source app that extends the hardware notch of your
 - **Join meetings**: events with a Zoom, Meet, Teams or Webex link get a **Join** button in the Calendar panel, green from ten minutes before the start.
 - **Permission buttons**: wherever something needs a permission (Calendar, Reminders, controlling Spotify or Music, Accessibility, Bluetooth, Focus status, your Spotify account), the notch shows an **Authorize** button, and **Settings → General → Permissions** lists them all.
 - **System HUDs**: volume and brightness feedback in the notch, replacing the native macOS HUD, with theme, label and decibel options.
+- **Notchy** (early, off by default): a small glass cube that lives in the notch and peeks out now and then. It is the first *extension*: plugins are simple buttons in Control Center, extensions have their own page and settings and can use AI with your own keys (Anthropic, Gemini, OpenAI, Ollama, vLLM), kept in the Keychain. Asking it things comes in the next versions.
 - **Control Center and plugins**: a third panel in the notch holds plugin buttons, installed from a built-in store. See [Plugins](#plugins).
 - **Native settings**: a System Settings–style preferences window built with SwiftUI, plus launch at login.
 - **Gestures**: scroll or swipe horizontally to switch between panels, and reverse the direction with **Settings → General → Gestures → Invert swipe direction** if you prefer it the other way.
