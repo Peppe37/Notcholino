@@ -50,14 +50,10 @@ final class NotchyAssistant: ObservableObject {
         run(label: name + extra, prompt: "This is the file \"\(name)\". Summarize it in a few short lines, or give its outline if it is long.\n\n\(text.prefix(14_000))", image: nil)
     }
 
-    /// "Plan my day": Notchy reads today's events and reminders from the Mac, and only if there is something to plan does it ask
-    /// the text provider. Only titles and times are sent: no places, notes or attendees.
-    func planDay() {
+    /// What is left of today, from the calendars ticked in Notcholino's own Calendar settings (not the ones shown in Calendar.app)
+    /// and the reminders it shows. Titles and times only.
+    static func agendaLines() -> [String] {
         let cal = CalendarManager.shared
-        guard cal.hasAccess || cal.hasRemindersAccess else {
-            finish(.failed("I can't see your calendar yet. Allow Calendar in Settings → General → Permissions."))
-            return
-        }
         let now = Date()
         let clock = DateFormatter(); clock.dateFormat = "HH:mm"
         var lines: [String] = []
@@ -69,6 +65,75 @@ final class NotchyAssistant: ObservableObject {
             let due = cal.dueTime(of: reminder).map { "due \($0)" } ?? (cal.isOverdue(reminder) ? "overdue" : "today")
             lines.append("- to do (\(due)): \(reminder.title ?? "Reminder")")
         }
+        return lines
+    }
+
+    /// Voice: turn the recording into text, then answer it
+    func transcribeAndAsk(_ file: URL) {
+        guard NotchySettings.shared.enabled else { return }
+        task?.cancel()
+        state = .thinking("what you said")
+        NotchyPresence.shared.peek(mood: .thinking, seconds: 90)
+        task = Task { @MainActor [weak self] in
+            defer { try? FileManager.default.removeItem(at: file) }
+            do {
+                let said = try await NotchyTranscriber.transcribe(file)
+                guard !Task.isCancelled else { return }
+                guard !said.isEmpty else { self?.finish(.failed("I didn't catch that.")); return }
+                self?.ask(spoken: said)
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.finish(.failed(error.localizedDescription))
+            }
+        }
+    }
+
+    /// Something said out loud. The day's agenda is added only when the words are about the day, so most questions cost nothing extra.
+    func ask(spoken: String) {
+        let lower = spoken.lowercased()
+        let aboutDay = ["calendar", "calendario", "agenda", "today", "oggi", "giornata", "day", "impegn", "meeting", "riunion", "appuntament",
+                        "schedule", "free time", "libero", "reminder", "promemoria"].contains { lower.contains($0) }
+        var prompt = "I said this to you out loud: \"\(spoken)\". Answer it."
+        if aboutDay {
+            let lines = Self.agendaLines()
+            prompt += lines.isEmpty ? "\n\nNothing is left on my calendar today." : "\n\nWhat is left of my day:\n\(lines.joined(separator: "\n"))"
+        }
+        run(label: "“\(spoken.prefix(40))”", prompt: prompt, image: nil)
+    }
+
+    /// "Look at the screen": the text on the screen is read on the Mac; a picture is sent only if there is almost no text
+    func lookAtScreen() {
+        guard NotchySettings.shared.enabled else { return }
+        task?.cancel()
+        state = .thinking("your screen")
+        NotchyPresence.shared.peek(mood: .thinking, seconds: 90)
+        task = Task { @MainActor [weak self] in
+            do {
+                let look = try await NotchyScreen.capture()
+                guard !Task.isCancelled else { return }
+                if let png = look.png {
+                    self?.run(label: "your screen", prompt: "Tell me in a couple of short sentences what I am looking at, and anything I should notice.", image: png, task: .vision)
+                } else {
+                    self?.run(label: "your screen", prompt: "This is the text on my screen, read on my Mac:\n\n\(look.text.prefix(10_000))\n\nTell me in a couple of short sentences what I am looking at, and anything I should notice.", image: nil)
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.finish(.failed(error.localizedDescription))
+            }
+        }
+    }
+
+    /// "Plan my day": Notchy reads today's events and reminders from the Mac, and only if there is something to plan does it ask
+    /// the text provider. Only titles and times are sent: no places, notes or attendees.
+    func planDay() {
+        let cal = CalendarManager.shared
+        guard cal.hasAccess || cal.hasRemindersAccess else {
+            finish(.failed("I can't see your calendar yet. Allow Calendar in Settings → General → Permissions."))
+            return
+        }
+        let now = Date()
+        let clock = DateFormatter(); clock.dateFormat = "HH:mm"
+        let lines = Self.agendaLines()
         guard !lines.isEmpty else {
             finish(.reply("Nothing left on your calendar today. The rest of the day is yours."))
             return

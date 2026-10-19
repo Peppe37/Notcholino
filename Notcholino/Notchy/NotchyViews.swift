@@ -9,6 +9,7 @@ struct NotchyNotchView: View {
     @ObservedObject private var settings = NotchySettings.shared
     @ObservedObject private var assistant = NotchyAssistant.shared
     @ObservedObject private var calendar = CalendarManager.shared
+    @ObservedObject private var voice = NotchyVoice.shared
     @State private var mood: NotchyMood = .calm
     @State private var gaze: CGFloat = 0
     @State private var resetTask: Task<Void, Never>?
@@ -26,15 +27,13 @@ struct NotchyNotchView: View {
                 }
                 .frame(maxHeight: 70)
                 if settings.providerID(for: .text) != nil {
-                    Button { assistant.planDay() } label: {
-                        Label("Plan my day", systemImage: "calendar.badge.clock")
-                            .font(.system(size: 11, weight: .semibold))
-                            .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(Capsule().fill(.white.opacity(0.14)))
-                            .foregroundStyle(.white)
+                    HStack(spacing: 8) {
+                        PageButton(title: "Plan my day", symbol: "calendar.badge.clock", busy: busy) { assistant.planDay() }
+                        PageButton(title: "Look at the screen", symbol: "eye", busy: busy) { assistant.lookAtScreen() }
                     }
-                    .buttonStyle(.plain)
-                    .disabled({ if case .thinking = assistant.state { return true } else { return false } }())
+                    if settings.providerID(for: .speech) != nil {
+                        Text("Hold \(voice.shortcutLabel) to talk").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
+                    }
                 }
             }
             Spacer(minLength: 0)
@@ -43,6 +42,8 @@ struct NotchyNotchView: View {
         .padding(.top, 6)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
+
+    private var busy: Bool { if case .thinking = assistant.state { return true } else { return false } }
 
     private var shownMood: NotchyMood {
         switch assistant.state {
@@ -125,6 +126,7 @@ struct NotchySettingsView: View {
                 taskSection(task)
             }
 
+            if settings.enabled { VoiceSection() }
             if settings.enabled { MailSection() }
 
             Section {
@@ -334,6 +336,47 @@ private struct MailSection: View {
             Text("Email")
         } footer: {
             Text("Works with the accounts in Mail (Gmail, iCloud, Microsoft). Notchy looks every few minutes, only while Mail is open and Notchy is not Silent, and only compares the sender with your list: no email is sent anywhere.")
+        }
+    }
+}
+
+private struct PageButton: View {
+    let title: String
+    let symbol: String
+    let busy: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: symbol)
+                .font(.system(size: 11, weight: .semibold))
+                .padding(.horizontal, 10).padding(.vertical, 5)
+                .background(Capsule().fill(.white.opacity(0.14)))
+                .foregroundStyle(.white)
+        }
+        .buttonStyle(.plain)
+        .disabled(busy)
+        .opacity(busy ? 0.5 : 1)
+    }
+}
+
+/// Talking to Notchy and showing it the screen
+private struct VoiceSection: View {
+    @ObservedObject private var settings = NotchySettings.shared
+    @ObservedObject private var voice = NotchyVoice.shared
+
+    var body: some View {
+        Section {
+            Picker("Hold to talk", selection: $voice.shortcutID) {
+                ForEach(NotchyVoice.Shortcut.all) { Text($0.label).tag($0.id) }
+            }
+            .disabled(settings.providerID(for: .speech) == nil)
+        } header: {
+            Text("Voice and screen")
+        } footer: {
+            Text(settings.providerID(for: .speech) == nil
+                 ? "Choose a provider for voice to text above to talk to Notchy. It always answers in writing."
+                 : "Hold the keys, speak, let go. Notchy listens only while the keys are down. Calendar questions use only the calendars ticked in Settings → Calendar. \"Look at the screen\" reads the screen's text on the Mac first and sends a picture only when there is little text.")
         }
     }
 }

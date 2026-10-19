@@ -146,21 +146,25 @@ struct NotchyAIError: LocalizedError {
 /// One text request to the provider chosen for a task. Only used when the user asks for something (or answers a peek):
 /// the "when to act" part of Notchy runs on plain local rules and never calls a model.
 enum NotchyClient {
-    static func complete(prompt: String, system: String? = nil, task: NotchyTask = .text, image: Data? = nil) async throws -> String {
+    /// The provider chosen for a task with its key, address and model. A click or a shortcut asked for this, so a Keychain
+    /// question is fine; nothing here ever runs in the background.
+    static func resolve(_ task: NotchyTask) async throws -> (provider: NotchyProvider, key: String, base: String, model: String) {
         let config = NotchySettings.shared
         guard let providerID = config.providerID(for: task), let provider = NotchyProvider.provider(providerID) else {
             throw NotchyAIError(message: "Choose a provider for \(task.title.lowercased()) in Settings → Notchy.")
         }
         var key = ""
         if provider.needsKey {
-            // A click asked for this, so a Keychain question is fine
             guard let k = await NotchyKeychain.read(provider.id, interactive: true), !k.isEmpty else {
                 throw NotchyAIError(message: "No key saved for \(provider.name).")
             }
             key = k
         } else if let k = await NotchyKeychain.read(provider.id, interactive: false) { key = k }
-        let base = config.baseURL(for: provider)
-        let model = config.model(for: provider, task: task)
+        return (provider, key, config.baseURL(for: provider), config.model(for: provider, task: task))
+    }
+
+    static func complete(prompt: String, system: String? = nil, task: NotchyTask = .text, image: Data? = nil) async throws -> String {
+        let (provider, key, base, model) = try await resolve(task)
         guard !model.isEmpty else { throw NotchyAIError(message: "Choose a model for \(provider.name) in Settings → Notchy.") }
         switch provider.kind {
         case .anthropic:        return try await anthropic(base: base, key: key, model: model, prompt: prompt, system: system, image: image)
@@ -170,7 +174,7 @@ enum NotchyClient {
         }
     }
 
-    private static func send(_ request: URLRequest) async throws -> [String: Any] {
+    static func send(_ request: URLRequest) async throws -> [String: Any] {
         var request = request
         request.timeoutInterval = 60
         let (data, response) = try await URLSession.shared.data(for: request)

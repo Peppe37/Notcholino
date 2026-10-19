@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0-alpha] - 2026-10-19
+
+### Added
+- **Voice**: hold a shortcut (⌃⌥ Space by default, or ⌃⌥ N / ⌃⌥ V), speak, let go. The provider you chose for voice to text (Gemini, OpenAI, ElevenLabs, or the Mac's own recogniser) turns it into text and Notchy answers in writing, under the notch. It listens only while the keys are held, for at most a minute. Questions about your day add the agenda, others don't.
+- **Look at the screen**: a button on Notchy's page. The text on the screen is read on the Mac first and, when there is enough of it, only that text goes to the AI (cheaper than a picture); a picture is sent only when there is little text, to the provider chosen for images. Needs Screen Recording.
+- **Extensions** section at the top of the Plugin Store: extensions are the bigger things (their own page in the notch, their own settings, AI), plugins stay simple Control Center buttons. Notchy is listed there with an on/off switch.
+
+### Changed
+- Plan my day and spoken calendar questions use only the calendars ticked in Notcholino's own Calendar settings (not the ones shown in Calendar.app), and the reminders the notch shows.
+
 ## [0.21.0-alpha] - 2026-10-19
 
 ### Added

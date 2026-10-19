@@ -84,6 +84,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotchyPresence.shared.settingsChanged()
         NotchyServices.shared.register()
         NotchyMail.shared.settingsChanged()
+        NotchyVoice.shared.apply()
         watchWindowsForDock()
         DeviceMonitor.shared.start()
 

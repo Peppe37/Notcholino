@@ -21,7 +21,7 @@ enum NotchyLevel: Int, CaseIterable, Identifiable {
 final class NotchySettings: ObservableObject {
     static let shared = NotchySettings()
 
-    @Published var enabled: Bool { didSet { UserDefaults.standard.set(enabled, forKey: "notchyEnabled"); NotchyPresence.shared.settingsChanged(); NotchyMail.shared.settingsChanged() } }
+    @Published var enabled: Bool { didSet { UserDefaults.standard.set(enabled, forKey: "notchyEnabled"); NotchyPresence.shared.settingsChanged(); NotchyMail.shared.settingsChanged(); NotchyVoice.shared.apply() } }
     @Published var pageVisible: Bool { didSet { UserDefaults.standard.set(pageVisible, forKey: "notchyPageVisible") } }
     /// The language Notchy answers in; empty means "the language of what it was sent"
     @Published var replyLanguage: String { didSet { UserDefaults.standard.set(replyLanguage, forKey: "notchyReplyLanguage") } }
@@ -41,6 +41,14 @@ final class NotchySettings: ObservableObject {
         urls = d.dictionary(forKey: "notchyURLs") as? [String: String] ?? [:]
     }
 
+    /// The language to listen in when the Mac itself recognises speech: the chosen reply language, or the Mac's own
+    var replyLanguageLocale: String {
+        let map = ["Italiano": "it-IT", "English": "en-US", "Español": "es-ES", "Français": "fr-FR", "Deutsch": "de-DE", "Português": "pt-PT",
+                   "Nederlands": "nl-NL", "Polski": "pl-PL", "Română": "ro-RO", "Українська": "uk-UA", "Русский": "ru-RU", "Türkçe": "tr-TR",
+                   "العربية": "ar-SA", "हिन्दी": "hi-IN", "日本語": "ja-JP", "한국어": "ko-KR", "中文": "zh-CN"]
+        return map[replyLanguage] ?? Locale.current.identifier
+    }
+
     func providerID(for task: NotchyTask) -> String? {
         guard let id = choices[task.rawValue], NotchyProvider.provider(id) != nil else { return nil }
         return id
@@ -49,6 +57,7 @@ final class NotchySettings: ObservableObject {
     func setProvider(_ id: String?, for task: NotchyTask) {
         if let id { choices[task.rawValue] = id } else { choices.removeValue(forKey: task.rawValue) }
         UserDefaults.standard.set(choices, forKey: "notchyChoices")
+        NotchyVoice.shared.apply()
     }
 
     func baseURL(for provider: NotchyProvider) -> String {

@@ -90,6 +90,7 @@ struct ContentView: View {
         }
         .frame(minWidth: 680, minHeight: 560)
         .onReceive(NotificationCenter.default.publisher(for: .openPluginStore)) { _ in selection = .pluginStore }
+        .onReceive(NotificationCenter.default.publisher(for: .openNotchySettings)) { _ in selection = .notchy }
         // Native window title
         .navigationTitle("Notcholino")
     }
@@ -878,6 +879,7 @@ struct PluginDetailView: View {
 
 extension Notification.Name {
     static let openPluginStore = Notification.Name("openPluginStore")
+    static let openNotchySettings = Notification.Name("openNotchySettings")
 }
 
 // MARK: - Plugin Store (a grid, with search)
@@ -911,6 +913,10 @@ struct PluginStoreView: View {
                     .padding(12)
                     .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.accentColor.opacity(0.1)))
                 }
+
+                ExtensionsShelf()
+
+                Text("Plugins").font(.title3.weight(.semibold)).padding(.top, 4)
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -998,5 +1004,63 @@ private struct PluginCard: View {
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.secondary.opacity(0.14)))
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .onTapGesture(perform: open)
+    }
+}
+
+// MARK: - Extensions
+
+/// Extensions are bigger than plugins: where a plugin is a button in Control Center, an extension has its own page in the notch,
+/// its own settings, and can use AI. They are part of the app and switched on here. (More will follow.)
+struct NotcholinoExtension: Identifiable {
+    let id: String
+    let name: String
+    let summary: String
+    let symbol: String
+    let color: Color
+    let isEnabled: () -> Bool
+    let setEnabled: (Bool) -> Void
+    let openSettings: () -> Void
+
+    static let all: [NotcholinoExtension] = [
+        NotcholinoExtension(id: "notchy", name: "Notchy",
+                            summary: "A small glass cube that lives in the notch: summaries of files and text, your day planned from your calendars, a look at the screen, email alerts and voice. You bring your own AI key.",
+                            symbol: "face.smiling.inverse", color: .indigo,
+                            isEnabled: { NotchySettings.shared.enabled },
+                            setEnabled: { NotchySettings.shared.enabled = $0 },
+                            openSettings: { NotificationCenter.default.post(name: .openNotchySettings, object: nil) }),
+    ]
+}
+
+struct ExtensionsShelf: View {
+    @ObservedObject private var notchy = NotchySettings.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Extensions").font(.title3.weight(.semibold))
+            ForEach(NotcholinoExtension.all) { ext in
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: ext.symbol).font(.title2).foregroundStyle(.white)
+                        .frame(width: 46, height: 46)
+                        .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(ext.color.gradient))
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack {
+                            Text(ext.name).font(.headline)
+                            Text("Extension").font(.caption2.weight(.semibold)).padding(.horizontal, 6).padding(.vertical, 1)
+                                .background(Capsule().fill(Color.secondary.opacity(0.18)))
+                        }
+                        Text(ext.summary).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        HStack {
+                            Button("Settings") { ext.openSettings() }.controlSize(.small)
+                        }.padding(.top, 2)
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(get: { notchy.enabled }, set: { ext.setEnabled($0) })).labelsHidden()
+                }
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.secondary.opacity(0.1)))
+            }
+            Text("Plugins are simple buttons in Control Center. Extensions are bigger: they have their own page in the notch and their own settings.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
     }
 }

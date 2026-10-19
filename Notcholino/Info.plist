@@ -30,6 +30,8 @@
 	<string>Notcholino needs access to display your upcoming events.</string>
 	<key>NSFocusStatusUsageDescription</key>
 	<string>Notcholino shows a moon beside the notch while a Focus, such as Do Not Disturb, is on.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Notchy listens only while you hold its shortcut, to turn your voice into text.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Notcholino needs access to show the reminders due today.</string>
 	<key>NSServices</key>
@@ -65,5 +67,7 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Notchy can use the Mac's own speech recognition to turn your voice into text.</string>
 </dict>
 </plist>
