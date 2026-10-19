@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
+import EventKit
 import SwiftUI
 
 /// Notchy's settings, one topic per tab so nothing is crowded: how it behaves, which AI does what, voice and screen, day and email.
@@ -193,6 +194,8 @@ private struct DayTab: View {
                 Text("Ask Notchy about the weather (“che tempo fa a Roma domani?”) and it looks it up on Open-Meteo, a free service with no account. Only the name of the place is sent.")
             }
 
+            VoiceCommandsSection()
+
             Section {
                 Toggle("Tell me about important emails", isOn: $mail.enabled)
                 if mail.enabled {
@@ -368,3 +371,34 @@ private struct TestRow: View {
     }
 }
 
+
+/// Adding things by voice: events, reminders, notes
+private struct VoiceCommandsSection: View {
+    @ObservedObject private var settings = NotchySettings.shared
+    @State private var calendars: [String] = []
+    @State private var lists: [String] = []
+
+    var body: some View {
+        Section {
+            Toggle("Add events, reminders and notes by voice", isOn: $settings.voiceCommands)
+            if settings.voiceCommands {
+                Picker("Events go to", selection: $settings.defaultCalendar) {
+                    Text("The Mac's default calendar").tag("")
+                    ForEach(calendars, id: \.self) { Text($0).tag($0) }
+                }
+                Picker("Reminders go to", selection: $settings.defaultReminderList) {
+                    Text("The Mac's default list").tag("")
+                    ForEach(lists, id: \.self) { Text($0).tag($0) }
+                }
+            }
+        } header: { Text("Add by voice") } footer: {
+            Text("Say it clearly, in any language: “aggiungi al calendario dentista martedì alle 15”, “ricordami di chiamare Marco domani alle 10”, “annotati: comprare il latte”, “remind me to call Anna on Friday”. Notchy puts it in Calendar, Reminders or Notes and shows what it added, with Undo. It only adds something when you ask for it outright; otherwise it just answers.")
+        }
+        .task {
+            // Names of the calendars and lists, if the access is already there (looking never asks)
+            let store = EKEventStore()
+            if EKEventStore.authorizationStatus(for: .event) == .fullAccess { calendars = store.calendars(for: .event).filter(\.allowsContentModifications).map(\.title).sorted() }
+            if EKEventStore.authorizationStatus(for: .reminder) == .fullAccess { lists = store.calendars(for: .reminder).filter(\.allowsContentModifications).map(\.title).sorted() }
+        }
+    }
+}

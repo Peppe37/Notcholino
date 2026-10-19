@@ -163,13 +163,13 @@ enum NotchyClient {
         return (provider, key, config.baseURL(for: provider), config.model(for: provider, task: task))
     }
 
-    static func complete(prompt: String, system: String? = nil, task: NotchyTask = .text, image: Data? = nil) async throws -> String {
+    static func complete(prompt: String, system: String? = nil, task: NotchyTask = .text, image: Data? = nil, json: Bool = false) async throws -> String {
         let (provider, key, base, model) = try await resolve(task)
         guard !model.isEmpty else { throw NotchyAIError(message: "Choose a model for \(provider.name) in Settings → Notchy.") }
         switch provider.kind {
-        case .anthropic:        return try await anthropic(base: base, key: key, model: model, prompt: prompt, system: system, image: image)
-        case .gemini:           return try await gemini(base: base, key: key, model: model, prompt: prompt, system: system, image: image)
-        case .openAICompatible: return try await openAI(base: base, key: key, model: model, prompt: prompt, system: system, image: image)
+        case .anthropic:        return try await anthropic(base: base, key: key, model: model, prompt: prompt, system: system, image: image, json: json)
+        case .gemini:           return try await gemini(base: base, key: key, model: model, prompt: prompt, system: system, image: image, json: json)
+        case .openAICompatible: return try await openAI(base: base, key: key, model: model, prompt: prompt, system: system, image: image, json: json)
         case .elevenLabs, .system: throw NotchyAIError(message: "\(provider.name) does not write text.")
         }
     }
@@ -196,7 +196,7 @@ enum NotchyClient {
         return json
     }
 
-    private static func anthropic(base: String, key: String, model: String, prompt: String, system: String?, image: Data?) async throws -> String {
+    private static func anthropic(base: String, key: String, model: String, prompt: String, system: String?, image: Data?, json: Bool = false) async throws -> String {
         var r = URLRequest(url: URL(string: base + "/v1/messages")!)
         r.httpMethod = "POST"
         r.setValue(key, forHTTPHeaderField: "x-api-key")
@@ -208,12 +208,12 @@ enum NotchyClient {
         var body: [String: Any] = ["model": model, "max_tokens": 1024, "messages": [["role": "user", "content": content]]]
         if let system { body["system"] = system }
         r.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let json = try await send(r)
-        let parts = (json["content"] as? [[String: Any]]) ?? []
+        let reply = try await send(r)
+        let parts = (reply["content"] as? [[String: Any]]) ?? []
         return parts.compactMap { $0["text"] as? String }.joined()
     }
 
-    private static func gemini(base: String, key: String, model: String, prompt: String, system: String?, image: Data?) async throws -> String {
+    private static func gemini(base: String, key: String, model: String, prompt: String, system: String?, image: Data?, json: Bool = false) async throws -> String {
         var r = URLRequest(url: URL(string: "\(base)/v1beta/models/\(model):generateContent")!)
         r.httpMethod = "POST"
         r.setValue(key, forHTTPHeaderField: "x-goog-api-key")
@@ -223,14 +223,15 @@ enum NotchyClient {
         parts.append(["text": prompt])
         var body: [String: Any] = ["contents": [["parts": parts]]]
         if let system { body["systemInstruction"] = ["parts": [["text": system]]] }
+        if json { body["generationConfig"] = ["responseMimeType": "application/json"] }
         r.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let json = try await send(r)
-        let candidates = (json["candidates"] as? [[String: Any]]) ?? []
+        let answer = try await send(r)
+        let candidates = (answer["candidates"] as? [[String: Any]]) ?? []
         let reply = ((candidates.first?["content"] as? [String: Any])?["parts"] as? [[String: Any]]) ?? []
         return reply.compactMap { $0["text"] as? String }.joined()
     }
 
-    private static func openAI(base: String, key: String, model: String, prompt: String, system: String?, image: Data?) async throws -> String {
+    private static func openAI(base: String, key: String, model: String, prompt: String, system: String?, image: Data?, json: Bool = false) async throws -> String {
         var r = URLRequest(url: URL(string: base + "/chat/completions")!)
         r.httpMethod = "POST"
         if !key.isEmpty { r.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization") }
@@ -243,9 +244,18 @@ enum NotchyClient {
         } else {
             messages.append(["role": "user", "content": prompt])
         }
-        r.httpBody = try JSONSerialization.data(withJSONObject: ["model": model, "messages": messages])
-        let json = try await send(r)
-        let choices = (json["choices"] as? [[String: Any]]) ?? []
+        var body: [String: Any] = ["model": model, "messages": messages]
+        if json { body["response_format"] = ["type": "json_object"] }
+        r.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let reply: [String: Any]
+        do { reply = try await send(r) } catch {
+            // A server that does not know "response_format" (some local ones): ask again without it, the prompt asks for JSON anyway
+            guard json, "\(error)".lowercased().contains("response_format") else { throw error }
+            body.removeValue(forKey: "response_format")
+            r.httpBody = try JSONSerialization.data(withJSONObject: body)
+            reply = try await send(r)
+        }
+        let choices = (reply["choices"] as? [[String: Any]]) ?? []
         return ((choices.first?["message"] as? [String: Any])?["content"] as? String) ?? ""
     }
 

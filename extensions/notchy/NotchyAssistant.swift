@@ -9,6 +9,10 @@ final class NotchyAssistant: ObservableObject {
 
     enum State: Equatable { case idle, thinking(String), reply(String), failed(String) }
     @Published private(set) var state: State = .idle
+    /// What was just added by voice (and so can be taken back), for a few minutes
+    @Published private(set) var undoLabel: String?
+    private var undoAction: (() async -> Void)?
+    private var undoExpiry: Task<Void, Never>?
     private var task: Task<Void, Never>?
 
     private static let system = """
@@ -76,6 +80,7 @@ final class NotchyAssistant: ObservableObject {
 
     /// Something said out loud. The day's agenda is added only when the words are about the day, so most questions cost nothing extra.
     func ask(spoken: String) {
+        if NotchySettings.shared.voiceCommands { route(spoken); return }
         let lower = spoken.lowercased()
         let aboutDay = ["calendar", "calendario", "agenda", "today", "oggi", "giornata", "day", "impegn", "meeting", "riunion", "appuntament",
                         "schedule", "free time", "libero", "reminder", "promemoria"].contains { lower.contains($0) }
@@ -85,6 +90,69 @@ final class NotchyAssistant: ObservableObject {
             prompt += lines.isEmpty ? "\n\nNothing is left on my calendar today." : "\n\nWhat is left of my day:\n\(lines.joined(separator: "\n"))"
         }
         run(label: "“\(spoken.prefix(40))”", prompt: prompt, image: nil, tools: spoken)
+    }
+
+    /// A spoken request that may be a command: one AI call turns it into a JSON object, and plain code adds the event, the reminder
+    /// or the note (or shows the answer). The agenda is added to the request only when the words are about the day.
+    private func route(_ spoken: String) {
+        guard NotchySettings.shared.enabled else { return }
+        task?.cancel()
+        clearUndo()
+        state = .thinking("what you said")
+        NotchyPresence.shared.peek(mood: .thinking, seconds: 90)
+        task = Task { @MainActor [weak self] in
+            do {
+                var prompt = "The user said: \"\(spoken)\""
+                let lower = spoken.lowercased()
+                if ["calendar", "calendario", "agenda", "today", "oggi", "giornata", "impegn", "meeting", "riunion", "appuntament", "schedule", "libero", "free time"].contains(where: lower.contains) {
+                    let lines = Self.agendaLines()
+                    prompt += lines.isEmpty ? "\n\nNothing is left on the calendar today." : "\n\nWhat is left of the day:\n\(lines.joined(separator: "\n"))"
+                }
+                prompt += "\n\n" + (await NotchyTools.context(for: spoken))
+                let language = NotchySettings.shared.replyLanguage
+                let system = NotchyCommands.system + (language.isEmpty ? "" : " Write the \"text\" of answers in \(language).")
+                let raw = try await NotchyClient.complete(prompt: prompt, system: system, task: .text, json: true)
+                guard !Task.isCancelled else { return }
+                let command = NotchyCommands.parse(raw)
+                if case .answer(let text) = command {
+                    self?.finish(text.isEmpty ? .failed("It had nothing to say.") : .reply(text))
+                    return
+                }
+                let done = try await NotchyDoer.run(command)
+                guard !Task.isCancelled else { return }
+                self?.setUndo(done)
+                self?.finish(.reply("✓ " + done.summary))
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.finish(.failed(error.localizedDescription))
+            }
+        }
+    }
+
+    private func setUndo(_ done: NotchyDone) {
+        undoAction = done.undo
+        undoLabel = done.summary
+        undoExpiry?.cancel()
+        undoExpiry = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 180_000_000_000)
+            if !Task.isCancelled { self?.clearUndo() }
+        }
+    }
+
+    private func clearUndo() {
+        undoExpiry?.cancel()
+        undoAction = nil
+        undoLabel = nil
+    }
+
+    /// Takes back what was just added
+    func undo() {
+        guard let action = undoAction else { return }
+        clearUndo()
+        Task { @MainActor [weak self] in
+            await action()
+            self?.finish(.reply("Undone."))
+        }
     }
 
     /// "Look at the screen": the text on the screen is read on the Mac; a picture is sent only if there is almost no text

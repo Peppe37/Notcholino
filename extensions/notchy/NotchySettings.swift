@@ -25,6 +25,11 @@ final class NotchySettings: ObservableObject {
     @Published var enabled = false { didSet { NotchyPresence.shared.settingsChanged(); NotchyMail.shared.settingsChanged(); NotchyVoice.shared.apply() } }
     @Published var pageVisible: Bool { didSet { UserDefaults.standard.set(pageVisible, forKey: "notchyPageVisible"); NotchyBridge.shared.host?.pagesChanged() } }
     /// The city used for the weather when a question does not name one
+    /// Whether spoken requests may add events, reminders and notes (the AI decides if the user asked for one)
+    @Published var voiceCommands: Bool { didSet { UserDefaults.standard.set(voiceCommands, forKey: "notchyVoiceCommands") } }
+    /// Where events and reminders go, by name ("" = the Mac's default)
+    @Published var defaultCalendar: String { didSet { UserDefaults.standard.set(defaultCalendar, forKey: "notchyDefaultCalendar") } }
+    @Published var defaultReminderList: String { didSet { UserDefaults.standard.set(defaultReminderList, forKey: "notchyDefaultReminderList") } }
     @Published var homeCity: String { didSet { UserDefaults.standard.set(homeCity, forKey: "notchyHomeCity") } }
     /// The language Notchy answers in; empty means "the language of what it was sent"
     @Published var replyLanguage: String { didSet { UserDefaults.standard.set(replyLanguage, forKey: "notchyReplyLanguage") } }
@@ -36,6 +41,9 @@ final class NotchySettings: ObservableObject {
     init() {
         let d = UserDefaults.standard
         pageVisible = d.object(forKey: "notchyPageVisible") as? Bool ?? true
+        voiceCommands = d.object(forKey: "notchyVoiceCommands") as? Bool ?? true
+        defaultCalendar = d.string(forKey: "notchyDefaultCalendar") ?? ""
+        defaultReminderList = d.string(forKey: "notchyDefaultReminderList") ?? ""
         homeCity = d.string(forKey: "notchyHomeCity") ?? ""
         replyLanguage = d.string(forKey: "notchyReplyLanguage") ?? ""
         level = NotchyLevel(rawValue: d.object(forKey: "notchyLevel") as? Int ?? 1) ?? .normal

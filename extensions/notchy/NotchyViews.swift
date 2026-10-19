@@ -29,6 +29,9 @@ struct NotchyNotchView: View {
                 }
                 .frame(maxHeight: 58)
                 if settings.providerID(for: .text) != nil {
+                    if assistant.undoLabel != nil {
+                        PageButton(title: "Undo", symbol: "arrow.uturn.backward", busy: busy) { assistant.undo() }
+                    }
                     // Side by side when they fit, one under the other when the column is narrow: never a label on two lines
                     ViewThatFits(in: .horizontal) {
                         HStack(spacing: 6) {

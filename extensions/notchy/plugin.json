@@ -7,20 +7,39 @@
   "description": "A small glass cube in the notch: summaries, your day, the weather, the screen, email alerts and voice. You bring your own AI key.",
   "author": "Giuseppe",
   "icon": "face.smiling.inverse",
-  "version": "0.1.1-alpha",
+  "version": "0.2.0-alpha",
   "apiVersion": 1,
   "minAppVersion": "0.26.0",
   "category": "AI",
-  "tags": ["ai", "assistant", "voice", "summary", "calendar", "weather", "email", "companion"],
+  "tags": [
+    "ai",
+    "assistant",
+    "voice",
+    "summary",
+    "calendar",
+    "weather",
+    "email",
+    "companion"
+  ],
   "details": "Notchy is a small, soft glass cube that lives in the notch and keeps you company. Right-click text or a file and send it to Notchy for a short summary; ask it to plan your day from the calendars you chose, the weather, or a look at the screen; hold a shortcut and talk to it; let it tell you about emails from the people who matter. It peeks out now and then, wears headphones when music plays, and reacts to your other plugins. You bring your own key for Anthropic, Gemini, OpenAI, Ollama or vLLM, kept in the macOS Keychain; nothing runs in the background that needs one.",
   "features": [
     "Summaries and outlines of text, notes, code, PDFs and images (right-click → Send to Notchy)",
     "Plans your day from the calendars you ticked, and knows the weather",
     "Voice: hold a key and talk, Notchy answers in writing",
+    "Add events, reminders and notes by voice, in any language, with Undo",
     "Looks at the screen only when you ask, reading the text on your Mac first",
     "Tells you about emails from senders you choose, through Mail",
     "Silent, Normal or Lively: from only when called to peeking out now and then"
   ],
-  "permissions": "Optional: Microphone (voice), Speech Recognition (the Mac's own recogniser), Screen Recording (look at the screen), Automation of Mail (email alerts), Calendar and Reminders (plan your day), Accessibility (a single-key shortcut such as Fn).",
-  "capabilities": ["network", "keychain", "applescript", "files", "microphone", "screen", "accessibility"]
+  "permissions": "Optional: Microphone (voice), Speech Recognition (the Mac's own recogniser), Screen Recording (look at the screen), Automation of Mail (email alerts) and of Notes (add notes), Calendar and Reminders (plan your day, add events and reminders), Accessibility (a single-key shortcut such as Fn).",
+  "capabilities": [
+    "accessibility",
+    "applescript",
+    "calendar",
+    "files",
+    "keychain",
+    "microphone",
+    "network",
+    "screen"
+  ]
 }

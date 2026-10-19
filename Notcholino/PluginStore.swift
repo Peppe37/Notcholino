@@ -107,7 +107,11 @@ final class PluginStore: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            let (data, response) = try await URLSession.shared.data(from: Self.manifestURL)
+            // GitHub Pages lets caches keep the list for ten minutes: ask for a fresh one every time, so a plugin or an extension that
+            // was just published shows up when you open the store (a changing address gets past the CDN's copy too)
+            var components = URLComponents(url: Self.manifestURL, resolvingAgainstBaseURL: false)!
+            components.queryItems = [URLQueryItem(name: "t", value: String(Int(Date().timeIntervalSince1970 / 30)))]
+            let (data, response) = try await URLSession.shared.data(for: URLRequest(url: components.url!, cachePolicy: .reloadIgnoringLocalCacheData))
             guard (response as? HTTPURLResponse)?.statusCode == 200 else {
                 throw StoreError.message("The plugin list is not available yet.")
             }

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.1-alpha] - 2026-10-19
+
+### Fixed
+- A plugin or an extension that was just published did not show in the Plugin Store for up to ten minutes: GitHub Pages lets caches keep the list that long. The store now asks for a fresh list every time it is opened.
+- The release workflows use a newer `actions/checkout` (GitHub is retiring the one they used).
+
 ## [0.27.0-alpha] - 2026-10-19
 
 ### Added
