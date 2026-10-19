@@ -305,7 +305,7 @@ struct NotchShape: Shape {
 
 /// The panels the notch can show, in display order.
 enum NotchTab: Int, CaseIterable {
-    case controlCenter = -2, shelf = -1, music = 0, calendar = 1, notchy = 2
+    case controlCenter = -2, shelf = -1, music = 0, calendar = 1, notchy = 2, extensions = 3
 }
 
 struct NotchContentView: View {
@@ -341,6 +341,7 @@ struct NotchContentView: View {
     @StateObject private var music   = MusicManager()
     @StateObject private var sysEvt  = SystemEventsManager()
     @ObservedObject private var calMgr = CalendarManager.shared
+    @ObservedObject private var extensionManager = ExtensionManager.shared
 
     @AppStorage("notchWidth")  private var tuningW: Double = 0
     @AppStorage("notchHeight") private var tuningH: Double = 0
@@ -364,6 +365,7 @@ struct NotchContentView: View {
             case .music:         return nowPlayingEnabled
             case .calendar:      return calendarEnabled
             case .notchy:        return notchy.enabled && notchy.pageVisible
+            case .extensions:    return !extensionManager.pages.isEmpty
             }
         }
     }
@@ -623,7 +625,8 @@ struct NotchContentView: View {
         case .shelf:         ShelfNotchView(dropTargeted: dropTargeted)
         case .music:         NowPlayingNotchView(music: music)
         case .calendar:      CalendarNotchView()
-        case .notchy:        NotchyNotchView()
+        case .notchy:        NotchyNotchView(musicPlaying: music.isPlaying)
+        case .extensions:    ExtensionNotchView()
         }
     }
 

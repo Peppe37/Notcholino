@@ -37,6 +37,8 @@ struct NotchyCube: View {
     var gaze: CGFloat = 0
     /// Blinks by itself while true
     var alive = true
+    /// Things it wears or holds, drawn with shapes too
+    var accessories: Set<NotchyAccessory> = []
 
     @State private var blinking = false
     @State private var squash: CGSize = CGSize(width: 1, height: 1)
@@ -49,7 +51,12 @@ struct NotchyCube: View {
         ZStack {
             body(in: CGSize(width: w, height: h))
             eyes
+            ForEach(Array(accessories), id: \.self) { accessory in
+                NotchyAccessoryView(accessory: accessory, size: size)
+                    .transition(.scale(scale: 0.4).combined(with: .opacity))
+            }
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.65), value: accessories)
         .frame(width: w, height: h)
         .scaleEffect(squash)
         .animation(.spring(response: 0.32, dampingFraction: 0.5), value: squash)
@@ -156,6 +163,79 @@ struct NotchyCube: View {
                 try? await Task.sleep(nanoseconds: 110_000_000)
                 blinking = false
             }
+        }
+    }
+}
+
+// MARK: - Accessories
+
+/// What Notchy picks up from the Mac and from the official plugins, if they are installed
+enum NotchyAccessory: String, Hashable {
+    case headphones   // music is playing
+    case tomato       // a Tomato timer is running
+    case coffee       // Espresso is keeping the Mac awake
+
+    /// What is going on right now. Cheap: three yes/no answers, asked only while Notchy's page is on screen.
+    @MainActor static func current(musicPlaying: Bool) -> Set<NotchyAccessory> {
+        var set: Set<NotchyAccessory> = []
+        if musicPlaying { set.insert(.headphones) }
+        for plugin in PluginManager.shared.loadedPlugins where plugin.isActive {
+            if plugin.pluginIdentifier == "tomato" { set.insert(.tomato) }
+            if plugin.pluginIdentifier == "espresso" { set.insert(.coffee) }
+        }
+        return set
+    }
+}
+
+struct NotchyAccessoryView: View {
+    let accessory: NotchyAccessory
+    let size: CGFloat
+
+    var body: some View {
+        switch accessory {
+        case .headphones:
+            ZStack {
+                // The band over the top, and a cup on each side
+                Circle().trim(from: 0.5, to: 1)
+                    .stroke(Color(white: 0.16), style: StrokeStyle(lineWidth: size * 0.05, lineCap: .round))
+                    .frame(width: size * 0.95, height: size * 0.95)
+                    .offset(y: -size * 0.08)
+                ForEach([-1.0, 1.0], id: \.self) { side in
+                    RoundedRectangle(cornerRadius: size * 0.05, style: .continuous)
+                        .fill(LinearGradient(colors: [Color(white: 0.30), Color(white: 0.12)], startPoint: .top, endPoint: .bottom))
+                        .overlay(RoundedRectangle(cornerRadius: size * 0.05).strokeBorder(.white.opacity(0.25), lineWidth: 0.6))
+                        .frame(width: size * 0.12, height: size * 0.26)
+                        .offset(x: CGFloat(side) * size * 0.475, y: size * 0.0)
+                }
+            }
+        case .tomato:
+            // A small tomato on top, like a hat
+            ZStack {
+                Circle().fill(RadialGradient(colors: [Color(red: 1, green: 0.45, blue: 0.35), Color(red: 0.85, green: 0.15, blue: 0.12)],
+                                             center: .topLeading, startRadius: 1, endRadius: size * 0.25))
+                    .frame(width: size * 0.3, height: size * 0.27)
+                Capsule().fill(Color(red: 0.25, green: 0.7, blue: 0.3)).frame(width: size * 0.16, height: size * 0.05)
+                    .rotationEffect(.degrees(-18)).offset(y: -size * 0.13)
+                Capsule().fill(Color(red: 0.25, green: 0.7, blue: 0.3)).frame(width: size * 0.12, height: size * 0.045)
+                    .rotationEffect(.degrees(28)).offset(x: size * 0.02, y: -size * 0.12)
+            }
+            .offset(x: size * 0.12, y: -size * 0.49)
+        case .coffee:
+            // A cup held at the bottom right, with steam
+            ZStack {
+                Capsule().fill(.white.opacity(0.7)).frame(width: size * 0.035, height: size * 0.12)
+                    .offset(x: -size * 0.04, y: -size * 0.17)
+                Capsule().fill(.white.opacity(0.5)).frame(width: size * 0.035, height: size * 0.09)
+                    .offset(x: size * 0.04, y: -size * 0.15)
+                RoundedRectangle(cornerRadius: size * 0.04, style: .continuous)
+                    .fill(LinearGradient(colors: [.white, Color(white: 0.82)], startPoint: .top, endPoint: .bottom))
+                    .frame(width: size * 0.24, height: size * 0.2)
+                Circle().strokeBorder(.white.opacity(0.9), lineWidth: size * 0.03).frame(width: size * 0.12, height: size * 0.12)
+                    .offset(x: size * 0.15, y: -size * 0.01)
+                RoundedRectangle(cornerRadius: size * 0.02).fill(Color(red: 0.42, green: 0.26, blue: 0.16))
+                    .frame(width: size * 0.2, height: size * 0.035).offset(y: -size * 0.08)
+            }
+            .offset(x: size * 0.4, y: size * 0.42)
         }
     }
 }

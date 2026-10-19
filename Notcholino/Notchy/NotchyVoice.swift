@@ -4,58 +4,152 @@ import AppKit
 import Carbon.HIToolbox
 import Speech
 
-/// Voice input for Notchy: hold the shortcut, speak, let go. The audio is turned into text by the provider chosen for voice, and
-/// the text goes to Notchy like anything else. Notchy always answers in writing. Nothing listens until the key is held down.
+/// A shortcut the user recorded: a combination (hold to talk) or a single modifier key such as Fn (hold to talk, or double-tap
+/// for hands-free and tap again to stop)
+struct NotchyShortcut: Codable, Equatable {
+    enum Kind: String, Codable { case combo, modifier }
+    var kind: Kind
+    var keyCode: UInt32
+    var modifiers: UInt32      // Carbon mask, for combos
+    var label: String
+
+    static let fn = NotchyShortcut(kind: .modifier, keyCode: 63, modifiers: 0, label: "Fn")
+
+    /// The flag that says a single modifier key is down
+    var modifierFlag: NSEvent.ModifierFlags? {
+        switch keyCode {
+        case 63: return .function
+        case 58, 61: return .option
+        case 55, 54: return .command
+        case 59, 62: return .control
+        case 56, 60: return .shift
+        default: return nil
+        }
+    }
+
+    static func modifierName(_ code: UInt32) -> String? {
+        ["63": "Fn", "58": "Left ⌥", "61": "Right ⌥", "55": "Left ⌘", "54": "Right ⌘", "59": "Left ⌃", "62": "Right ⌃", "56": "Left ⇧", "60": "Right ⇧"]["\(code)"]
+    }
+
+    static func carbonMask(_ f: NSEvent.ModifierFlags) -> UInt32 {
+        var m: UInt32 = 0
+        if f.contains(.command) { m |= UInt32(cmdKey) }
+        if f.contains(.option) { m |= UInt32(optionKey) }
+        if f.contains(.control) { m |= UInt32(controlKey) }
+        if f.contains(.shift) { m |= UInt32(shiftKey) }
+        return m
+    }
+
+    static func comboLabel(_ event: NSEvent) -> String {
+        let f = event.modifierFlags
+        var s = ""
+        if f.contains(.control) { s += "⌃" }
+        if f.contains(.option) { s += "⌥" }
+        if f.contains(.shift) { s += "⇧" }
+        if f.contains(.command) { s += "⌘" }
+        let key = event.keyCode == 49 ? "Space" : (event.charactersIgnoringModifiers ?? "").uppercased()
+        return s + " " + key
+    }
+}
+
+/// Voice input for Notchy: hold the shortcut, speak, let go. The provider chosen for voice turns the audio into text, and the
+/// text goes to Notchy like anything else. Notchy always answers in writing. Nothing listens until the shortcut is used.
 final class NotchyVoice: ObservableObject {
     static let shared = NotchyVoice()
 
-    struct Shortcut: Identifiable, Hashable {
-        let id: String, label: String, keyCode: UInt32, modifiers: UInt32
-        static let all = [
-            Shortcut(id: "ctrlOptSpace", label: "⌃⌥ Space", keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey | optionKey)),
-            Shortcut(id: "ctrlOptN", label: "⌃⌥ N", keyCode: UInt32(kVK_ANSI_N), modifiers: UInt32(controlKey | optionKey)),
-            Shortcut(id: "ctrlOptV", label: "⌃⌥ V", keyCode: UInt32(kVK_ANSI_V), modifiers: UInt32(controlKey | optionKey)),
-        ]
+    @Published var shortcut: NotchyShortcut? {
+        didSet {
+            UserDefaults.standard.set(shortcut.flatMap { try? JSONEncoder().encode($0) }, forKey: "notchyShortcutV2")
+            apply()
+        }
     }
-
-    @Published var shortcutID: String { didSet { UserDefaults.standard.set(shortcutID, forKey: "notchyShortcut"); apply() } }
     @Published private(set) var listening = false
+    /// Set while the settings are waiting for the user to press a shortcut
+    @Published var recording = false
 
     private var hotKey: EventHotKeyRef?
     private var handler: EventHandlerRef?
+    private var flagMonitor: Any?
     private var recorder: AVAudioRecorder?
     private var startedAt = Date()
     private var stopTask: Task<Void, Never>?
+    // Single-key state
+    private var downAt: Date?
+    private var lastTapEnd: Date?
+    private var handsFree = false
+    private var armTask: Task<Void, Never>?
 
-    init() { shortcutID = UserDefaults.standard.string(forKey: "notchyShortcut") ?? "ctrlOptSpace" }
+    init() {
+        let d = UserDefaults.standard
+        if let data = d.data(forKey: "notchyShortcutV2"), let s = try? JSONDecoder().decode(NotchyShortcut.self, from: data) { shortcut = s }
+        else if d.object(forKey: "notchyShortcutV2") == nil { shortcut = .fn }
+    }
 
-    var shortcutLabel: String { Shortcut.all.first { $0.id == shortcutID }?.label ?? "" }
+    var shortcutLabel: String { shortcut?.label ?? "" }
 
     /// Registers (or removes) the global shortcut. Only while Notchy is on and a voice provider is chosen.
     func apply() {
         if let hotKey { UnregisterEventHotKey(hotKey); self.hotKey = nil }
+        if let m = flagMonitor { NSEvent.removeMonitor(m); flagMonitor = nil }
         let s = NotchySettings.shared
-        guard s.enabled, s.providerID(for: .speech) != nil, let sc = Shortcut.all.first(where: { $0.id == shortcutID }) else { return }
-        if handler == nil {
-            var spec = [EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed)),
-                        EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyReleased))]
-            InstallEventHandler(GetApplicationEventTarget(), { _, event, _ in
-                let kind = GetEventKind(event)
-                DispatchQueue.main.async {
-                    if kind == UInt32(kEventHotKeyPressed) { NotchyVoice.shared.begin() } else { NotchyVoice.shared.finish() }
-                }
-                return noErr
-            }, 2, &spec, nil, &handler)
+        guard s.enabled, s.providerID(for: .speech) != nil, !recording, let sc = shortcut else { return }
+        switch sc.kind {
+        case .combo:
+            if handler == nil {
+                var spec = [EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed)),
+                            EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyReleased))]
+                InstallEventHandler(GetApplicationEventTarget(), { _, event, _ in
+                    let kind = GetEventKind(event)
+                    DispatchQueue.main.async {
+                        if kind == UInt32(kEventHotKeyPressed) { NotchyVoice.shared.begin() } else { NotchyVoice.shared.finish() }
+                    }
+                    return noErr
+                }, 2, &spec, nil, &handler)
+            }
+            RegisterEventHotKey(sc.keyCode, sc.modifiers, EventHotKeyID(signature: OSType(0x4E54_4348), id: 1), GetApplicationEventTarget(), 0, &hotKey)
+        case .modifier:
+            guard let flag = sc.modifierFlag else { return }
+            flagMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+                guard event.keyCode == UInt16(sc.keyCode) else { return }
+                if event.modifierFlags.contains(flag) { self?.modifierDown() } else { self?.modifierUp() }
+            }
         }
-        RegisterEventHotKey(sc.keyCode, sc.modifiers, EventHotKeyID(signature: OSType(0x4E54_4348), id: 1), GetApplicationEventTarget(), 0, &hotKey)
     }
+
+    // MARK: A single modifier key: hold to talk, or double-tap for hands-free and tap to stop
+
+    private func modifierDown() {
+        if handsFree { handsFree = false; finish(); return }
+        downAt = Date()
+        if let last = lastTapEnd, Date().timeIntervalSince(last) < 0.45 {
+            lastTapEnd = nil
+            handsFree = true
+            begin()
+        } else {
+            // A short tap is not for us: start only if the key stays down a moment
+            armTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 280_000_000)
+                if !Task.isCancelled, self?.downAt != nil { self?.begin() }
+            }
+        }
+    }
+
+    private func modifierUp() {
+        guard let down = downAt else { return }
+        downAt = nil
+        armTask?.cancel()
+        if handsFree { return }
+        if Date().timeIntervalSince(down) >= 0.28 { finish() } else { lastTapEnd = Date() }
+    }
+
+    // MARK: Recording
 
     private func begin() {
         guard !listening, NotchySettings.shared.enabled else { return }
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized: start()
         case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .audio) { ok in DispatchQueue.main.async { if ok { PopupCenter.shared.show(icon: "mic.fill", title: "Microphone allowed", subtitle: "Hold the shortcut again to talk", seconds: 4) } } }
+            AVCaptureDevice.requestAccess(for: .audio) { ok in DispatchQueue.main.async { if ok { PopupCenter.shared.show(icon: "mic.fill", title: "Microphone allowed", subtitle: "Use the shortcut again to talk", seconds: 4) } } }
         default:
             PopupCenter.shared.show(icon: "mic.slash.fill", title: "Notchy can't hear you", subtitle: "Allow the microphone in System Settings → Privacy & Security", tint: .orange, seconds: 6)
         }
@@ -71,11 +165,11 @@ final class NotchyVoice: ObservableObject {
         listening = true
         startedAt = Date()
         NotchyPresence.shared.peek(mood: .curious, seconds: 70)
-        PopupCenter.shared.show(icon: "mic.fill", title: "Listening…", subtitle: "Let go of the keys when you are done", seconds: 15)
+        PopupCenter.shared.show(icon: "mic.fill", title: "Listening…", subtitle: handsFree ? "Tap the key again when you are done" : "Let go when you are done", seconds: 15)
         // Never listen for more than a minute, even if the keys stay down
         stopTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 60_000_000_000)
-            if !Task.isCancelled { self?.finish() }
+            if !Task.isCancelled { self?.handsFree = false; self?.finish() }
         }
     }
 
@@ -87,9 +181,60 @@ final class NotchyVoice: ObservableObject {
         recorder = nil
         PopupCenter.shared.dismiss()
         guard Date().timeIntervalSince(startedAt) > 0.5 else { NotchyPresence.shared.peek(mood: .calm, seconds: 0.1); return }
-        let file = r.url
-        NotchyAssistant.shared.transcribeAndAsk(file)
+        NotchyAssistant.shared.transcribeAndAsk(r.url)
     }
+
+    // MARK: Recording a new shortcut (the settings ask for a key; this is like Wispr Flow)
+
+    private var localMonitor: Any?
+    private var candidate: UInt32?
+    private var otherKeyPressed = false
+
+    func startRecordingShortcut() {
+        stopRecordingShortcut()
+        recording = true
+        apply()          // the current shortcut stops reacting while a new one is being chosen
+        if !AXIsProcessTrusted() {
+            AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary)
+        }
+        candidate = nil; otherKeyPressed = false
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
+            guard let self else { return event }
+            if event.type == .keyDown {
+                if event.keyCode == 53 { self.stopRecordingShortcut(); return nil }           // Esc cancels
+                let mods = NotchyShortcut.carbonMask(event.modifierFlags.intersection([.command, .option, .control, .shift]))
+                guard mods != 0 else { return nil }                                            // a bare letter is not a shortcut
+                self.otherKeyPressed = true
+                self.shortcut = NotchyShortcut(kind: .combo, keyCode: UInt32(event.keyCode), modifiers: mods, label: NotchyShortcut.comboLabel(event))
+                self.stopRecordingShortcut()
+                return nil
+            }
+            // flagsChanged: a modifier alone, pressed and released
+            let code = UInt32(event.keyCode)
+            guard let name = NotchyShortcut.modifierName(code) else { return event }
+            let all = event.modifierFlags.intersection([.command, .option, .control, .shift, .function])
+            if all.isEmpty {
+                if self.candidate == code, !self.otherKeyPressed {
+                    self.shortcut = NotchyShortcut(kind: .modifier, keyCode: code, modifiers: 0, label: name)
+                    self.stopRecordingShortcut()
+                }
+                self.candidate = nil
+            } else if self.candidate == nil {
+                self.candidate = code
+            } else if self.candidate != code {
+                self.otherKeyPressed = true      // two modifiers: wait for a letter to make a combination
+            }
+            return nil
+        }
+    }
+
+    func stopRecordingShortcut() {
+        if let m = localMonitor { NSEvent.removeMonitor(m); localMonitor = nil }
+        recording = false
+        apply()
+    }
+
+    func clearShortcut() { shortcut = nil }
 }
 
 // MARK: - Turning speech into text

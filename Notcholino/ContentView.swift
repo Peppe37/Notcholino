@@ -1011,7 +1011,7 @@ private struct PluginCard: View {
 
 /// Extensions are bigger than plugins: where a plugin is a button in Control Center, an extension has its own page in the notch,
 /// its own settings, and can use AI. They are part of the app and switched on here. (More will follow.)
-struct NotcholinoExtension: Identifiable {
+struct BuiltInExtension: Identifiable {
     let id: String
     let name: String
     let summary: String
@@ -1021,8 +1021,8 @@ struct NotcholinoExtension: Identifiable {
     let setEnabled: (Bool) -> Void
     let openSettings: () -> Void
 
-    static let all: [NotcholinoExtension] = [
-        NotcholinoExtension(id: "notchy", name: "Notchy",
+    static let all: [BuiltInExtension] = [
+        BuiltInExtension(id: "notchy", name: "Notchy",
                             summary: "A small glass cube that lives in the notch: summaries of files and text, your day planned from your calendars, a look at the screen, email alerts and voice. You bring your own AI key.",
                             symbol: "face.smiling.inverse", color: .indigo,
                             isEnabled: { NotchySettings.shared.enabled },
@@ -1037,7 +1037,7 @@ struct ExtensionsShelf: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Extensions").font(.title3.weight(.semibold))
-            ForEach(NotcholinoExtension.all) { ext in
+            ForEach(BuiltInExtension.all) { ext in
                 HStack(alignment: .top, spacing: 14) {
                     Image(systemName: ext.symbol).font(.title2).foregroundStyle(.white)
                         .frame(width: 46, height: 46)
@@ -1061,6 +1061,7 @@ struct ExtensionsShelf: View {
             }
             Text("Plugins are simple buttons in Control Center. Extensions are bigger: they have their own page in the notch and their own settings.")
                 .font(.caption).foregroundStyle(.secondary)
+            DeveloperExtensionsView().padding(.top, 6)
         }
     }
 }

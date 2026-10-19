@@ -83,6 +83,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         FocusMonitor.shared.start()
         NotchyPresence.shared.settingsChanged()
         NotchyServices.shared.register()
+        _ = ExtensionManager.shared
         NotchyMail.shared.settingsChanged()
         NotchyVoice.shared.apply()
         watchWindowsForDock()
@@ -101,6 +102,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Whatever way the app ends (⌘Q, logout, an update, `kill`), every plugin gets to put the Mac back as it found it
     func applicationWillTerminate(_ notification: Notification) {
         PluginManager.shared.loadedPlugins.forEach { $0.pluginWillUnload?() }
+        ExtensionManager.shared.willQuit()
     }
 
     private var signalSources: [DispatchSourceSignal] = []

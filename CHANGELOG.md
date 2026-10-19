@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0-alpha] - 2026-10-19
+
+### Added
+- **Extensions for developers**: the extension API is open. In **Settings → Plugin Store → Extensions → Developer mode** you can load extensions you built yourself (a page in the notch, settings, and, if you allow it, Notchy's AI without ever seeing your keys) from `~/Library/Application Support/Notcholino/Extensions`. Nothing loads with developer mode off, and there is no download or store for them. See `extensions/GUIDE.md`, the example in `extensions/hello` and `scripts/dev-extension.sh`.
+- **Notchy wears things**: headphones while music plays, a tomato on its head while a Tomato timer runs, a coffee cup while Espresso keeps the Mac awake (when those plugins are installed).
+- **Record a shortcut** for voice, like dictation apps do: click Record and press a combination (hold to talk) or tap a single key such as Fn (hold to talk, double-tap for hands-free and tap once to stop).
+- Email senders are now a list you add to and remove from, and Notchy can open Mail in the background when it is closed, so alerts work whether or not Mail is open.
+
+### Changed
+- Notchy's settings are split into four tabs: General, AI, Voice & screen, Day & email. The address of OpenAI, Anthropic and Gemini is no longer shown: only servers you run yourself (Ollama, vLLM) have one.
+
+### Fixed
+- The voice shortcut did not trigger: ⌃⌥ Space is taken by macOS for switching input sources. The default is now the Fn key, and any shortcut can be recorded.
+
 ## [0.22.0-alpha] - 2026-10-19
 
 ### Added
