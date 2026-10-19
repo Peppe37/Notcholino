@@ -492,7 +492,7 @@ struct NotchContentView: View {
                             if hoverExpands || !isSystemHudActive {
                                 VStack(spacing: 0) {
                                     Spacer().frame(height: topPad)
-                                    if isMusicMode && enabledTabs.count > 1 {
+                                    if tabsNavigable && enabledTabs.count > 1 {
                                         tabDots
                                     } else {
                                         Spacer().frame(height: dotsRowH)
@@ -639,7 +639,7 @@ struct NotchContentView: View {
             .simultaneousGesture(
                 DragGesture(minimumDistance: 20, coordinateSpace: .local)
                     .onEnded { val in
-                        guard isExpanded, isMusicMode, !pageIsLocked else { return }
+                        guard isExpanded, tabsNavigable, !pageIsLocked else { return }
                         if val.translation.width < -30 {
                             step(1)
                         } else if val.translation.width > 30 {
@@ -649,7 +649,7 @@ struct NotchContentView: View {
             )
             // Two-finger horizontal swipe on the trackpad: same direction as the drag
             .onReceive(NotificationCenter.default.publisher(for: .notchScrollWheel)) { notif in
-                guard (notif.object as? UUID) == notchID, isExpanded, isMusicMode, !pageIsLocked,
+                guard (notif.object as? UUID) == notchID, isExpanded, tabsNavigable, !pageIsLocked,
                       let info = notif.userInfo,
                       let dx = info["dx"] as? CGFloat,
                       let dy = info["dy"] as? CGFloat else { return }
@@ -719,7 +719,7 @@ struct NotchContentView: View {
     private func updateHoveredDot(x: CGFloat, y: CGFloat) {
         let tabs = enabledTabs
         var found: NotchTab?
-        if isExpanded, isMusicMode, tabs.count > 1 {
+        if isExpanded, tabsNavigable, tabs.count > 1 {
             let cy = topPad + dotsRowH / 2
             for (i, tab) in tabs.enumerated() {
                 let cx = (CGFloat(i) - CGFloat(tabs.count - 1) / 2) * dotPitch
@@ -800,6 +800,10 @@ struct NotchContentView: View {
     private var isMusicMode: Bool {
         sysEvt.currentMode == .music || sysEvt.currentMode == .calendar
     }
+
+    /// The pages can be changed (the dots show, and swiping or scrolling sideways works). Also while the volume or brightness bar is on
+    /// screen, as long as the pointer is on the notch and the pages are showing above it: before, the bar switched all of that off.
+    private var tabsNavigable: Bool { isMusicMode || hoverExpands }
 
     // MARK: - Compact Content (Live Activity Style)
     @ViewBuilder

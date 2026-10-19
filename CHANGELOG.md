@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.1-alpha] - 2026-10-20
+
+### Fixed
+- While the volume or brightness bar is showing in the notch, the pages can still be changed: the dots stay and swiping or scrolling sideways works. Before, the bar switched the gestures off for as long as it was there.
+
 ## [0.28.0-alpha] - 2026-10-19
 
 ### Added
