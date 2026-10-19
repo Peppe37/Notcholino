@@ -150,6 +150,39 @@ final class CalendarManager: ObservableObject {
         }
     }
 
+    /// The user's calendars and reminders over a span of days (from the start of `start`'s day to the end of `end`'s day): the
+    /// calendars ticked in Notcholino's own settings and the reminders it shows. One line each, titles and times only. For an extension
+    /// asked "what do I have tomorrow?".
+    func agenda(from start: Date, to end: Date, completion: @escaping ([String]) -> Void) {
+        let cal = Calendar.current
+        let first = cal.startOfDay(for: start)
+        guard let last = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: max(start, end))) else { completion([]); return }
+        let day = DateFormatter(); day.setLocalizedDateFormatFromTemplate("EEE d MMM")
+        let time = DateFormatter(); time.timeStyle = .short
+        var found: [(Date, String)] = []
+        if hasAccess {
+            let calendars = store.calendars(for: .event).filter { selectedCalendarIDs.contains($0.calendarIdentifier) }
+            if !calendars.isEmpty {
+                for e in store.events(matching: store.predicateForEvents(withStart: first, end: last, calendars: calendars)) {
+                    let when = e.isAllDay ? "all day" : "\(time.string(from: e.startDate))–\(time.string(from: e.endDate))"
+                    found.append((e.startDate, "- \(day.string(from: e.startDate)) \(when): \(e.title ?? "Event")"))
+                }
+            }
+        }
+        func finish() { completion(found.sorted { $0.0 < $1.0 }.map(\.1)) }
+        guard hasRemindersAccess, showsReminders else { finish(); return }
+        // A span that includes today also takes what is overdue
+        let predicate = store.predicateForIncompleteReminders(withDueDateStarting: first <= Date() ? nil : first, ending: last, calendars: nil)
+        store.fetchReminders(matching: predicate) { reminders in
+            for r in reminders ?? [] {
+                guard let comps = r.dueDateComponents, let due = cal.date(from: comps) else { continue }
+                let label = comps.hour != nil ? "\(day.string(from: due)) \(time.string(from: due))" : day.string(from: due)
+                found.append((due, "- to do (\(label)): \(r.title ?? "Reminder")"))
+            }
+            DispatchQueue.main.async { finish() }
+        }
+    }
+
     func fetchEvents() {
         guard hasAccess else { return }
         let cal = Calendar.current

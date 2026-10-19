@@ -7,9 +7,9 @@
   "description": "A small glass cube in the notch: summaries, your day, the weather, the screen, email alerts and voice. You bring your own AI key.",
   "author": "Giuseppe",
   "icon": "face.smiling.inverse",
-  "version": "0.2.0-alpha",
+  "version": "0.3.0-alpha",
   "apiVersion": 1,
-  "minAppVersion": "0.26.0",
+  "minAppVersion": "0.28.0",
   "category": "AI",
   "tags": [
     "ai",
@@ -26,7 +26,7 @@
     "Summaries and outlines of text, notes, code, PDFs and images (right-click → Send to Notchy)",
     "Plans your day from the calendars you ticked, and knows the weather",
     "Voice: hold a key and talk, Notchy answers in writing",
-    "Add events, reminders and notes by voice, in any language, with Undo",
+    "Add events, reminders and notes by voice, and ask what is on your calendar for any day, in any language, with Undo",
     "Looks at the screen only when you ask, reading the text on your Mac first",
     "Tells you about emails from senders you choose, through Mail",
     "Silent, Normal or Lively: from only when called to peeking out now and then"

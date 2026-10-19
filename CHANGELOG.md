@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0-alpha] - 2026-10-19
+
+### Added
+- The extension API can read the calendar and the reminders over any span of days (`host.agenda(from:to:)`), from the calendars you ticked in Notcholino's Calendar settings. Notchy uses it to answer “what do I have tomorrow?” (Notchy 0.3.0).
+
 ## [0.27.5-alpha] - 2026-10-19
 
 ### Changed

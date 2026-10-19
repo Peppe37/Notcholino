@@ -10,6 +10,8 @@ enum NotchyCommand {
     case event(title: String, start: Date, end: Date, allDay: Bool, location: String?, notes: String?, calendar: String?)
     case reminder(title: String, due: Date?, hasTime: Bool, notes: String?, list: String?)
     case note(title: String?, body: String)
+    /// Asks what is on the calendar and in Reminders over some days: nothing is saved, it is read and then answered
+    case agenda(from: Date, to: Date, ifEmpty: String?)
     case answer(String)
 }
 
@@ -31,7 +33,11 @@ enum NotchyCommands {
         {"action":"event","title":"…","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM","all_day":false,"location":null,"notes":null,"calendar":null}
         {"action":"reminder","title":"…","due":"YYYY-MM-DDTHH:MM" or "YYYY-MM-DD" or null,"notes":null,"list":null}
         {"action":"note","title":"a short title or null","body":"the text to keep"}
+        {"action":"agenda","from":"YYYY-MM-DD","to":"YYYY-MM-DD","if_empty":"a short sentence"}
         {"action":"answer","text":"a short reply"}
+        Use "agenda" when they ask what is on their calendar or reminders for a day or a period ("what do I have tomorrow?", "che ho \
+        in agenda oggi?", "cosa devo fare questa settimana?"): "from" and "to" are the first and last day, inclusive (the same day for \
+        one day); "if_empty" is what to say if there is nothing, in the user's language. Never use "agenda" to add something.
         Rules: dates and times are the user's local time, resolved from the "Now" line (so "tomorrow at 3pm", "next Tuesday", "alle 15 di \
         domani" become real dates). An event with no end lasts one hour; with only a date it is all day (all_day true, start and end the \
         same date). Keep titles short and in the user's language, without the words of the command. If something essential is missing \
@@ -65,6 +71,9 @@ enum NotchyCommands {
             guard let title = text("title") else { return .answer(text("text") ?? "What should I remind you of?") }
             let due = text("due").flatMap(date)
             return .reminder(title: title, due: due?.date, hasTime: due?.hasTime ?? false, notes: text("notes"), list: text("list"))
+        case "agenda":
+            guard let from = text("from").flatMap(date)?.date else { return .answer(text("text") ?? "Which day do you mean?") }
+            return .agenda(from: from, to: text("to").flatMap(date)?.date ?? from, ifEmpty: text("if_empty"))
         case "note":
             guard let body = text("body") ?? text("title") else { return .answer(text("text") ?? "What should I write down?") }
             return .note(title: text("title"), body: body)
@@ -101,7 +110,7 @@ enum NotchyDoer {
             return try await addReminder(title: title, due: due, hasTime: hasTime, notes: notes, list: list)
         case .note(let title, let body):
             return try await addNote(title: title, body: body)
-        case .answer:
+        case .answer, .agenda:
             throw NotchyAIError(message: "Nothing to do.")
         }
     }

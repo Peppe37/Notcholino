@@ -288,6 +288,10 @@ final class ExtensionHost: NSObject, NotcholinoHost {
         return lines
     }
 
+    func agenda(from: Date, to: Date, completion: @escaping ([String]) -> Void) {
+        DispatchQueue.main.async { CalendarManager.shared.agenda(from: from, to: to, completion: completion) }
+    }
+
     func nextEventLine() -> String? {
         onMain {
             guard let next = CalendarManager.shared.upcomingEvent, let start = next.startDate, !next.isAllDay else { return nil }

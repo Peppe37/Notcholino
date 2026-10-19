@@ -95,6 +95,9 @@ public protocol NotcholinoHost: NSObjectProtocol {
     /// What is left of today, from the calendars the user ticked in Notcholino's Calendar settings and the reminders the notch
     /// shows. One line each; titles and times only.
     func agendaLines() -> [String]
+    /// The calendar and the reminders over a span of days (from the start of `from`'s day to the end of `to`'s day), as the agenda
+    /// lines above. For "what do I have tomorrow?". The completion is called on the main thread. (Notcholino 0.28.0 and later.)
+    func agenda(from: Date, to: Date, completion: @escaping ([String]) -> Void)
     /// The next event today, like "Meeting at 15:00", or nil
     func nextEventLine() -> String?
     func isMusicPlaying() -> Bool

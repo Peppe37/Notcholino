@@ -22,6 +22,13 @@ final class NotchyBridge {
     func setWing(_ visible: Bool) { host?.setWingVisible(visible) }
     func agendaLines() -> [String] { host?.agendaLines() ?? [] }
     func nextEventLine() -> String? { host?.nextEventLine() }
+
+    /// The calendar and reminders over some days. An app older than 0.28 does not have it: then there is only today.
+    func agenda(from: Date, to: Date) async -> [String] {
+        guard let host else { return [] }
+        guard host.responds(to: Selector(("agendaFrom:to:completion:"))) else { return host.agendaLines() }
+        return await withCheckedContinuation { c in host.agenda(from: from, to: to) { c.resume(returning: $0) } }
+    }
     func hasCalendarAccess() -> Bool { host?.hasCalendarAccess() ?? false }
     func isMusicPlaying() -> Bool { host?.isMusicPlaying() ?? false }
     func activePluginIDs() -> [String] { host?.activePluginIDs() ?? [] }

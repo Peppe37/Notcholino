@@ -103,11 +103,6 @@ final class NotchyAssistant: ObservableObject {
         task = Task { @MainActor [weak self] in
             do {
                 var prompt = "The user said: \"\(spoken)\""
-                let lower = spoken.lowercased()
-                if ["calendar", "calendario", "agenda", "today", "oggi", "giornata", "impegn", "meeting", "riunion", "appuntament", "schedule", "libero", "free time"].contains(where: lower.contains) {
-                    let lines = Self.agendaLines()
-                    prompt += lines.isEmpty ? "\n\nNothing is left on the calendar today." : "\n\nWhat is left of the day:\n\(lines.joined(separator: "\n"))"
-                }
                 prompt += "\n\n" + (await NotchyTools.context(for: spoken))
                 let language = NotchySettings.shared.replyLanguage
                 let system = NotchyCommands.system + (language.isEmpty ? "" : " Write the \"text\" of answers in \(language).")
@@ -116,6 +111,18 @@ final class NotchyAssistant: ObservableObject {
                 let command = NotchyCommands.parse(raw)
                 if case .answer(let text) = command {
                     self?.finish(text.isEmpty ? .failed("It had nothing to say.") : .reply(text))
+                    return
+                }
+                if case .agenda(let from, let to, let ifEmpty) = command {
+                    // Read the calendar and the reminders for the days asked, then have them answered in a few words
+                    let lines = await NotchyBridge.shared.agenda(from: from, to: to)
+                    guard !Task.isCancelled else { return }
+                    if lines.isEmpty { self?.finish(.reply(ifEmpty ?? "Nothing.")); return }
+                    let answer = try await NotchyClient.complete(
+                        prompt: "The user asked: \"\(spoken)\"\n\nTheir calendar and reminders for those days:\n\(lines.prefix(60).joined(separator: "\n"))\n\nAnswer them briefly: say what is there, in order, with the times.",
+                        system: Self.systemPrompt(), task: .text)
+                    guard !Task.isCancelled else { return }
+                    self?.finish(.reply(answer.trimmingCharacters(in: .whitespacesAndNewlines)))
                     return
                 }
                 let done = try await NotchyDoer.run(command)
