@@ -44,6 +44,10 @@
 			<string>sendToNotchy</string>
 			<key>NSPortName</key>
 			<string>Notcholino</string>
+			<key>NSRequiredContext</key>
+			<dict/>
+			<key>NSRestricted</key>
+			<false/>
 			<key>NSSendFileTypes</key>
 			<array>
 				<string>public.text</string>

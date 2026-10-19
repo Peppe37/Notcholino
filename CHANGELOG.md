@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.3-alpha] - 2026-10-19
+
+### Fixed
+- "Send to Notchy" was still missing from the right-click menu (Services): macOS needs the service to say it is unrestricted and has no required context. Now it appears for selected text and for files in Finder.
+
 ## [0.17.2-alpha] - 2026-10-19
 
 ### Fixed
