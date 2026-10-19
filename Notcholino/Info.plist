@@ -44,10 +44,20 @@
 			<string>sendToNotchy</string>
 			<key>NSPortName</key>
 			<string>Notcholino</string>
+			<key>NSSendFileTypes</key>
+			<array>
+				<string>public.text</string>
+				<string>public.source-code</string>
+				<string>public.image</string>
+				<string>com.adobe.pdf</string>
+				<string>net.daringfireball.markdown</string>
+				<string>public.json</string>
+				<string>public.xml</string>
+				<string>public.comma-separated-values-text</string>
+			</array>
 			<key>NSSendTypes</key>
 			<array>
 				<string>NSStringPboardType</string>
-				<string>public.file-url</string>
 			</array>
 		</dict>
 	</array>

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.2-alpha] - 2026-10-19
+
+### Fixed
+- "Send to Notchy" now shows up in Finder's right-click menu for files (text, code, notes, PDFs and images): it declared the wrong kind of input before.
+
 ## [0.17.1-alpha] - 2026-10-19
 
 ### Fixed
