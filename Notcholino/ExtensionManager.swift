@@ -307,11 +307,35 @@ final class ExtensionHost: NSObject, NotcholinoHost {
     }
 }
 
+/// A container that has no size of its own: whatever an extension's view would like to measure, the container takes the room SwiftUI
+/// gives it. (An extension's settings page can be taller than the window; letting its size through made the whole Settings window
+/// lay out taller than the screen and scroll its sidebar out of place.)
+final class FlexibleHostView: NSView {
+    override var intrinsicContentSize: NSSize { NSSize(width: NSView.noIntrinsicMetric, height: NSView.noIntrinsicMetric) }
+}
+
 /// Hosts an extension's own NSView inside SwiftUI
 struct ExtensionViewHost: NSViewRepresentable {
     let make: () -> NSView
-    func makeNSView(context: Context) -> NSView { make() }
+    func makeNSView(context: Context) -> NSView {
+        let container = FlexibleHostView()
+        let view = make()
+        view.removeFromSuperview()
+        view.translatesAutoresizingMaskIntoConstraints = true
+        view.frame = container.bounds
+        view.autoresizingMask = [.width, .height]
+        container.addSubview(view)
+        container.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        container.setContentHuggingPriority(.defaultLow, for: .vertical)
+        container.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        container.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        return container
+    }
     func updateNSView(_ view: NSView, context: Context) {}
+    /// Takes whatever room it is offered: the size an extension's view would like to be is none of the layout's business
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSView, context: Context) -> CGSize? {
+        proposal.replacingUnspecifiedDimensions(by: CGSize(width: 10, height: 10))
+    }
 }
 
 /// The notch page of an extension. While an extension has opened the notch for itself (Snap, with a window in hand) only its page is
@@ -480,24 +504,31 @@ struct ExtensionsSettingsView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 HStack(spacing: 0) {
-                    List(selection: Binding(get: { current?.extensionIdentifier }, set: { manager.settingsID = $0 })) {
-                        ForEach(list, id: \.extensionIdentifier) { ext in
-                            HStack(spacing: 10) {
-                                Image(systemName: ext.extensionSymbol).frame(width: 22)
-                                Text(ext.extensionName)
-                                Spacer()
-                                Toggle("", isOn: Binding(get: { manager.isEnabled(ext.extensionIdentifier) },
-                                                         set: { manager.setEnabled($0, ext.extensionIdentifier) }))
-                                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                    // A plain column of rows, not a List with the sidebar style: that style makes the window treat it as a second
+                    // sidebar and rearranges the whole Settings window around it
+                    ScrollView {
+                        VStack(spacing: 4) {
+                            ForEach(list, id: \.extensionIdentifier) { ext in
+                                let selected = ext.extensionIdentifier == current?.extensionIdentifier
+                                HStack(spacing: 10) {
+                                    Image(systemName: ext.extensionSymbol).frame(width: 22)
+                                    Text(ext.extensionName).lineLimit(1)
+                                    Spacer(minLength: 4)
+                                    Toggle("", isOn: Binding(get: { manager.isEnabled(ext.extensionIdentifier) },
+                                                             set: { manager.setEnabled($0, ext.extensionIdentifier) }))
+                                        .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                                }
+                                .padding(.horizontal, 10).padding(.vertical, 7)
+                                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(selected ? Color.accentColor.opacity(0.22) : .clear))
+                                .contentShape(Rectangle())
+                                .onTapGesture { manager.settingsID = ext.extensionIdentifier }
                             }
-                            .padding(.vertical, 3)
-                            .tag(ext.extensionIdentifier)
                         }
+                        .padding(10)
                     }
-                    .listStyle(.sidebar)
-                    .frame(width: 230)
+                    .frame(width: 220)
                     Divider()
-                    if let current { ExtensionDetail(ext: current).id(current.extensionIdentifier) }
+                    if let current { ExtensionDetail(ext: current).id(current.extensionIdentifier).frame(minWidth: 380) }
                 }
             }
         }
@@ -519,9 +550,12 @@ private struct ExtensionDetail: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(ext.extensionName).font(.title2.weight(.semibold))
                     Text("v\(ext.extensionVersion) · \(ext.extensionAuthor)").font(.caption).foregroundStyle(.secondary)
-                    Text(ext.extensionDescription).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    // No fixedSize here: when the window asks how small this column can be it proposes a width of zero, and a text
+                    // that must show all its lines then wraps one letter per line and reports a height of thousands of points,
+                    // which made the whole Settings window lay out taller than the screen
+                    Text(ext.extensionDescription).font(.callout).foregroundStyle(.secondary).lineLimit(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                Spacer()
                 Toggle("", isOn: Binding(get: { manager.isEnabled(id) }, set: { manager.setEnabled($0, id) }))
                     .labelsHidden().toggleStyle(.switch)
             }
@@ -540,8 +574,10 @@ private struct ExtensionDetail: View {
             .padding(.horizontal, 20).padding(.bottom, 12)
             Divider()
             if ext.responds(to: Selector(("makeSettingsView"))) {
+                // minHeight 0: the settings page of an extension may want to be taller than the window; it must scroll inside it, not
+                // make the window's layout taller than the window
                 ExtensionViewHost { ext.makeSettingsView?() ?? NSView() }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
                     .disabled(!manager.isEnabled(id))
                     .opacity(manager.isEnabled(id) ? 1 : 0.45)
             } else {

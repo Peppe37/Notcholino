@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.4-alpha] - 2026-10-19
+
+### Fixed
+- **Settings → Extensions was broken in 0.27.3**: the whole Settings window laid out taller than the screen and its sidebar scrolled out of place. The cause was a description text that, when the window worked out how small the page could be, wrapped one letter per line and reported a height of thousands of points. It is fixed, and the extension's own settings page can no longer make the window taller than it is. The page is now checked in the real Settings window, not only on its own.
+
 ## [0.27.3-alpha] - 2026-10-19
 
 ### Changed

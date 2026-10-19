@@ -18,8 +18,8 @@ final class SnapExtension: NSObject, NotcholinoExtension {
 
     func setHost(_ host: NotcholinoHost) { SnapBridge.shared.host = host }
 
-    func makePageView() -> NSView { SnapHostingView(rootView: SnapPage()) }
-    func makeSettingsView() -> NSView { NSHostingView(rootView: SnapSettingsView()) }
+    func makePageView() -> NSView { let v = SnapHostingView(rootView: SnapPage()); v.sizingOptions = []; return v }
+    func makeSettingsView() -> NSView { let v = NSHostingView(rootView: SnapSettingsView()); v.sizingOptions = []; return v }
 
     func extensionDidEnable() {
         let d = UserDefaults.standard

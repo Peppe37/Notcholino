@@ -18,9 +18,17 @@ final class NotchyExtension: NSObject, NotcholinoExtension {
 
     func setHost(_ host: NotcholinoHost) { NotchyBridge.shared.host = host }
 
-    func makePageView() -> NSView { NSHostingView(rootView: NotchyNotchView()) }
-    func makeSettingsView() -> NSView { NSHostingView(rootView: NotchySettingsView()) }
-    func makeWingView() -> NSView { NSHostingView(rootView: NotchyWingView()) }
+    func makePageView() -> NSView { hosting(NotchyNotchView()) }
+    func makeSettingsView() -> NSView { hosting(NotchySettingsView()) }
+    func makeWingView() -> NSView { hosting(NotchyWingView()) }
+
+    /// A hosting view that takes the size it is given: with the default sizing options it asks its window to be as big as the page
+    /// would like, and a settings page taller than the window made the whole Settings window lay out around it
+    private func hosting<V: View>(_ view: V) -> NSView {
+        let host = NSHostingView(rootView: view)
+        host.sizingOptions = []
+        return host
+    }
 
     /// Switched on (after loading, or from the store): start the things Notchy does by itself
     func extensionDidEnable() { NotchySettings.shared.enabled = true }

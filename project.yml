@@ -27,8 +27,8 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
-        MARKETING_VERSION: "0.27.3"
-        CURRENT_PROJECT_VERSION: "52"
+        MARKETING_VERSION: "0.27.4"
+        CURRENT_PROJECT_VERSION: "53"
     info:
       path: Notcholino/Info.plist
       properties:
