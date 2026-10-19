@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0-alpha] - 2026-10-19
+
+### Added
+- **Plan my day** on Notchy's page: Notchy reads what is left of today in Calendar and Reminders and gives a short plan (what comes next, free time, one suggestion). It asks the AI only when there is something to plan, and sends only titles and times, never places, notes or people. With an empty day it answers on its own.
+- Notchy's page also shows your next event on its own, worked out on the Mac without any AI.
+
 ## [0.19.0-alpha] - 2026-10-19
 
 ### Added

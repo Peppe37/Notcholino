@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 import AppKit
+import EventKit
 import PDFKit
 import SwiftUI
 
@@ -47,6 +48,39 @@ final class NotchyAssistant: ObservableObject {
             return
         }
         run(label: name + extra, prompt: "This is the file \"\(name)\". Summarize it in a few short lines, or give its outline if it is long.\n\n\(text.prefix(14_000))", image: nil)
+    }
+
+    /// "Plan my day": Notchy reads today's events and reminders from the Mac, and only if there is something to plan does it ask
+    /// the text provider. Only titles and times are sent: no places, notes or attendees.
+    func planDay() {
+        let cal = CalendarManager.shared
+        guard cal.hasAccess || cal.hasRemindersAccess else {
+            finish(.failed("I can't see your calendar yet. Allow Calendar in Settings → General → Permissions."))
+            return
+        }
+        let now = Date()
+        let clock = DateFormatter(); clock.dateFormat = "HH:mm"
+        var lines: [String] = []
+        for event in cal.todayEvents where event.isAllDay || event.endDate > now {
+            let when = event.isAllDay ? "all day" : "\(clock.string(from: event.startDate))–\(clock.string(from: event.endDate))"
+            lines.append("- \(when): \(event.title ?? "Event")")
+        }
+        for reminder in cal.todayReminders {
+            let due = cal.dueTime(of: reminder).map { "due \($0)" } ?? (cal.isOverdue(reminder) ? "overdue" : "today")
+            lines.append("- to do (\(due)): \(reminder.title ?? "Reminder")")
+        }
+        guard !lines.isEmpty else {
+            finish(.reply("Nothing left on your calendar today. The rest of the day is yours."))
+            return
+        }
+        let prompt = """
+            It is \(clock.string(from: now)). This is what is left of my day:
+            \(lines.joined(separator: "\n"))
+
+            Help me organise it: what comes next, where there is free time, and one useful suggestion. \
+            Three or four short lines at most.
+            """
+        run(label: "your day", prompt: prompt, image: nil)
     }
 
     private func run(label: String, prompt: String, image: Data?, task kind: NotchyTask = .text) {

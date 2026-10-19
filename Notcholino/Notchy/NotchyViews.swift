@@ -8,6 +8,7 @@ struct NotchyNotchView: View {
     @ObservedObject private var presence = NotchyPresence.shared
     @ObservedObject private var settings = NotchySettings.shared
     @ObservedObject private var assistant = NotchyAssistant.shared
+    @ObservedObject private var calendar = CalendarManager.shared
     @State private var mood: NotchyMood = .calm
     @State private var gaze: CGFloat = 0
     @State private var resetTask: Task<Void, Never>?
@@ -23,7 +24,18 @@ struct NotchyNotchView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxHeight: 90)
+                .frame(maxHeight: 70)
+                if settings.providerID(for: .text) != nil {
+                    Button { assistant.planDay() } label: {
+                        Label("Plan my day", systemImage: "calendar.badge.clock")
+                            .font(.system(size: 11, weight: .semibold))
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(Capsule().fill(.white.opacity(0.14)))
+                            .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled({ if case .thinking = assistant.state { return true } else { return false } }())
+                }
             }
             Spacer(minLength: 0)
         }
@@ -50,6 +62,11 @@ struct NotchyNotchView: View {
         }
         guard let id = settings.providerID(for: .text), let p = NotchyProvider.provider(id) else {
             return "Choose a provider in Settings → Notchy to ask it things."
+        }
+        // Worked out on the Mac, no AI involved
+        if let next = calendar.upcomingEvent, let start = next.startDate, !next.isAllDay {
+            let f = DateFormatter(); f.dateFormat = "HH:mm"
+            return "Next: \(next.title ?? "event") at \(f.string(from: start)). Right-click text or a file → Services → Send to Notchy, or plan your day."
         }
         return "Ready · text with \(p.name). Select text or a file, right-click → Services → Send to Notchy."
     }
