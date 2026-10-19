@@ -13,6 +13,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
     case calendar    = "Calendar"
     case controlCenter = "Control Center"
     case pluginStore = "Plugin Store"
+    case notchy      = "Notchy"
     case license     = "License"
     case about       = "About"
 
@@ -27,6 +28,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .calendar:     return "calendar"
         case .controlCenter: return "square.grid.2x2.fill"
         case .pluginStore:  return "bag.fill"
+        case .notchy:       return "face.smiling.inverse"
         case .license:      return "checkmark.seal.fill"
         case .about:        return "info.circle.fill"
         }
@@ -43,6 +45,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .calendar:     return .red
         case .controlCenter: return .purple
         case .pluginStore:  return .blue
+        case .notchy:       return .indigo
         case .license:      return .teal
         case .about:        return Color(NSColor.secondaryLabelColor)
         }
@@ -69,7 +72,7 @@ struct ContentView: View {
                 }
 
                 Section("Live Activities") {
-                    ForEach([SidebarItem.controlCenter, .pluginStore, .shelf, .nowPlaying, .calendar], id: \.self) { item in
+                    ForEach([SidebarItem.controlCenter, .pluginStore, .notchy, .shelf, .nowPlaying, .calendar], id: \.self) { item in
                         NavigationLink(value: item) { SidebarLabel(item: item) }
                     }
                 }
@@ -103,6 +106,7 @@ struct ContentView: View {
         case .calendar:     CalendarSettingsView()
         case .controlCenter: ControlCenterSettingsView()
         case .pluginStore:  PluginStoreView()
+        case .notchy:       NotchySettingsView()
         case .license:      LicenseView()
         case .about:        AboutView()
         case nil:           EmptyView()

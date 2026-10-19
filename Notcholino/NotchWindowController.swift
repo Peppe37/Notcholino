@@ -305,7 +305,7 @@ struct NotchShape: Shape {
 
 /// The panels the notch can show, in display order.
 enum NotchTab: Int, CaseIterable {
-    case controlCenter = -2, shelf = -1, music = 0, calendar = 1
+    case controlCenter = -2, shelf = -1, music = 0, calendar = 1, notchy = 2
 }
 
 struct NotchContentView: View {
@@ -327,6 +327,8 @@ struct NotchContentView: View {
     @AppStorage("controlCenterEnabled") private var controlCenterEnabled = true
     @AppStorage("shelfEnabled")         private var shelfEnabled = true
     @ObservedObject private var shelf = ShelfManager.shared
+    @ObservedObject private var notchy = NotchySettings.shared
+    @ObservedObject private var notchyPresence = NotchyPresence.shared
     @ObservedObject private var popups = PopupCenter.shared
     @State private var dropTargeted = false
     /// Reverses the direction of the two-finger swipe (and of the mouse wheel)
@@ -361,6 +363,7 @@ struct NotchContentView: View {
             case .shelf:         return shelfEnabled && (!shelf.items.isEmpty || shelf.pending > 0 || shelf.dragActive)
             case .music:         return nowPlayingEnabled
             case .calendar:      return calendarEnabled
+            case .notchy:        return notchy.enabled && notchy.pageVisible
             }
         }
     }
@@ -391,7 +394,8 @@ struct NotchContentView: View {
     }
 
     /// Icons that live inside the black, beside the hardware notch: the moon on the left, plugins' icons on the right
-    private var leftIconCount: Int { focusOn && !isExpanded ? 1 : 0 }
+    private var notchyPeeking: Bool { notchyPresence.peeking && notchy.enabled && !isExpanded }
+    private var leftIconCount: Int { isExpanded ? 0 : (focusOn ? 1 : 0) + (notchyPeeking ? 1 : 0) }
     private var rightIconCount: Int { isExpanded ? 0 : pluginManager.sideIcons.count }
     private let iconSlot: CGFloat = 22
 
@@ -519,9 +523,14 @@ struct NotchContentView: View {
             .overlay(alignment: .top) {
                 let edge = (baseW + CGFloat(tuningW)) / 2 + 4
                 ZStack {
-                    if leftIconCount > 0 {
+                    if focusOn && !isExpanded {
                         SideIcon(symbol: "moon.fill", color: Color(red: 0.62, green: 0.55, blue: 1))
                             .offset(x: -(edge + 4 + iconSlot / 2))
+                    }
+                    if notchyPeeking {
+                        NotchyCube(mood: notchyPresence.mood, size: 20, alive: false)
+                            .offset(x: -(edge + 4 + iconSlot / 2 + (focusOn ? iconSlot : 0)))
+                            .transition(.scale(scale: 0.3).combined(with: .opacity))
                     }
                     ForEach(Array(pluginManager.sideIcons.enumerated()), id: \.offset) { i, icon in
                         if !isExpanded {
@@ -614,6 +623,7 @@ struct NotchContentView: View {
         case .shelf:         ShelfNotchView(dropTargeted: dropTargeted)
         case .music:         NowPlayingNotchView(music: music)
         case .calendar:      CalendarNotchView()
+        case .notchy:        NotchyNotchView()
         }
     }
 
