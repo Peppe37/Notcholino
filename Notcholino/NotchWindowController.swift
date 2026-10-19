@@ -224,9 +224,17 @@ class NotchWindowController: NSWindowController {
 
     /// Where a dragged file counts as being on the notch: a wider strip than for hovering, since you are carrying something
     private func dragRect(in f: NSRect) -> NSRect {
-        if isOpen { return hoverRect(in: f) }
         let width = max(notchSize.width + 120, 260)
-        return NSRect(x: f.midX - width / 2, y: f.maxY - 40, width: width, height: 40)
+        let strip = NSRect(x: f.midX - width / 2, y: f.maxY - 40, width: width, height: 40)
+        // Once the notch has opened for the drag, the whole open notch takes the file (the dashed area too), not just the strip
+        // it opened from, and a little around it: nobody aims at a drop zone to the point. The open size is assumed from what it
+        // normally is, so it does not depend on the notch having reported its size yet.
+        if isOpen || ShelfManager.shared.dragActive {
+            let w = max(notchSize.width, 400) + 40, h = max(notchSize.height, 250) + 30
+            let open = NSRect(x: f.midX - w / 2, y: f.maxY - h, width: w, height: h)
+            return strip.union(open)
+        }
+        return strip
     }
 
     private func handleDrag() {
@@ -404,7 +412,9 @@ struct NotchContentView: View {
     /// Room the icons need on each side of the hardware notch (the same on both, so the notch stays centered)
     private var iconWing: CGFloat {
         let n = max(leftIconCount, rightIconCount)
-        return n == 0 ? 0 : CGFloat(n) * iconSlot + 8
+        // The icons sit against the hardware notch; the extra at the outer end is the black left around the last one, so it is
+        // not hard against the rounded edge of the notch
+        return n == 0 ? 0 : CGFloat(n) * iconSlot + 18
     }
 
     private var pillW: CGFloat {
@@ -573,6 +583,8 @@ struct NotchContentView: View {
             .onChange(of: shelf.dragActive) { dragging in
                 // Something is being dragged to the notch: open on the shelf
                 if dragging, shelfEnabled { goingForward = false; activeTab = .shelf }
+                // The notch opens (or closes) because of the drag: tell the window now, so its drop zone follows the open notch
+                publishLayout()
             }
             .onReceive(NotificationCenter.default.publisher(for: .notchMouseEntered)) { notif in
                 if (notif.object as? UUID) == notchID { setHovering(true) }

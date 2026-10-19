@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.1-alpha] - 2026-10-19
+
+### Fixed
+- **Dropping files on the Shelf**: once the notch has opened for the file you are dragging, you can drop it anywhere on the open notch, on the dashed area too, and a little around it. Before, the drop zone could stay the small strip the notch opened from, so releasing on the dashed area did nothing.
+- Notchy (and the other icons) beside the closed notch had too little black around them on the left: the notch is a bit wider now, so they are no longer hard against its rounded edge.
+
 ## [0.25.0-alpha] - 2026-10-19
 
 ### Added
