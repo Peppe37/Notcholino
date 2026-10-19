@@ -1,6 +1,9 @@
 name: Notcholino
 options:
   bundleIdPrefix: com.giuseppe
+# Targets of the community plugins and extensions, generated from their plugin.json (scripts/gen_community_targets.py)
+include:
+  - community/targets.yml
 targets:
   Notcholino:
     type: application
@@ -24,8 +27,8 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
-        MARKETING_VERSION: "0.23.0"
-        CURRENT_PROJECT_VERSION: "44"
+        MARKETING_VERSION: "0.24.0"
+        CURRENT_PROJECT_VERSION: "45"
     info:
       path: Notcholino/Info.plist
       properties:

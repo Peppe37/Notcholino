@@ -70,6 +70,9 @@ final class NotchyVoice: ObservableObject {
     private var hotKey: EventHotKeyRef?
     private var handler: EventHandlerRef?
     private var flagMonitor: Any?
+    private var localFlagMonitor: Any?
+    private var keyMonitor: Any?
+    private var localKeyMonitor: Any?
     private var recorder: AVAudioRecorder?
     private var startedAt = Date()
     private var stopTask: Task<Void, Never>?
@@ -90,7 +93,8 @@ final class NotchyVoice: ObservableObject {
     /// Registers (or removes) the global shortcut. Only while Notchy is on and a voice provider is chosen.
     func apply() {
         if let hotKey { UnregisterEventHotKey(hotKey); self.hotKey = nil }
-        if let m = flagMonitor { NSEvent.removeMonitor(m); flagMonitor = nil }
+        for m in [flagMonitor, localFlagMonitor, keyMonitor, localKeyMonitor] { if let m { NSEvent.removeMonitor(m) } }
+        flagMonitor = nil; localFlagMonitor = nil; keyMonitor = nil; localKeyMonitor = nil
         let s = NotchySettings.shared
         guard s.enabled, s.providerID(for: .speech) != nil, !recording, let sc = shortcut else { return }
         switch sc.kind {
@@ -109,10 +113,17 @@ final class NotchyVoice: ObservableObject {
             RegisterEventHotKey(sc.keyCode, sc.modifiers, EventHotKeyID(signature: OSType(0x4E54_4348), id: 1), GetApplicationEventTarget(), 0, &hotKey)
         case .modifier:
             guard let flag = sc.modifierFlag else { return }
-            flagMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            let handle: (NSEvent) -> Void = { [weak self] event in
                 guard event.keyCode == UInt16(sc.keyCode) else { return }
                 if event.modifierFlags.contains(flag) { self?.modifierDown() } else { self?.modifierUp() }
             }
+            // Global events come from other apps; local ones from Notcholino's own windows (Settings), so it works in both
+            flagMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged, handler: handle)
+            localFlagMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { handle($0); return $0 }
+            // A letter pressed while the key is down means a key combination (⌘C): not for Notchy
+            let other: (NSEvent) -> Void = { [weak self] _ in self?.otherKeyDuringHold() }
+            keyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown, handler: other)
+            localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { other($0); return $0 }
         }
     }
 
@@ -132,6 +143,24 @@ final class NotchyVoice: ObservableObject {
                 if !Task.isCancelled, self?.downAt != nil { self?.begin() }
             }
         }
+    }
+
+    private func otherKeyDuringHold() {
+        guard downAt != nil, !handsFree else { return }
+        armTask?.cancel()
+        downAt = nil
+        lastTapEnd = nil
+        if listening { cancelListening() }
+    }
+
+    private func cancelListening() {
+        stopTask?.cancel()
+        listening = false
+        recorder?.stop()
+        if let url = recorder?.url { try? FileManager.default.removeItem(at: url) }
+        recorder = nil
+        PopupCenter.shared.dismiss()
+        NotchyPresence.shared.peek(mood: .calm, seconds: 0.1)
     }
 
     private func modifierUp() {

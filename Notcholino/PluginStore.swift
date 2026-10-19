@@ -27,10 +27,29 @@ struct RemotePlugin: Decodable, Identifiable {
     /// A known problem, shown in orange on the plugin's card and page
     let warning: String?
     let tags: [String]?
+    /// "plugin" (a button in Control Center) or "extension" (its own page in the notch and settings). Older manifests have only plugins.
+    let kind: String?
+    /// Who made it. Missing means the Notcholino project itself.
+    let publisher: Publisher?
+    /// True only for what the Notcholino project makes. Community entries are reviewed on GitHub but made by someone else.
+    let official: Bool?
+    /// What its code can do beyond drawing: "network", "shell", "applescript", "files"… (checked against the source in review)
+    let capabilities: [String]?
+    /// Where its source is, for anyone who wants to read it before installing
+    let source: URL?
+
+    struct Publisher: Decodable { let name: String; let github: String? }
+
+    var isExtension: Bool { kind == "extension" }
+    var isOfficial: Bool { official ?? true }
+    var publisherName: String { publisher?.name ?? "Notcholino" }
+    var sourceURL: URL {
+        source ?? URL(string: "https://github.com/Peppe37/Notcholino/tree/main/\(isExtension ? "extensions" : "plugins")/\(id)")!
+    }
 
     /// What the store search looks at: name, description, features, category and tags
     var searchText: String {
-        ([name, description, details ?? "", category ?? ""] + (features ?? []) + (tags ?? [])).joined(separator: " ").lowercased()
+        ([name, description, details ?? "", category ?? "", publisherName, isExtension ? "extension" : "plugin"] + (features ?? []) + (tags ?? [])).joined(separator: " ").lowercased()
     }
 
     func matches(_ query: String) -> Bool {
@@ -62,6 +81,9 @@ struct RemotePlugin: Decodable, Identifiable {
 private struct PluginManifest: Decodable {
     let apiVersion: Int
     let plugins: [RemotePlugin]
+    /// Extensions have their own list (so an older app, which only reads `plugins`, never sees them) and their own API version
+    let extensionApiVersion: Int?
+    let extensions: [RemotePlugin]?
 }
 
 /// Downloads plugins from the project's GitHub releases.
@@ -93,7 +115,9 @@ final class PluginStore: ObservableObject {
             guard manifest.apiVersion == notcholinoPluginAPIVersion else {
                 throw StoreError.message("The plugin list needs a newer version of Notcholino.")
             }
-            available = manifest.plugins
+            var all = manifest.plugins
+            if manifest.extensionApiVersion == notcholinoExtensionAPIVersion { all += manifest.extensions ?? [] }
+            available = all
             message = nil
         } catch {
             message = (error as? StoreError)?.text ?? "Could not load the plugin list. Check your connection."
@@ -101,14 +125,19 @@ final class PluginStore: ObservableObject {
     }
 
     func installedVersion(of id: String) -> String? {
-        pluginManager.loadedPlugins.first { $0.pluginIdentifier == id }?.pluginVersion
+        if let v = pluginManager.loadedPlugins.first(where: { $0.pluginIdentifier == id })?.pluginVersion { return v }
+        return ExtensionManager.shared.installedVersion(of: id)
+    }
+
+    func installedVersion(of plugin: RemotePlugin) -> String? {
+        plugin.isExtension ? ExtensionManager.shared.installedVersion(of: plugin.id) : pluginManager.loadedPlugins.first { $0.pluginIdentifier == plugin.id }?.pluginVersion
     }
 
     /// Asks for confirmation, then downloads, verifies and installs the plugin
     /// Plugins installed here with a newer version in the store that this app can run
     var updates: [RemotePlugin] {
         available.filter { p in
-            guard let v = installedVersion(of: p.id) else { return false }
+            guard let v = installedVersion(of: p) else { return false }
             return v != p.version && p.isCompatible
         }
     }
@@ -168,7 +197,8 @@ final class PluginStore: ObservableObject {
     }
 
     func remove(identifier: String) {
-        pluginManager.remove(identifier: identifier)
+        if ExtensionManager.shared.installedVersion(of: identifier) != nil { ExtensionManager.shared.removeStoreExtension(identifier) }
+        else { pluginManager.remove(identifier: identifier) }
         message = nil
     }
 
@@ -177,13 +207,18 @@ final class PluginStore: ObservableObject {
     private func confirmInstall(_ plugin: RemotePlugin) -> Bool {
         let alert = NSAlert()
         alert.messageText = "Install \(plugin.name) \(plugin.version)?"
+        let kind = plugin.isExtension ? "extension" : "plugin"
+        let who = plugin.isOfficial
+            ? "Made by the Notcholino project."
+            : "Made by \(plugin.publisherName)\(plugin.publisher?.github.map { " (github.com/\($0))" } ?? ""), not by the Notcholino project. Its code was reviewed on GitHub before it was listed here, but you are trusting its author."
+        let can = (plugin.capabilities ?? []).isEmpty ? "" : "\n\nIt can: \(plugin.capabilities!.joined(separator: ", "))."
         alert.informativeText = """
-        By \(plugin.author)
+        \(who)
 
-        \(plugin.description)
+        \(plugin.description)\(can)
 
-        Plugins run inside Notcholino with the same permissions as the app. \
-        This one will be downloaded from the Notcholino releases on GitHub and checked against its published checksum.
+        A \(kind) runs inside Notcholino with the same permissions as the app. \
+        This one is built by the Notcholino project from the reviewed source, downloaded from the Notcholino releases on GitHub and checked against its published checksum.
         """
         alert.addButton(withTitle: "Install")
         alert.addButton(withTitle: "Cancel")
@@ -228,6 +263,16 @@ final class PluginStore: ObservableObject {
         guard let bundleURL = try FileManager.default.contentsOfDirectory(at: work, includingPropertiesForKeys: nil)
             .first(where: { $0.pathExtension == "bundle" }) else {
             throw StoreError.message("The download does not contain a plugin.")
+        }
+
+        if plugin.isExtension {
+            let wasLoaded = ExtensionManager.shared.installedVersion(of: plugin.id) != nil
+            try ExtensionManager.shared.installFromStore(bundleURL, id: plugin.id, version: plugin.version)
+            if wasLoaded {
+                message = "\(plugin.name) \(plugin.version) is installed and starts when Notcholino restarts."
+                needsRestart.append(plugin.name)
+            } else { message = nil }
+            return
         }
 
         // Install (replacing a previous version)

@@ -781,7 +781,7 @@ struct PluginDetailView: View {
     @ObservedObject private var store = PluginStore.shared
 
     var body: some View {
-        let installed = store.installedVersion(of: plugin.id)
+        let installed = store.installedVersion(of: plugin)
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 14) {
                 Image(systemName: plugin.icon)
@@ -790,8 +790,16 @@ struct PluginDetailView: View {
                     .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.accentColor.opacity(0.16)))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(plugin.name).font(.title.bold())
-                    Text("by \(plugin.author) · v\(plugin.version)")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                    HStack(spacing: 5) {
+                        if plugin.isOfficial {
+                            Image(systemName: "checkmark.seal.fill").foregroundStyle(Color.accentColor)
+                            Text("Notcholino")
+                        } else {
+                            Text("by \(plugin.publisherName)")
+                        }
+                        Text("· \(plugin.isExtension ? "Extension" : "Plugin") · v\(plugin.version)")
+                    }
+                    .font(.subheadline).foregroundStyle(.secondary)
                 }
                 Spacer()
                 StoreButton(plugin: plugin, installed: installed)
@@ -825,6 +833,17 @@ struct PluginDetailView: View {
                         Link(destination: video) { Label("Watch the video", systemImage: "play.circle.fill") }
                     }
 
+                    if !plugin.isOfficial {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Label("Made by the community", systemImage: "person.2.fill").font(.headline)
+                            Text("\(plugin.publisherName)\(plugin.publisher?.github.map { " (github.com/\($0))" } ?? "") made this, not the Notcholino project. Its source was reviewed on GitHub before it was listed, and what you download is built from that source by the project. Still, it runs inside Notcholino with the app's permissions: install it if you trust its maker.")
+                                .font(.callout).fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.secondary.opacity(0.12)))
+                    }
+
                     if let warning = plugin.warning {
                         VStack(alignment: .leading, spacing: 6) {
                             Label("Known problem", systemImage: "exclamationmark.triangle.fill").font(.headline).foregroundStyle(.orange)
@@ -849,6 +868,18 @@ struct PluginDetailView: View {
                     if let permissions = plugin.permissions, !permissions.isEmpty {
                         section("What it needs") { Text(permissions).foregroundStyle(.secondary) }
                     }
+                    if let caps = plugin.capabilities, !caps.isEmpty {
+                        section("What its code can do") {
+                            HStack { ForEach(caps, id: \.self) { c in
+                                Text(c).font(.caption.weight(.medium)).padding(.horizontal, 8).padding(.vertical, 3)
+                                    .background(Capsule().fill(Color.orange.opacity(0.16)))
+                            } }
+                            Text("Declared by its maker and checked against the source in review.").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    if plugin.isExtension, installed != nil {
+                        section("Manage") { ExtensionManageView(id: plugin.id) }
+                    }
                     if let news = plugin.whatsNew, !news.isEmpty {
                         section("What's new in \(plugin.version)") {
                             ForEach(news, id: \.self) { n in Text("• \(n)").foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
@@ -859,7 +890,7 @@ struct PluginDetailView: View {
                     }
                     HStack(spacing: 14) {
                         Text("Needs Notcholino \(plugin.minAppVersion ?? "any version")").font(.caption).foregroundStyle(.secondary)
-                        Link("Source on GitHub", destination: URL(string: "https://github.com/Peppe37/Notcholino/tree/main/plugins/\(plugin.id)")!).font(.caption)
+                        Link("Source on GitHub", destination: plugin.sourceURL).font(.caption)
                     }
                 }
                 .padding(20)
@@ -884,18 +915,64 @@ extension Notification.Name {
 
 // MARK: - Plugin Store (a grid, with search)
 
+enum StoreType: String, CaseIterable, Identifiable {
+    case all = "All", plugins = "Plugins", extensions = "Extensions"
+    var id: String { rawValue }
+}
+
+enum StoreSource: String, CaseIterable, Identifiable {
+    case all = "Everyone", official = "Notcholino", community = "Community"
+    var id: String { rawValue }
+}
+
+/// One thing in the store: a plugin or an extension from the manifest, or an extension that is part of the app
+enum StoreItem: Identifiable {
+    case remote(RemotePlugin)
+    case builtIn(BuiltInExtension)
+
+    var id: String {
+        switch self { case .remote(let p): return (p.isExtension ? "x-" : "p-") + p.id; case .builtIn(let e): return "b-" + e.id }
+    }
+    var name: String { switch self { case .remote(let p): return p.name; case .builtIn(let e): return e.name } }
+    var isExtension: Bool { switch self { case .remote(let p): return p.isExtension; case .builtIn: return true } }
+    var isOfficial: Bool { switch self { case .remote(let p): return p.isOfficial; case .builtIn: return true } }
+    var category: String? { switch self { case .remote(let p): return p.category; case .builtIn(let e): return e.category } }
+    func matches(_ query: String) -> Bool {
+        switch self {
+        case .remote(let p): return p.matches(query)
+        case .builtIn(let e):
+            let words = query.lowercased().split(separator: " ").map(String.init)
+            let text = "\(e.name) \(e.summary) \(e.category) notcholino extension built in ai assistant".lowercased()
+            return words.allSatisfy { text.contains($0) }
+        }
+    }
+}
+
 struct PluginStoreView: View {
     @ObservedObject private var store = PluginStore.shared
+    @ObservedObject private var notchy = NotchySettings.shared
     @State private var query = ""
     @State private var category = "All"
+    @State private var type: StoreType = .all
+    @State private var source: StoreSource = .all
     @State private var detail: RemotePlugin?
+    @State private var showDeveloper = false
 
-    private var categories: [String] {
-        ["All"] + Array(Set(store.available.compactMap(\.category))).sorted()
+    /// Everything, official first and then by name, so the order is the same however many things the store holds
+    private var items: [StoreItem] {
+        let all = BuiltInExtension.all.map(StoreItem.builtIn) + store.available.map(StoreItem.remote)
+        return all.sorted { ($0.isOfficial ? 0 : 1, $0.name.lowercased()) < ($1.isOfficial ? 0 : 1, $1.name.lowercased()) }
     }
 
-    private var shown: [RemotePlugin] {
-        store.available.filter { (category == "All" || $0.category == category) && $0.matches(query) }
+    private var categories: [String] { ["All"] + Array(Set(items.compactMap(\.category))).sorted() }
+
+    private var shown: [StoreItem] {
+        items.filter { item in
+            (type == .all || (type == .extensions) == item.isExtension)
+                && (source == .all || (source == .official) == item.isOfficial)
+                && (category == "All" || item.category == category)
+                && item.matches(query)
+        }
     }
 
     var body: some View {
@@ -914,9 +991,14 @@ struct PluginStoreView: View {
                     .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.accentColor.opacity(0.1)))
                 }
 
-                ExtensionsShelf()
-
-                Text("Plugins").font(.title3.weight(.semibold)).padding(.top, 4)
+                // What kind of thing, and who made it: the same two questions however many there are
+                HStack(spacing: 12) {
+                    Picker("", selection: $type) { ForEach(StoreType.allCases) { Text($0.rawValue).tag($0) } }
+                        .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 260)
+                    Picker("", selection: $source) { ForEach(StoreSource.allCases) { Text($0.rawValue).tag($0) } }
+                        .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 260)
+                    Spacer()
+                }
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -931,19 +1013,22 @@ struct PluginStoreView: View {
                     }
                 }
 
-                if store.isLoading && store.available.isEmpty {
+                if store.isLoading && store.available.isEmpty && shown.isEmpty {
                     HStack { ProgressView().controlSize(.small); Text("Loading…").foregroundStyle(.secondary) }
                 } else if shown.isEmpty {
                     VStack(spacing: 6) {
                         Image(systemName: "magnifyingglass").font(.largeTitle).foregroundStyle(.secondary)
-                        Text(query.isEmpty ? "No plugins here yet." : "No plugin matches \"\(query)\".").foregroundStyle(.secondary)
-                        Text("Search looks at names, descriptions, what a plugin does and its keywords.").font(.caption).foregroundStyle(.tertiary)
+                        Text(query.isEmpty ? "Nothing here yet." : "Nothing matches \"\(query)\".").foregroundStyle(.secondary)
+                        Text("Search looks at names, descriptions, what something does, who made it and its keywords.").font(.caption).foregroundStyle(.tertiary)
                     }
                     .frame(maxWidth: .infinity).padding(.top, 50)
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 190, maximum: 260), spacing: 14)], spacing: 14) {
-                        ForEach(shown) { plugin in
-                            PluginCard(plugin: plugin) { detail = plugin }
+                        ForEach(shown) { item in
+                            switch item {
+                            case .remote(let plugin): PluginCard(plugin: plugin) { detail = plugin }
+                            case .builtIn(let ext): BuiltInCard(ext: ext)
+                            }
                         }
                     }
                 }
@@ -951,12 +1036,17 @@ struct PluginStoreView: View {
                 if let message = store.message {
                     Text(message).font(.caption).foregroundStyle(.orange)
                 }
-                Text("Plugins are downloaded from the Notcholino releases on GitHub, always at their latest version, after a checksum check.")
+                Text("Plugins are simple buttons in Control Center; extensions have their own page in the notch and their own settings. Everything here is built by the Notcholino project from source that was reviewed on GitHub, downloaded from its releases and checked against a published checksum. Things made by the community say who made them.")
                     .font(.caption).foregroundStyle(.secondary)
+
+                DisclosureGroup("For developers", isExpanded: $showDeveloper) {
+                    DeveloperExtensionsView().padding(.top, 8)
+                }
+                .font(.callout)
             }
             .padding(20)
         }
-        .searchable(text: $query, placement: .toolbar, prompt: "Search plugins, features, keywords")
+        .searchable(text: $query, placement: .toolbar, prompt: "Search plugins, extensions, makers, keywords")
         .navigationTitle("Plugin Store")
         .task { await store.refresh() }
         .toolbar {
@@ -968,42 +1058,92 @@ struct PluginStoreView: View {
     }
 }
 
-/// A plugin in the grid: a big icon, its name, a line about it and the button
+/// The same card for everything in the store: icon, name, who made it and what kind it is, a line about it, and the action
+private struct StoreCardLayout<Trailing: View>: View {
+    let symbol: String
+    let tint: Color
+    let name: String
+    let isExtension: Bool
+    let isOfficial: Bool
+    let publisher: String
+    let description: String
+    let category: String?
+    let warning: Bool
+    @ViewBuilder let trailing: () -> Trailing
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 26))
+                .foregroundStyle(tint)
+                .frame(width: 56, height: 56)
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(tint.opacity(0.16)))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(name).font(.headline)
+                HStack(spacing: 4) {
+                    if isOfficial {
+                        Image(systemName: "checkmark.seal.fill").foregroundStyle(Color.accentColor)
+                        Text("Notcholino")
+                    } else {
+                        Text("by \(publisher)")
+                    }
+                    Text("·")
+                    Text(isExtension ? "Extension" : "Plugin")
+                }
+                .font(.caption2).foregroundStyle(.secondary)
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+            }
+            Spacer(minLength: 0)
+            HStack {
+                if warning {
+                    Label("Known problem", systemImage: "exclamationmark.triangle.fill").font(.caption2).foregroundStyle(.orange)
+                } else if let category { Text(category).font(.caption2).foregroundStyle(.tertiary) }
+                Spacer()
+                trailing()
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 200, alignment: .topLeading)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.secondary.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.secondary.opacity(0.14)))
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
 private struct PluginCard: View {
     let plugin: RemotePlugin
     let open: () -> Void
     @ObservedObject private var store = PluginStore.shared
 
     var body: some View {
-        let installed = store.installedVersion(of: plugin.id)
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: plugin.icon)
-                .font(.system(size: 26))
-                .frame(width: 56, height: 56)
-                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.accentColor.opacity(0.16)))
-            VStack(alignment: .leading, spacing: 3) {
-                Text(plugin.name).font(.headline)
-                Text(plugin.description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
-            HStack {
-                if plugin.warning != nil {
-                    Label("Known problem", systemImage: "exclamationmark.triangle.fill").font(.caption2).foregroundStyle(.orange)
-                } else if let category = plugin.category { Text(category).font(.caption2).foregroundStyle(.tertiary) }
-                Spacer()
-                StoreButton(plugin: plugin, installed: installed)
+        StoreCardLayout(symbol: plugin.icon, tint: .accentColor, name: plugin.name, isExtension: plugin.isExtension,
+                        isOfficial: plugin.isOfficial, publisher: plugin.publisherName, description: plugin.description,
+                        category: plugin.category, warning: plugin.warning != nil) {
+            StoreButton(plugin: plugin, installed: store.installedVersion(of: plugin))
+        }
+        .onTapGesture(perform: open)
+    }
+}
+
+/// An extension that is part of the app (Notchy): shown like the others, switched on here
+private struct BuiltInCard: View {
+    let ext: BuiltInExtension
+    @ObservedObject private var notchy = NotchySettings.shared
+
+    var body: some View {
+        StoreCardLayout(symbol: ext.symbol, tint: ext.color, name: ext.name, isExtension: true, isOfficial: true, publisher: "Notcholino",
+                        description: ext.summary, category: ext.category, warning: false) {
+            HStack(spacing: 8) {
+                Text("Built in").font(.caption2).foregroundStyle(.tertiary)
+                Toggle("", isOn: Binding(get: { ext.isEnabled() }, set: { ext.setEnabled($0) })).labelsHidden().controlSize(.small)
             }
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 190, alignment: .topLeading)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.secondary.opacity(0.08)))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.secondary.opacity(0.14)))
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .onTapGesture(perform: open)
+        .onTapGesture { ext.openSettings() }
     }
 }
 
@@ -1017,6 +1157,7 @@ struct BuiltInExtension: Identifiable {
     let summary: String
     let symbol: String
     let color: Color
+    let category: String
     let isEnabled: () -> Bool
     let setEnabled: (Bool) -> Void
     let openSettings: () -> Void
@@ -1024,44 +1165,9 @@ struct BuiltInExtension: Identifiable {
     static let all: [BuiltInExtension] = [
         BuiltInExtension(id: "notchy", name: "Notchy",
                             summary: "A small glass cube that lives in the notch: summaries of files and text, your day planned from your calendars, a look at the screen, email alerts and voice. You bring your own AI key.",
-                            symbol: "face.smiling.inverse", color: .indigo,
+                            symbol: "face.smiling.inverse", color: .indigo, category: "AI",
                             isEnabled: { NotchySettings.shared.enabled },
                             setEnabled: { NotchySettings.shared.enabled = $0 },
                             openSettings: { NotificationCenter.default.post(name: .openNotchySettings, object: nil) }),
     ]
-}
-
-struct ExtensionsShelf: View {
-    @ObservedObject private var notchy = NotchySettings.shared
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Extensions").font(.title3.weight(.semibold))
-            ForEach(BuiltInExtension.all) { ext in
-                HStack(alignment: .top, spacing: 14) {
-                    Image(systemName: ext.symbol).font(.title2).foregroundStyle(.white)
-                        .frame(width: 46, height: 46)
-                        .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(ext.color.gradient))
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack {
-                            Text(ext.name).font(.headline)
-                            Text("Extension").font(.caption2.weight(.semibold)).padding(.horizontal, 6).padding(.vertical, 1)
-                                .background(Capsule().fill(Color.secondary.opacity(0.18)))
-                        }
-                        Text(ext.summary).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                        HStack {
-                            Button("Settings") { ext.openSettings() }.controlSize(.small)
-                        }.padding(.top, 2)
-                    }
-                    Spacer()
-                    Toggle("", isOn: Binding(get: { notchy.enabled }, set: { ext.setEnabled($0) })).labelsHidden()
-                }
-                .padding(14)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.secondary.opacity(0.1)))
-            }
-            Text("Plugins are simple buttons in Control Center. Extensions are bigger: they have their own page in the notch and their own settings.")
-                .font(.caption).foregroundStyle(.secondary)
-            DeveloperExtensionsView().padding(.top, 6)
-        }
-    }
 }

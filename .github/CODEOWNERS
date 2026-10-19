@@ -1,0 +1,7 @@
+# Every change is reviewed by the maintainer. GitHub asks for this review when "Require review from Code Owners" is on for main.
+*                    @Peppe37
+/community/          @Peppe37
+/.github/            @Peppe37
+/scripts/            @Peppe37
+/ExtensionAPI/       @Peppe37
+/Shared/             @Peppe37

@@ -3,10 +3,10 @@ name: Plugins check
 # Every plugin has what the store needs (fields of plugin.json, changelog section, pictures, a target in project.yml)
 on:
   pull_request:
-    paths: [plugins/**, project.yml, scripts/check_plugins.py]
+    paths: [plugins/**, extensions/**, community/**, project.yml, scripts/**]
   push:
     branches: [main]
-    paths: [plugins/**, project.yml, scripts/check_plugins.py]
+    paths: [plugins/**, extensions/**, community/**, project.yml, scripts/**]
 
 permissions:
   contents: read

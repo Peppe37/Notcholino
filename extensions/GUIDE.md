@@ -40,5 +40,7 @@ project needed) and installs it in the folder above. Turn on developer mode and 
 
 ## Getting an extension in the store
 
-There is no store for extensions yet. If you build something useful, open an issue or a pull request: official extensions are
-reviewed and shipped inside the app.
+Extensions are in the store next to plugins, under your own name. You do not upload anything: you open a pull request that adds
+your source to `community/extensions/<id>/`, the maintainer reviews it, and the project builds and publishes it. Read
+[community/README.md](../community/README.md) for the process, what is checked and why. Extensions that come from the store load
+without developer mode (they were reviewed and built by the project); developer mode is only for ones you build yourself.

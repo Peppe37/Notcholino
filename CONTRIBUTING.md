@@ -29,7 +29,9 @@ The Xcode project is generated from `project.yml` and is not committed: change t
 | --- | --- |
 | `Notcholino/` | The app: notch window and views, Now Playing, Calendar and Reminders, settings, permissions. |
 | `Shared/` | The plugin API, compiled into the app and into every plugin. |
-| `plugins/` | Plugins, one folder each. See [plugins/README.md](plugins/README.md). |
+| `plugins/` | Plugins made by the project, one folder each. See [plugins/README.md](plugins/README.md). |
+| `community/` | Plugins and extensions made by other people, added through a reviewed pull request. See [community/README.md](community/README.md). |
+| `extensions/`, `ExtensionAPI/` | The extension API and an example extension. See [extensions/GUIDE.md](extensions/GUIDE.md). |
 | `third_party/` | Vendored dependencies, with their licenses. |
 | `docs/` | The website (GitHub Pages) and its assets. |
 | `dmg/` | The window of the installer DMG. |

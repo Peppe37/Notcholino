@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0-alpha] - 2026-10-19
+
+### Added
+- **A store for everyone's plugins and extensions.** Other people can now publish plugins and extensions under their own name: they open a pull request that adds their source to `community/`, the maintainer reviews it, and the project builds and publishes it. Things made by the project say **Notcholino** with a blue check; community ones say **by <maker>** and carry a "Made by the community" notice, what their code can do (network, running commands, files…) and a link to the source. See `community/README.md`.
+- **Extensions in the store**: installed like plugins, checked against their published checksum, and checked again every time they load. They load without developer mode (developer mode is only for ones you build yourself).
+- Safety checks on every submission: the source is scanned for what it can do and must declare it; loading other code, swapping the app's methods and carrying a script are refused; a pull request from anyone but the maintainer may only change `community/`; the build target is generated from the plugin's JSON, so nothing runs at build time.
+
+### Changed
+- The Plugin Store is one grid for plugins and extensions alike, with the same card for everything, a filter by type (All, Plugins, Extensions) and by maker (Everyone, Notcholino, Community), the categories, and search that also looks at who made it. The developer mode switch moved to a "For developers" section at the bottom.
+- Notchy's buttons on its page never wrap a label onto two lines: they sit side by side when there is room and one under the other when not.
+
+### Fixed
+- A voice shortcut that is a single key (Right ⌘, Fn…) now also works while a Notcholino window is in front, and is cancelled when it turns out to be part of a key combination such as ⌘C.
+
 ## [0.23.0-alpha] - 2026-10-19
 
 ### Added

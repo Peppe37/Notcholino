@@ -15,13 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check the whole store before building anything
+        run: python3 scripts/check_plugins.py
+
       - name: Read plugin and check the tag
         id: p
         run: |
           ID="${GITHUB_REF_NAME%%-v*}"
           VERSION="${GITHUB_REF_NAME#*-v}"
-          META="plugins/$ID/plugin.json"
-          if [ ! -f "$META" ]; then echo "No plugin '$ID' (missing $META)"; exit 1; fi
+          # plugins/, extensions/, community/plugins/ or community/extensions/ (see scripts/store_items.py)
+          DIR=$(python3 scripts/store_items.py "$ID")
+          META="$DIR/plugin.json"
+          if [ ! -f "$META" ]; then echo "No plugin or extension '$ID' (missing $META)"; exit 1; fi
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
           if [ "$(jq -r .version "$META")" != "$VERSION" ]; then
             echo "Tag version $VERSION does not match version in $META"; exit 1
           fi
@@ -34,7 +40,9 @@ jobs:
         run: brew install xcodegen
 
       - name: Generate project
-        run: xcodegen generate
+        run: |
+          python3 scripts/gen_community_targets.py --check
+          xcodegen generate
 
       - name: Build
         env:
@@ -62,13 +70,14 @@ jobs:
         env:
           ID: ${{ steps.p.outputs.id }}
           VERSION: ${{ steps.p.outputs.version }}
+          DIR: ${{ steps.p.outputs.dir }}
         run: |
           awk -v t="$VERSION" '
             $0 ~ "^## \\[" t "\\]" { on=1; next }
             on && /^## \[/ { exit }
             on { print }
-          ' "plugins/$ID/CHANGELOG.md" > notes.md
-          if [ ! -s notes.md ]; then echo "No CHANGELOG entry for $VERSION in plugins/$ID/CHANGELOG.md"; exit 1; fi
+          ' "$DIR/CHANGELOG.md" > notes.md
+          if [ ! -s notes.md ]; then echo "No CHANGELOG entry for $VERSION in $DIR/CHANGELOG.md"; exit 1; fi
 
       - name: Publish release
         env:
@@ -81,7 +90,7 @@ jobs:
           case "$VERSION" in *-*) FLAGS="--prerelease" ;; esac
           # --latest=false: a plugin release must never become the app's "latest" release
           gh release create "$GITHUB_REF_NAME" "$ID-$VERSION.zip" \
-            --title "$NAME $VERSION (plugin)" --notes-file notes.md --latest=false $FLAGS
+            --title "$NAME $VERSION" --notes-file notes.md --latest=false $FLAGS
 
       - name: Update the plugin store manifest
         env:

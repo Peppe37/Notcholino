@@ -1,0 +1,27 @@
+name: Community guard
+
+# A pull request from someone who is not the maintainer may only add or change files in community/. Everything else (the app, the
+# scripts, the workflows, the official plugins) is reviewed and changed by the maintainer. The build targets of community
+# plugins are generated from their plugin.json, so a contribution is source code and JSON and nothing that runs at build time.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login != 'Peppe37'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Only community/ changed
+        run: |
+          BAD=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -v '^community/' || true)
+          if [ -n "$BAD" ]; then
+            echo "A community contribution may only change files under community/. These are outside it:"
+            echo "$BAD"
+            exit 1
+          fi

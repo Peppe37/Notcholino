@@ -30,11 +30,18 @@ struct NotchyNotchView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxHeight: 70)
+                .frame(maxHeight: 58)
                 if settings.providerID(for: .text) != nil {
-                    HStack(spacing: 8) {
-                        PageButton(title: "Plan my day", symbol: "calendar.badge.clock", busy: busy) { assistant.planDay() }
-                        PageButton(title: "Look at the screen", symbol: "eye", busy: busy) { assistant.lookAtScreen() }
+                    // Side by side when they fit, one under the other when the column is narrow: never a label on two lines
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 6) {
+                            PageButton(title: "Plan my day", symbol: "calendar.badge.clock", busy: busy) { assistant.planDay() }
+                            PageButton(title: "Look at the screen", symbol: "eye", busy: busy) { assistant.lookAtScreen() }
+                        }
+                        VStack(alignment: .leading, spacing: 5) {
+                            PageButton(title: "Plan my day", symbol: "calendar.badge.clock", busy: busy) { assistant.planDay() }
+                            PageButton(title: "Look at the screen", symbol: "eye", busy: busy) { assistant.lookAtScreen() }
+                        }
                     }
                     if settings.providerID(for: .speech) != nil {
                         Text("Hold \(voice.shortcutLabel) to talk").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
@@ -99,6 +106,8 @@ private struct PageButton: View {
         Button(action: action) {
             Label(title, systemImage: symbol)
                 .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+                .fixedSize()
                 .padding(.horizontal, 10).padding(.vertical, 5)
                 .background(Capsule().fill(.white.opacity(0.14)))
                 .foregroundStyle(.white)
