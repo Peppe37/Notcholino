@@ -32,5 +32,24 @@
 	<string>Notcholino shows a moon beside the notch while a Focus, such as Do Not Disturb, is on.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Notcholino needs access to show the reminders due today.</string>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Send to Notchy</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>sendToNotchy</string>
+			<key>NSPortName</key>
+			<string>Notcholino</string>
+			<key>NSSendTypes</key>
+			<array>
+				<string>NSStringPboardType</string>
+				<string>public.file-url</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

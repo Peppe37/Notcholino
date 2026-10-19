@@ -60,7 +60,7 @@ final class NotchySettings: ObservableObject {
 
     func model(for provider: NotchyProvider, task: NotchyTask) -> String {
         let custom = (models["\(provider.id)/\(task.rawValue)"] ?? "").trimmingCharacters(in: .whitespaces)
-        return custom.isEmpty ? provider.defaultModel : custom
+        return custom.isEmpty ? (provider.models(for: task).first ?? "") : custom
     }
 
     func setModel(_ model: String, for provider: NotchyProvider, task: NotchyTask) {

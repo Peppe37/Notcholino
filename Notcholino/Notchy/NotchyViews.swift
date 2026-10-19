@@ -7,18 +7,23 @@ import SwiftUI
 struct NotchyNotchView: View {
     @ObservedObject private var presence = NotchyPresence.shared
     @ObservedObject private var settings = NotchySettings.shared
+    @ObservedObject private var assistant = NotchyAssistant.shared
     @State private var mood: NotchyMood = .calm
     @State private var gaze: CGFloat = 0
     @State private var resetTask: Task<Void, Never>?
 
     var body: some View {
         HStack(spacing: 22) {
-            NotchyCube(mood: mood, size: 78, gaze: gaze)
+            NotchyCube(mood: shownMood, size: 78, gaze: gaze)
                 .onTapGesture { pet() }
             VStack(alignment: .leading, spacing: 4) {
                 Text("Notchy").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
-                Text(status).font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.55))
-                    .fixedSize(horizontal: false, vertical: true)
+                ScrollView {
+                    Text(status).font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.7))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 90)
             }
             Spacer(minLength: 0)
         }
@@ -27,11 +32,26 @@ struct NotchyNotchView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
+    private var shownMood: NotchyMood {
+        switch assistant.state {
+        case .thinking: return .thinking
+        case .reply: return .happy
+        case .failed: return .sleepy
+        case .idle: return mood
+        }
+    }
+
     private var status: String {
+        switch assistant.state {
+        case .thinking(let what): return "Reading \(what)…"
+        case .reply(let text): return text
+        case .failed(let why): return why
+        case .idle: break
+        }
         guard let id = settings.providerID(for: .text), let p = NotchyProvider.provider(id) else {
             return "Choose a provider in Settings → Notchy to ask it things."
         }
-        return "Ready · text with \(p.name)"
+        return "Ready · text with \(p.name). Select text or a file, right-click → Services → Send to Notchy."
     }
 
     private func pet() {
@@ -121,11 +141,9 @@ struct NotchySettingsView: View {
                                                        set: { settings.setBaseURL($0, for: provider) }))
                         .textFieldStyle(.roundedBorder)
                 }
-                TextField("Model", text: Binding(get: { settings.model(for: provider, task: task) },
-                                                 set: { settings.setModel($0, for: provider, task: task) }))
-                    .textFieldStyle(.roundedBorder)
-                if task == .text {
-                    TestRow(provider: provider)
+                ModelRow(provider: provider, task: task)
+                if provider.kind != .system {
+                    TestRow(provider: provider, task: task)
                 }
             }
         } footer: {
@@ -163,21 +181,96 @@ private struct KeyRow: View {
     }
 }
 
-/// "Test": one tiny request, so the user knows the key, the address and the model work
+/// Model choice: the models that make sense for this task first, a Refresh button that asks the provider what it really has,
+/// and a field for anything else (a model of your own, a newer name).
+private struct ModelRow: View {
+    @ObservedObject private var settings = NotchySettings.shared
+    let provider: NotchyProvider
+    let task: NotchyTask
+    @State private var fetched: [String] = []
+    @State private var loading = false
+    @State private var note: String?
+    @State private var typing = false
+
+    private static let other = "\u{0}other"
+
+    private var options: [String] {
+        var all = provider.models(for: task)
+        for m in fetched where !all.contains(m) { all.append(m) }
+        return all
+    }
+
+    var body: some View {
+        let current = settings.model(for: provider, task: task)
+        let known = options.contains(current)
+        HStack {
+            if options.isEmpty || typing || (!known && !current.isEmpty) {
+                TextField("Model", text: Binding(get: { current }, set: { settings.setModel($0, for: provider, task: task) }))
+                    .textFieldStyle(.roundedBorder)
+                if !options.isEmpty {
+                    Button("List") { typing = false; settings.setModel("", for: provider, task: task) }
+                }
+            } else {
+                Picker("Model", selection: Binding(get: { current }, set: {
+                    if $0 == Self.other { typing = true } else { settings.setModel($0, for: provider, task: task) }
+                })) {
+                    ForEach(options, id: \.self) { Text($0).tag($0) }
+                    Divider()
+                    Text("Other…").tag(Self.other)
+                }
+            }
+            if provider.listsModels {
+                Button {
+                    loading = true; note = nil
+                    Task {
+                        do {
+                            fetched = try await NotchyClient.listModels(provider: provider, task: task)
+                            note = fetched.isEmpty ? "The provider returned no models for this." : "\(fetched.count) models found."
+                        } catch { note = error.localizedDescription }
+                        loading = false
+                    }
+                } label: {
+                    Image(systemName: loading ? "hourglass" : "arrow.clockwise")
+                }
+                .help("Ask \(provider.name) which models it has")
+                .disabled(loading)
+            }
+        }
+        if let note { Text(note).font(.caption).foregroundStyle(.secondary) }
+    }
+}
+
+/// "Test": one tiny request for the task, so the user knows the key, the address and the model work
 private struct TestRow: View {
     let provider: NotchyProvider
+    let task: NotchyTask
     @State private var result: String?
     @State private var good = false
     @State private var running = false
 
     var body: some View {
         HStack {
-            Button(running ? "Testing…" : "Test") {
+            Button(running ? "Testing…" : "Test \(task == .text ? "text" : task == .vision ? "images" : "voice")") {
                 running = true; result = nil
                 Task {
                     do {
-                        let answer = try await NotchyClient.complete(prompt: "Answer with the single word: ready", system: "Be brief.")
-                        good = true; result = "Works: “\(answer.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40))”"
+                        switch task {
+                        case .text:
+                            let a = try await NotchyClient.complete(prompt: "Answer with the single word: ready", system: "Be brief.", task: .text)
+                            good = true; result = "Works: “\(a.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40))”"
+                        case .vision:
+                            let a = try await NotchyClient.complete(prompt: "What colour is this image? Answer with one word.", system: "Be brief.",
+                                                                    task: .vision, image: NotchyClient.testImage())
+                            good = a.lowercased().contains("red")
+                            result = good ? "It can see images: “\(a.trimmingCharacters(in: .whitespacesAndNewlines).prefix(30))”"
+                                          : "Answered, but did not see the image: “\(a.prefix(40))”"
+                        case .speech:
+                            let list = try await NotchyClient.listModels(provider: provider, task: .speech)
+                            let model = NotchySettings.shared.model(for: provider, task: .speech)
+                            good = list.isEmpty || list.contains(model)
+                            result = good ? "Key and model look right. Voice itself is tested when the shortcut arrives."
+                                          : "The key works but “\(model)” is not in the provider's list."
+                        }
                     } catch {
                         good = false; result = error.localizedDescription
                     }
@@ -186,7 +279,7 @@ private struct TestRow: View {
             }
             .disabled(running)
             if let result {
-                Text(result).font(.caption).foregroundStyle(good ? Color.green : Color.orange).lineLimit(2)
+                Text(result).font(.caption).foregroundStyle(good ? Color.green : Color.orange).lineLimit(3)
             }
         }
     }

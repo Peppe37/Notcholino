@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0-alpha] - 2026-10-19
+
+### Added
+- **Send to Notchy**: select text anywhere, or a file in Finder, right-click → Services → Send to Notchy. Notchy reads it and answers in a short note under the notch (and in its page): a summary or outline for text, notes, code and PDFs, a description for images, or an answer if you sent a question. The cube turns thoughtful while it works.
+- A **Test** button for every task (text, images, voice) in Settings → Notchy: text asks for one word, images sends a tiny red square and checks the answer, voice checks the key and the model.
+- A **refresh** button beside the model that asks the provider which models it really has, filtered to what can do that task.
+
+### Changed
+- Providers are only offered for what they can do: Anthropic and Ollama for text and images, Gemini and OpenAI for all three, ElevenLabs and macOS for voice, vLLM for text and images.
+- Models are chosen from a short list that fits the task and the provider (Gemini now defaults to the `-latest` aliases, so it follows the current model; OpenAI uses a transcription model for voice), with "Other…" for any name.
+- A busy provider (503/429) now says so and suggests another model, instead of a raw error.
+
 ## [0.16.0-alpha] - 2026-10-19
 
 ### Added

@@ -23,14 +23,20 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
-        MARKETING_VERSION: "0.16.0"
-        CURRENT_PROJECT_VERSION: "34"
+        MARKETING_VERSION: "0.17.0"
+        CURRENT_PROJECT_VERSION: "35"
     info:
       path: Notcholino/Info.plist
       properties:
         LSUIElement: true
         NSAppleEventsUsageDescription: "Notcholino needs Apple Events access to control music players."
         NSAppleScriptEnabled: true
+        NSServices:
+          - NSMenuItem:
+              default: "Send to Notchy"
+            NSMessage: sendToNotchy
+            NSPortName: Notcholino
+            NSSendTypes: ["NSStringPboardType", "public.file-url"]
         NSCalendarsFullAccessUsageDescription: "Notcholino needs access to display your upcoming events."
         NSRemindersFullAccessUsageDescription: "Notcholino needs access to show the reminders due today."
         NSFocusStatusUsageDescription: "Notcholino shows a moon beside the notch while a Focus, such as Do Not Disturb, is on."

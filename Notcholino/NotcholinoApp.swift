@@ -61,6 +61,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         UpdateChecker.shared.start()
         FocusMonitor.shared.start()
         NotchyPresence.shared.settingsChanged()
+        NotchyServices.shared.register()
         DeviceMonitor.shared.start()
 
         NotificationCenter.default.addObserver(self, selector: #selector(setupNotches), name: NSApplication.didChangeScreenParametersNotification, object: nil)
