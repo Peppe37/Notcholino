@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0-alpha] - 2026-10-19
+
+### Changed
+- **Notchy is a real extension now**, not part of the app. It is installed from the Plugin Store and removed from it like a plugin: if you do not want it, it is not on your Mac. If you used it before, open **Settings → Plugin Store**, find **Notchy** and press Get: your settings and your keys (kept in the Keychain) are picked up as they were.
+- The extension API grew to carry it: an extension can now put a small view beside the closed notch, receive what you send from the right-click menu, read what is left of your day from the calendars you ticked, know when music plays or a plugin is busy, and answer other extensions' AI requests (Notchy holds the keys, so they never reach another extension). **Settings → Extensions** shows each installed extension's own settings.
+- The Plugin Store no longer lists anything as built in: everything in it can be installed and removed.
+
 ## [0.25.1-alpha] - 2026-10-19
 
 ### Fixed

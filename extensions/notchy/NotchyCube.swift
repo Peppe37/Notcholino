@@ -176,12 +176,12 @@ enum NotchyAccessory: String, Hashable {
     case coffee       // Espresso is keeping the Mac awake
 
     /// What is going on right now. Cheap: three yes/no answers, asked only while Notchy's page is on screen.
-    @MainActor static func current(musicPlaying: Bool) -> Set<NotchyAccessory> {
+    static func current() -> Set<NotchyAccessory> {
         var set: Set<NotchyAccessory> = []
-        if musicPlaying { set.insert(.headphones) }
-        for plugin in PluginManager.shared.loadedPlugins where plugin.isActive {
-            if plugin.pluginIdentifier == "tomato" { set.insert(.tomato) }
-            if plugin.pluginIdentifier == "espresso" { set.insert(.coffee) }
+        if NotchyBridge.shared.isMusicPlaying() { set.insert(.headphones) }
+        for id in NotchyBridge.shared.activePluginIDs() {
+            if id == "tomato" { set.insert(.tomato) }
+            if id == "espresso" { set.insert(.coffee) }
         }
         return set
     }

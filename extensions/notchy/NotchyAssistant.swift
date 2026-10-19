@@ -52,22 +52,8 @@ final class NotchyAssistant: ObservableObject {
     }
 
     /// What is left of today, from the calendars ticked in Notcholino's own Calendar settings (not the ones shown in Calendar.app)
-    /// and the reminders it shows. Titles and times only.
-    static func agendaLines() -> [String] {
-        let cal = CalendarManager.shared
-        let now = Date()
-        let clock = DateFormatter(); clock.dateFormat = "HH:mm"
-        var lines: [String] = []
-        for event in cal.todayEvents where event.isAllDay || event.endDate > now {
-            let when = event.isAllDay ? "all day" : "\(clock.string(from: event.startDate))–\(clock.string(from: event.endDate))"
-            lines.append("- \(when): \(event.title ?? "Event")")
-        }
-        for reminder in cal.todayReminders {
-            let due = cal.dueTime(of: reminder).map { "due \($0)" } ?? (cal.isOverdue(reminder) ? "overdue" : "today")
-            lines.append("- to do (\(due)): \(reminder.title ?? "Reminder")")
-        }
-        return lines
-    }
+    /// and the reminders it shows. Titles and times only. The app does the reading.
+    static func agendaLines() -> [String] { NotchyBridge.shared.agendaLines() }
 
     /// Voice: turn the recording into text, then answer it
     func transcribeAndAsk(_ file: URL) {
@@ -127,8 +113,7 @@ final class NotchyAssistant: ObservableObject {
     /// "Plan my day": Notchy reads today's events and reminders from the Mac, and only if there is something to plan does it ask
     /// the text provider. Only titles and times are sent: no places, notes or attendees.
     func planDay() {
-        let cal = CalendarManager.shared
-        guard cal.hasAccess || cal.hasRemindersAccess else {
+        guard NotchyBridge.shared.hasCalendarAccess() else {
             finish(.failed("I can't see your calendar yet. Allow Calendar in Settings → General → Permissions."))
             return
         }
@@ -151,13 +136,13 @@ final class NotchyAssistant: ObservableObject {
 
     private func run(label: String, prompt: String, image: Data?, task kind: NotchyTask = .text, tools: String? = nil) {
         guard NotchySettings.shared.enabled else {
-            PopupCenter.shared.show(icon: "face.smiling", title: "Notchy is off", subtitle: "Turn it on in Settings → Notchy", seconds: 4)
+            NotchyBridge.shared.popup(icon: "face.smiling", title: "Notchy is off", subtitle: "Turn it on in Settings → Notchy", seconds: 4)
             return
         }
         task?.cancel()
         state = .thinking(label)
         NotchyPresence.shared.peek(mood: .thinking, seconds: 90)
-        PopupCenter.shared.show(icon: "ellipsis.bubble", title: "Notchy is reading…", subtitle: label, seconds: 4, opensNotchy: true)
+        NotchyBridge.shared.popup(icon: "ellipsis.bubble", title: "Notchy is reading…", subtitle: label, seconds: 4, opensPage: true)
         task = Task { @MainActor [weak self] in
             do {
                 var full = prompt
@@ -180,10 +165,10 @@ final class NotchyAssistant: ObservableObject {
         case .reply(let text):
             NotchyPresence.shared.peek(mood: .happy, seconds: 8)
             let line = text.replacingOccurrences(of: "\n", with: " ")
-            PopupCenter.shared.show(icon: "face.smiling", title: "Notchy", subtitle: String(line.prefix(110)) + (line.count > 110 ? "…" : ""), seconds: 12, opensNotchy: true)
+            NotchyBridge.shared.popup(icon: "face.smiling", title: "Notchy", subtitle: String(line.prefix(110)) + (line.count > 110 ? "…" : ""), seconds: 12, opensPage: true)
         case .failed(let why):
             NotchyPresence.shared.peek(mood: .sleepy, seconds: 4)
-            PopupCenter.shared.show(icon: "exclamationmark.bubble", title: "Notchy could not", subtitle: String(why.prefix(110)), tint: .orange, seconds: 8, opensNotchy: true)
+            NotchyBridge.shared.popup(icon: "exclamationmark.bubble", title: "Notchy could not", subtitle: String(why.prefix(110)), tint: .orange, seconds: 8, opensPage: true)
         default: break
         }
     }
@@ -193,7 +178,7 @@ final class NotchyAssistant: ObservableObject {
         guard NotchySettings.shared.enabled else { return }
         state = .reply(text)
         NotchyPresence.shared.peek(mood: .curious, seconds: 8)
-        PopupCenter.shared.show(icon: "envelope.fill", title: title, subtitle: String(text.prefix(110)), seconds: 10, opensNotchy: true)
+        NotchyBridge.shared.popup(icon: "envelope.fill", title: title, subtitle: String(text.prefix(110)), seconds: 10, opensPage: true)
     }
 
     func clear() { task?.cancel(); state = .idle; NotchyPresence.shared.peek(mood: .calm, seconds: 0.1) }
@@ -223,23 +208,5 @@ final class NotchyAssistant: ObservableObject {
         image.draw(in: NSRect(origin: .zero, size: target))
         NSGraphicsContext.restoreGraphicsState()
         return rep.representation(using: .png, properties: [:])
-    }
-}
-
-/// "Send to Notchy" in the right-click menu (the Services menu), for selected text anywhere and for files in Finder
-final class NotchyServices: NSObject {
-    static let shared = NotchyServices()
-
-    func register() {
-        NSApp.servicesProvider = self
-        NSUpdateDynamicServices()
-    }
-
-    @objc func sendToNotchy(_ pboard: NSPasteboard, userData: String, error: AutoreleasingUnsafeMutablePointer<NSString>) {
-        if let urls = pboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
-            DispatchQueue.main.async { NotchyAssistant.shared.send(files: urls) }
-        } else if let text = pboard.string(forType: .string) {
-            DispatchQueue.main.async { NotchyAssistant.shared.send(text: text) }
-        }
     }
 }

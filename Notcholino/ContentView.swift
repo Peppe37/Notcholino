@@ -13,7 +13,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
     case calendar    = "Calendar"
     case controlCenter = "Control Center"
     case pluginStore = "Plugin Store"
-    case notchy      = "Notchy"
+    case extensions  = "Extensions"
     case license     = "License"
     case about       = "About"
 
@@ -28,7 +28,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .calendar:     return "calendar"
         case .controlCenter: return "square.grid.2x2.fill"
         case .pluginStore:  return "bag.fill"
-        case .notchy:       return "face.smiling.inverse"
+        case .extensions:   return "puzzlepiece.extension.fill"
         case .license:      return "checkmark.seal.fill"
         case .about:        return "info.circle.fill"
         }
@@ -45,7 +45,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .calendar:     return .red
         case .controlCenter: return .purple
         case .pluginStore:  return .blue
-        case .notchy:       return .indigo
+        case .extensions:   return .indigo
         case .license:      return .teal
         case .about:        return Color(NSColor.secondaryLabelColor)
         }
@@ -72,7 +72,7 @@ struct ContentView: View {
                 }
 
                 Section("Live Activities") {
-                    ForEach([SidebarItem.controlCenter, .pluginStore, .notchy, .shelf, .nowPlaying, .calendar], id: \.self) { item in
+                    ForEach([SidebarItem.controlCenter, .pluginStore, .extensions, .shelf, .nowPlaying, .calendar], id: \.self) { item in
                         NavigationLink(value: item) { SidebarLabel(item: item) }
                     }
                 }
@@ -90,7 +90,7 @@ struct ContentView: View {
         }
         .frame(minWidth: 680, minHeight: 560)
         .onReceive(NotificationCenter.default.publisher(for: .openPluginStore)) { _ in selection = .pluginStore }
-        .onReceive(NotificationCenter.default.publisher(for: .openNotchySettings)) { _ in selection = .notchy }
+        .onReceive(NotificationCenter.default.publisher(for: .openExtensionSettings)) { _ in selection = .extensions }
         // Native window title
         .navigationTitle("Notcholino")
     }
@@ -107,7 +107,7 @@ struct ContentView: View {
         case .calendar:     CalendarSettingsView()
         case .controlCenter: ControlCenterSettingsView()
         case .pluginStore:  PluginStoreView()
-        case .notchy:       NotchySettingsView()
+        case .extensions:   ExtensionsSettingsView()
         case .license:      LicenseView()
         case .about:        AboutView()
         case nil:           EmptyView()
@@ -878,7 +878,7 @@ struct PluginDetailView: View {
                         }
                     }
                     if plugin.isExtension, installed != nil {
-                        section("Manage") { ExtensionManageView(id: plugin.id) }
+                        section("Manage") { ExtensionManageView(id: plugin.id, close: close) }
                     }
                     if let news = plugin.whatsNew, !news.isEmpty {
                         section("What's new in \(plugin.version)") {
@@ -910,7 +910,7 @@ struct PluginDetailView: View {
 
 extension Notification.Name {
     static let openPluginStore = Notification.Name("openPluginStore")
-    static let openNotchySettings = Notification.Name("openNotchySettings")
+    static let openExtensionSettings = Notification.Name("openExtensionSettings")
 }
 
 // MARK: - Plugin Store (a grid, with search)
@@ -925,32 +925,20 @@ enum StoreSource: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-/// One thing in the store: a plugin or an extension from the manifest, or an extension that is part of the app
+/// One thing in the store: a plugin or an extension from the manifest
 enum StoreItem: Identifiable {
     case remote(RemotePlugin)
-    case builtIn(BuiltInExtension)
 
-    var id: String {
-        switch self { case .remote(let p): return (p.isExtension ? "x-" : "p-") + p.id; case .builtIn(let e): return "b-" + e.id }
-    }
-    var name: String { switch self { case .remote(let p): return p.name; case .builtIn(let e): return e.name } }
-    var isExtension: Bool { switch self { case .remote(let p): return p.isExtension; case .builtIn: return true } }
-    var isOfficial: Bool { switch self { case .remote(let p): return p.isOfficial; case .builtIn: return true } }
-    var category: String? { switch self { case .remote(let p): return p.category; case .builtIn(let e): return e.category } }
-    func matches(_ query: String) -> Bool {
-        switch self {
-        case .remote(let p): return p.matches(query)
-        case .builtIn(let e):
-            let words = query.lowercased().split(separator: " ").map(String.init)
-            let text = "\(e.name) \(e.summary) \(e.category) notcholino extension built in ai assistant".lowercased()
-            return words.allSatisfy { text.contains($0) }
-        }
-    }
+    var id: String { switch self { case .remote(let p): return (p.isExtension ? "x-" : "p-") + p.id } }
+    var name: String { switch self { case .remote(let p): return p.name } }
+    var isExtension: Bool { switch self { case .remote(let p): return p.isExtension } }
+    var isOfficial: Bool { switch self { case .remote(let p): return p.isOfficial } }
+    var category: String? { switch self { case .remote(let p): return p.category } }
+    func matches(_ query: String) -> Bool { switch self { case .remote(let p): return p.matches(query) } }
 }
 
 struct PluginStoreView: View {
     @ObservedObject private var store = PluginStore.shared
-    @ObservedObject private var notchy = NotchySettings.shared
     @State private var query = ""
     @State private var category = "All"
     @State private var type: StoreType = .all
@@ -960,7 +948,7 @@ struct PluginStoreView: View {
 
     /// Everything, official first and then by name, so the order is the same however many things the store holds
     private var items: [StoreItem] {
-        let all = BuiltInExtension.all.map(StoreItem.builtIn) + store.available.map(StoreItem.remote)
+        let all = store.available.map(StoreItem.remote)
         return all.sorted { ($0.isOfficial ? 0 : 1, $0.name.lowercased()) < ($1.isOfficial ? 0 : 1, $1.name.lowercased()) }
     }
 
@@ -1027,7 +1015,6 @@ struct PluginStoreView: View {
                         ForEach(shown) { item in
                             switch item {
                             case .remote(let plugin): PluginCard(plugin: plugin) { detail = plugin }
-                            case .builtIn(let ext): BuiltInCard(ext: ext)
                             }
                         }
                     }
@@ -1130,44 +1117,5 @@ private struct PluginCard: View {
     }
 }
 
-/// An extension that is part of the app (Notchy): shown like the others, switched on here
-private struct BuiltInCard: View {
-    let ext: BuiltInExtension
-    @ObservedObject private var notchy = NotchySettings.shared
-
-    var body: some View {
-        StoreCardLayout(symbol: ext.symbol, tint: ext.color, name: ext.name, isExtension: true, isOfficial: true, publisher: "Notcholino",
-                        description: ext.summary, category: ext.category, warning: false) {
-            HStack(spacing: 8) {
-                Text("Built in").font(.caption2).foregroundStyle(.tertiary)
-                Toggle("", isOn: Binding(get: { ext.isEnabled() }, set: { ext.setEnabled($0) })).labelsHidden().controlSize(.small)
-            }
-        }
-        .onTapGesture { ext.openSettings() }
-    }
-}
-
 // MARK: - Extensions
 
-/// Extensions are bigger than plugins: where a plugin is a button in Control Center, an extension has its own page in the notch,
-/// its own settings, and can use AI. They are part of the app and switched on here. (More will follow.)
-struct BuiltInExtension: Identifiable {
-    let id: String
-    let name: String
-    let summary: String
-    let symbol: String
-    let color: Color
-    let category: String
-    let isEnabled: () -> Bool
-    let setEnabled: (Bool) -> Void
-    let openSettings: () -> Void
-
-    static let all: [BuiltInExtension] = [
-        BuiltInExtension(id: "notchy", name: "Notchy",
-                            summary: "A small glass cube that lives in the notch: summaries of files and text, your day planned from your calendars, a look at the screen, email alerts and voice. You bring your own AI key.",
-                            symbol: "face.smiling.inverse", color: .indigo, category: "AI",
-                            isEnabled: { NotchySettings.shared.enabled },
-                            setEnabled: { NotchySettings.shared.enabled = $0 },
-                            openSettings: { NotificationCenter.default.post(name: .openNotchySettings, object: nil) }),
-    ]
-}

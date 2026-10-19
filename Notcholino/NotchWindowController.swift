@@ -313,7 +313,7 @@ struct NotchShape: Shape {
 
 /// The panels the notch can show, in display order.
 enum NotchTab: Int, CaseIterable {
-    case controlCenter = -2, shelf = -1, music = 0, calendar = 1, notchy = 2, extensions = 3
+    case controlCenter = -2, shelf = -1, music = 0, calendar = 1, extensions = 3
 }
 
 struct NotchContentView: View {
@@ -335,8 +335,6 @@ struct NotchContentView: View {
     @AppStorage("controlCenterEnabled") private var controlCenterEnabled = true
     @AppStorage("shelfEnabled")         private var shelfEnabled = true
     @ObservedObject private var shelf = ShelfManager.shared
-    @ObservedObject private var notchy = NotchySettings.shared
-    @ObservedObject private var notchyPresence = NotchyPresence.shared
     @ObservedObject private var popups = PopupCenter.shared
     @State private var dropTargeted = false
     /// Reverses the direction of the two-finger swipe (and of the mouse wheel)
@@ -372,7 +370,6 @@ struct NotchContentView: View {
             case .shelf:         return shelfEnabled && (!shelf.items.isEmpty || shelf.pending > 0 || shelf.dragActive)
             case .music:         return nowPlayingEnabled
             case .calendar:      return calendarEnabled
-            case .notchy:        return notchy.enabled && notchy.pageVisible
             case .extensions:    return !extensionManager.pages.isEmpty
             }
         }
@@ -404,8 +401,9 @@ struct NotchContentView: View {
     }
 
     /// Icons that live inside the black, beside the hardware notch: the moon on the left, plugins' icons on the right
-    private var notchyPeeking: Bool { notchyPresence.peeking && notchy.enabled && !isExpanded }
-    private var leftIconCount: Int { isExpanded ? 0 : (focusOn ? 1 : 0) + (notchyPeeking ? 1 : 0) }
+    /// Extensions that show a small view beside the closed notch (Notchy peeking out)
+    private var wings: [String] { isExpanded ? [] : extensionManager.wingVisible.filter { extensionManager.isEnabled($0) } }
+    private var leftIconCount: Int { isExpanded ? 0 : (focusOn ? 1 : 0) + wings.count }
     private var rightIconCount: Int { isExpanded ? 0 : pluginManager.sideIcons.count }
     private let iconSlot: CGFloat = 22
 
@@ -539,10 +537,13 @@ struct NotchContentView: View {
                         SideIcon(symbol: "moon.fill", color: Color(red: 0.62, green: 0.55, blue: 1))
                             .offset(x: -(edge + 4 + iconSlot / 2))
                     }
-                    if notchyPeeking {
-                        NotchyCube(mood: notchyPresence.mood, size: 20, alive: false)
-                            .offset(x: -(edge + 4 + iconSlot / 2 + (focusOn ? iconSlot : 0)))
-                            .transition(.scale(scale: 0.3).combined(with: .opacity))
+                    ForEach(Array(wings.enumerated()), id: \.element) { i, id in
+                        if let view = extensionManager.wingView(for: id) {
+                            ExtensionViewHost { view }
+                                .frame(width: 20, height: 20)
+                                .offset(x: -(edge + 4 + iconSlot / 2 + CGFloat(i + (focusOn ? 1 : 0)) * iconSlot))
+                                .transition(.scale(scale: 0.3).combined(with: .opacity))
+                        }
                     }
                     ForEach(Array(pluginManager.sideIcons.enumerated()), id: \.offset) { i, icon in
                         if !isExpanded {
@@ -569,7 +570,7 @@ struct NotchContentView: View {
             .onAppear { publishLayout() }
             .onChange(of: isHovering) { _ in publishLayout() }
             .onChange(of: sysEvt.currentMode) { _ in publishLayout() }
-            .onChange(of: music.isPlaying) { _ in publishLayout() }
+            .onChange(of: music.isPlaying) { playing in extensionManager.musicPlaying = playing; publishLayout() }
             .onChange(of: shownTab) { _ in publishLayout() }
             .onChange(of: notchExtension) { _ in publishLayout() }
             .onReceive(NotificationCenter.default.publisher(for: .notchDropTargeted)) { notif in
@@ -637,7 +638,6 @@ struct NotchContentView: View {
         case .shelf:         ShelfNotchView(dropTargeted: dropTargeted)
         case .music:         NowPlayingNotchView(music: music)
         case .calendar:      CalendarNotchView()
-        case .notchy:        NotchyNotchView(musicPlaying: music.isPlaying)
         case .extensions:    ExtensionNotchView()
         }
     }
@@ -726,10 +726,11 @@ struct NotchContentView: View {
             PermissionsManager.shared.refresh()
             calMgr.refreshAccess()
             closing = false
-            // Notchy just said something under the notch: moving to it opens Notchy's page, where the whole note is
-            if popups.current?.opensNotchy == true, notchy.enabled, notchy.pageVisible, !isExpanded {
+            // An extension just said something under the notch: moving to it opens that extension's page, where the whole note is
+            if let id = popups.current?.opensExtension, extensionManager.pages.contains(where: { $0.extensionIdentifier == id }), !isExpanded {
+                extensionManager.selectedID = id
                 goingForward = false
-                activeTab = .notchy
+                activeTab = .extensions
                 popups.dismiss()
             }
             withAnimation { isHovering = true }

@@ -24,7 +24,10 @@ You provide an identifier, a name, version, author, description and an SF Symbol
 - optional `makeSettingsView() -> NSView`: shown in a sheet from the Extensions settings.
 - optional `setPopupHandler(_:)`: keep the handler and call it to show a small popup under the notch.
 - optional `setAskHandler(_:)`: keep the handler and call it with a prompt to get an answer from the user's text AI.
-- optional `extensionWillUnload()`: release things.
+- optional `extensionWillUnload()`: release things. `extensionDidEnable()` is called when the user switches it on.
+- optional `setHost(_:)`: the app hands over a `NotcholinoHost` to show popups, show your `makeWingView()` beside the closed notch, read the day's agenda (from the calendars the user ticked), know if music plays or which plugins are busy.
+- optional `receiveText(_:)` / `receiveFiles(_:)` and `isAssistant`: what the user sends from the right-click menu goes to the assistant extension (Notchy).
+- optional `askAI(...)`: an assistant answers other extensions' AI requests, so they never see a key.
 
 ## Build one
 

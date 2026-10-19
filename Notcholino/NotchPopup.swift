@@ -9,8 +9,8 @@ struct NotchPopup: Identifiable, Equatable {
     var subtitle: String?
     var tint: Color
     var seconds: Double
-    /// Notchy's own notes: moving the pointer to the notch opens Notchy's page, where the full note is
-    var opensNotchy = false
+    /// The extension that made it, when it wants moving the pointer to the notch to open that extension's page (where the full note is)
+    var opensExtension: String?
 }
 
 /// Where popups come from: the app itself (devices, power) and plugins. One shows at a time; a new one replaces it.
@@ -20,8 +20,8 @@ final class PopupCenter: ObservableObject {
     @Published private(set) var current: NotchPopup?
     private var hideTask: Task<Void, Never>?
 
-    func show(icon: String? = nil, title: String, subtitle: String? = nil, tint: Color = .white, seconds: Double = 3, opensNotchy: Bool = false) {
-        let popup = NotchPopup(icon: icon, title: title, subtitle: subtitle, tint: tint, seconds: max(1, min(seconds, 15)), opensNotchy: opensNotchy)
+    func show(icon: String? = nil, title: String, subtitle: String? = nil, tint: Color = .white, seconds: Double = 3, opensExtension: String? = nil) {
+        let popup = NotchPopup(icon: icon, title: title, subtitle: subtitle, tint: tint, seconds: max(1, min(seconds, 15)), opensExtension: opensExtension)
         DispatchQueue.main.async {
             self.hideTask?.cancel()
             self.current = popup
@@ -36,12 +36,14 @@ final class PopupCenter: ObservableObject {
     /// From a plugin: the dictionary documented in NotcholinoPluginAPI.swift
     func show(from dictionary: [String: Any]) {
         guard let title = dictionary["title"] as? String, !title.isEmpty else { return }
-        NotchyPresence.shared.reactToPlugin()
+        // A plugin showed something: extensions may react to it (Notchy glances over). Not for what an extension shows itself.
+        if dictionary["extension"] == nil { ExtensionManager.shared.broadcast("plugin", info: dictionary) }
         show(icon: dictionary["icon"] as? String,
              title: title,
              subtitle: dictionary["subtitle"] as? String,
              tint: Color(hex: dictionary["color"] as? String ?? "") ?? .white,
-             seconds: dictionary["seconds"] as? Double ?? 3)
+             seconds: dictionary["seconds"] as? Double ?? 3,
+             opensExtension: (dictionary["opensPage"] as? Bool == true) ? dictionary["extension"] as? String : nil)
     }
 
     func dismiss() {

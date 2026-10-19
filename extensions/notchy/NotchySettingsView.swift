@@ -20,18 +20,11 @@ struct NotchySettingsView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .padding(.horizontal, 20).padding(.bottom, 6)
-            .disabled(!settings.enabled)
-            Group {
-                if settings.enabled {
-                    switch tab {
-                    case .general: GeneralTab()
-                    case .ai:      AITab()
-                    case .voice:   VoiceTab()
-                    case .day:     DayTab()
-                    }
-                } else {
-                    Form { Section { Text("Turn Notchy on to set it up.").foregroundStyle(.secondary) } }.formStyle(.grouped)
-                }
+            switch tab {
+            case .general: GeneralTab()
+            case .ai:      AITab()
+            case .voice:   VoiceTab()
+            case .day:     DayTab()
             }
         }
         .navigationTitle("Notchy")
@@ -41,7 +34,7 @@ struct NotchySettingsView: View {
         HStack(spacing: 16) {
             NotchyCube(mood: settings.enabled ? .calm : .sleepy, size: 52)
             VStack(alignment: .leading, spacing: 3) {
-                Toggle("Notchy", isOn: $settings.enabled).font(.headline)
+                Text("Notchy").font(.headline)
                 Text("A small glass cube that lives in the notch. It helps with files and your day when you ask, and keeps you company without getting in the way.")
                     .font(.caption).foregroundStyle(.secondary)
             }

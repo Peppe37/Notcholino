@@ -5,12 +5,9 @@ import SwiftUI
 
 /// Notchy's page in the notch: it is here, resting. Tap it to pet it. (Files, questions and the day come in the next steps.)
 struct NotchyNotchView: View {
-    /// From the notch, which owns the music player: Notchy puts on headphones while it plays
-    var musicPlaying = false
     @ObservedObject private var presence = NotchyPresence.shared
     @ObservedObject private var settings = NotchySettings.shared
     @ObservedObject private var assistant = NotchyAssistant.shared
-    @ObservedObject private var calendar = CalendarManager.shared
     @ObservedObject private var voice = NotchyVoice.shared
     @State private var mood: NotchyMood = .calm
     @State private var gaze: CGFloat = 0
@@ -20,7 +17,7 @@ struct NotchyNotchView: View {
         HStack(spacing: 22) {
             // Three yes/no questions every few seconds, only while this page is on screen
             TimelineView(.periodic(from: .now, by: 4)) { _ in
-                NotchyCube(mood: shownMood, size: 78, gaze: gaze, accessories: NotchyAccessory.current(musicPlaying: musicPlaying))
+                NotchyCube(mood: shownMood, size: 78, gaze: gaze, accessories: NotchyAccessory.current())
             }
             .onTapGesture { pet() }
             VStack(alignment: .leading, spacing: 4) {
@@ -77,9 +74,8 @@ struct NotchyNotchView: View {
             return "Choose a provider in Settings → Notchy to ask it things."
         }
         // Worked out on the Mac, no AI involved
-        if let next = calendar.upcomingEvent, let start = next.startDate, !next.isAllDay {
-            let f = DateFormatter(); f.dateFormat = "HH:mm"
-            return "Next: \(next.title ?? "event") at \(f.string(from: start)). Right-click text or a file → Services → Send to Notchy, or plan your day."
+        if let next = NotchyBridge.shared.nextEventLine() {
+            return "Next: \(next). Right-click text or a file → Services → Send to Notchy, or plan your day."
         }
         return "Ready · text with \(p.name). Select text or a file, right-click → Services → Send to Notchy."
     }

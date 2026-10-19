@@ -81,11 +81,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         SystemNowPlayingMonitor.shared.apply()
         UpdateChecker.shared.start()
         FocusMonitor.shared.start()
-        NotchyPresence.shared.settingsChanged()
-        NotchyServices.shared.register()
+        ExtensionServices.shared.register()
         _ = ExtensionManager.shared
-        NotchyMail.shared.settingsChanged()
-        NotchyVoice.shared.apply()
         watchWindowsForDock()
         DeviceMonitor.shared.start()
 

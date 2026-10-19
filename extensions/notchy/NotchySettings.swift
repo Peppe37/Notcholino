@@ -21,8 +21,9 @@ enum NotchyLevel: Int, CaseIterable, Identifiable {
 final class NotchySettings: ObservableObject {
     static let shared = NotchySettings()
 
-    @Published var enabled: Bool { didSet { UserDefaults.standard.set(enabled, forKey: "notchyEnabled"); NotchyPresence.shared.settingsChanged(); NotchyMail.shared.settingsChanged(); NotchyVoice.shared.apply() } }
-    @Published var pageVisible: Bool { didSet { UserDefaults.standard.set(pageVisible, forKey: "notchyPageVisible") } }
+    /// Whether Notchy is running: true while the extension is installed and switched on in the app. Not saved: the app decides.
+    @Published var enabled = false { didSet { NotchyPresence.shared.settingsChanged(); NotchyMail.shared.settingsChanged(); NotchyVoice.shared.apply() } }
+    @Published var pageVisible: Bool { didSet { UserDefaults.standard.set(pageVisible, forKey: "notchyPageVisible"); NotchyBridge.shared.host?.pagesChanged() } }
     /// The city used for the weather when a question does not name one
     @Published var homeCity: String { didSet { UserDefaults.standard.set(homeCity, forKey: "notchyHomeCity") } }
     /// The language Notchy answers in; empty means "the language of what it was sent"
@@ -34,7 +35,6 @@ final class NotchySettings: ObservableObject {
 
     init() {
         let d = UserDefaults.standard
-        enabled = d.bool(forKey: "notchyEnabled")
         pageVisible = d.object(forKey: "notchyPageVisible") as? Bool ?? true
         homeCity = d.string(forKey: "notchyHomeCity") ?? ""
         replyLanguage = d.string(forKey: "notchyReplyLanguage") ?? ""
@@ -94,7 +94,7 @@ final class NotchyPresence: ObservableObject {
     static let shared = NotchyPresence()
 
     /// Shown beside the closed notch right now, and in what mood
-    @Published private(set) var peeking = false
+    @Published private(set) var peeking = false { didSet { if peeking != oldValue { NotchyBridge.shared.setWing(peeking) } } }
     @Published private(set) var mood: NotchyMood = .calm
 
     private var timer: Timer?

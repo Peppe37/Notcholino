@@ -42,4 +42,60 @@ public protocol NotcholinoExtension: NSObjectProtocol {
     /// Settings → Notchy. `completion` receives the answer, or an error message. It only works if the user switched on
     /// "Allow this extension to use Notchy's AI" for it, and the user's keys never reach the extension.
     @objc optional func setAskHandler(_ handler: @escaping (_ prompt: String, _ system: String?, _ completion: @escaping (String?, String?) -> Void) -> Void)
+
+    // MARK: Optional: fuller integration (added with Notchy, which is itself an extension)
+
+    /// Called once, right after loading, with what the app offers an extension. Keep it.
+    @objc optional func setHost(_ host: NotcholinoHost)
+
+    /// A small view drawn beside the closed notch (about 20 × 20 points) while the extension says so with
+    /// `host.setWingVisible(true)`. Return it once; it should update itself.
+    @objc optional func makeWingView() -> NSView
+
+    /// The user switched the extension on (right after loading it, or from the store). Start whatever it does on its own here.
+    @objc optional func extensionDidEnable()
+
+    /// Text the user sent to the extension (right-click → Services → Send to Notchy). Only the extension that declares itself the
+    /// assistant, see `isAssistant`, receives it.
+    @objc optional func receiveText(_ text: String)
+    /// Files the user sent to it from Finder
+    @objc optional func receiveFiles(_ urls: [URL])
+    /// Whether the extension wants its page in the notch right now (default true). Call `host.pagesChanged()` when it changes.
+    @objc optional var pageVisible: Bool { get }
+
+    /// True for an extension that wants what the user sends from the right-click menu, and that answers other extensions' AI
+    /// requests (`askAI`).
+    @objc optional var isAssistant: Bool { get }
+    /// Answer a request another extension made through the host (an assistant that holds the user's AI keys does this: the
+    /// requesting extension never sees a key).
+    @objc optional func askAI(_ prompt: String, system: String?, completion: @escaping (String?, String?) -> Void)
+
+    /// Something happened in the app: `"plugin"` when a plugin showed a popup (`info["title"]`).
+    @objc optional func hostEvent(_ name: String, info: [String: Any])
+}
+
+/// What the app offers an extension, handed over in `setHost(_:)`
+@objc(NotcholinoHost)
+public protocol NotcholinoHost: NSObjectProtocol {
+    /// Show a small popup under the closed notch (same keys as `setPopupHandler`). Add `"opensPage": true` and moving the pointer
+    /// to the notch opens this extension's page.
+    func showPopup(_ info: [String: Any])
+    /// Show or hide the extension's wing view (`makeWingView`) beside the closed notch
+    func setWingVisible(_ visible: Bool)
+    /// Hide a popup this extension is showing
+    func dismissPopup()
+    /// True if the user allowed Notcholino to read Calendar or Reminders
+    func hasCalendarAccess() -> Bool
+    /// Tell the app the extension's page was switched on or off (see `pageVisible`)
+    func pagesChanged()
+    /// What is left of today, from the calendars the user ticked in Notcholino's Calendar settings and the reminders the notch
+    /// shows. One line each; titles and times only.
+    func agendaLines() -> [String]
+    /// The next event today, like "Meeting at 15:00", or nil
+    func nextEventLine() -> String?
+    func isMusicPlaying() -> Bool
+    /// Identifiers of the plugins that are doing something right now (a Tomato timer, Espresso keeping the Mac awake)
+    func activePluginIDs() -> [String]
+    /// Open the Notcholino settings on this extension's page
+    func openSettings()
 }

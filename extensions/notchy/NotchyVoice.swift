@@ -159,7 +159,7 @@ final class NotchyVoice: ObservableObject {
         recorder?.stop()
         if let url = recorder?.url { try? FileManager.default.removeItem(at: url) }
         recorder = nil
-        PopupCenter.shared.dismiss()
+        NotchyBridge.shared.dismissPopup()
         NotchyPresence.shared.peek(mood: .calm, seconds: 0.1)
     }
 
@@ -178,9 +178,9 @@ final class NotchyVoice: ObservableObject {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized: start()
         case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .audio) { ok in DispatchQueue.main.async { if ok { PopupCenter.shared.show(icon: "mic.fill", title: "Microphone allowed", subtitle: "Use the shortcut again to talk", seconds: 4) } } }
+            AVCaptureDevice.requestAccess(for: .audio) { ok in DispatchQueue.main.async { if ok { NotchyBridge.shared.popup(icon: "mic.fill", title: "Microphone allowed", subtitle: "Use the shortcut again to talk", seconds: 4) } } }
         default:
-            PopupCenter.shared.show(icon: "mic.slash.fill", title: "Notchy can't hear you", subtitle: "Allow the microphone in System Settings → Privacy & Security", tint: .orange, seconds: 6)
+            NotchyBridge.shared.popup(icon: "mic.slash.fill", title: "Notchy can't hear you", subtitle: "Allow the microphone in System Settings → Privacy & Security", tint: .orange, seconds: 6)
         }
     }
 
@@ -194,7 +194,7 @@ final class NotchyVoice: ObservableObject {
         listening = true
         startedAt = Date()
         NotchyPresence.shared.peek(mood: .curious, seconds: 70)
-        PopupCenter.shared.show(icon: "mic.fill", title: "Listening…", subtitle: handsFree ? "Tap the key again when you are done" : "Let go when you are done", seconds: 15)
+        NotchyBridge.shared.popup(icon: "mic.fill", title: "Listening…", subtitle: handsFree ? "Tap the key again when you are done" : "Let go when you are done", seconds: 15)
         // Never listen for more than a minute, even if the keys stay down
         stopTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 60_000_000_000)
@@ -208,7 +208,7 @@ final class NotchyVoice: ObservableObject {
         listening = false
         r.stop()
         recorder = nil
-        PopupCenter.shared.dismiss()
+        NotchyBridge.shared.dismissPopup()
         guard Date().timeIntervalSince(startedAt) > 0.5 else { NotchyPresence.shared.peek(mood: .calm, seconds: 0.1); return }
         NotchyAssistant.shared.transcribeAndAsk(r.url)
     }
