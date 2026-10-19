@@ -13,9 +13,15 @@ final class NotchyAssistant: ObservableObject {
 
     private static let system = """
         You are Notchy, a small, friendly assistant that lives in the Mac's notch. Be concise: at most three short sentences, \
-        or a few very short bullets for an outline. No greeting, no preamble, no sign-off. Answer in the language of the text you \
-        are given. Plain text only, no Markdown headings.
+        or a few very short bullets for an outline. No greeting, no preamble, no sign-off. \
+        Plain text only, no Markdown headings.
         """
+
+    private static func systemPrompt() -> String {
+        let language = NotchySettings.shared.replyLanguage
+        return system + (language.isEmpty ? " Answer in the language of the text you are given."
+                                          : " Always answer in \(language), whatever the language of the text.")
+    }
 
     /// Text sent from the right-click menu, or from anywhere else
     func send(text: String, name: String? = nil) {
@@ -51,10 +57,10 @@ final class NotchyAssistant: ObservableObject {
         task?.cancel()
         state = .thinking(label)
         NotchyPresence.shared.peek(mood: .thinking, seconds: 90)
-        PopupCenter.shared.show(icon: "ellipsis.bubble", title: "Notchy is reading…", subtitle: label, seconds: 4)
+        PopupCenter.shared.show(icon: "ellipsis.bubble", title: "Notchy is reading…", subtitle: label, seconds: 4, opensNotchy: true)
         task = Task { @MainActor [weak self] in
             do {
-                let answer = try await NotchyClient.complete(prompt: prompt, system: Self.system, task: kind, image: image)
+                let answer = try await NotchyClient.complete(prompt: prompt, system: Self.systemPrompt(), task: kind, image: image)
                 guard !Task.isCancelled else { return }
                 let clean = answer.trimmingCharacters(in: .whitespacesAndNewlines)
                 self?.finish(clean.isEmpty ? .failed("It had nothing to say.") : .reply(clean))
@@ -71,10 +77,10 @@ final class NotchyAssistant: ObservableObject {
         case .reply(let text):
             NotchyPresence.shared.peek(mood: .happy, seconds: 8)
             let line = text.replacingOccurrences(of: "\n", with: " ")
-            PopupCenter.shared.show(icon: "face.smiling", title: "Notchy", subtitle: String(line.prefix(110)) + (line.count > 110 ? "…" : ""), seconds: 12)
+            PopupCenter.shared.show(icon: "face.smiling", title: "Notchy", subtitle: String(line.prefix(110)) + (line.count > 110 ? "…" : ""), seconds: 12, opensNotchy: true)
         case .failed(let why):
             NotchyPresence.shared.peek(mood: .sleepy, seconds: 4)
-            PopupCenter.shared.show(icon: "exclamationmark.bubble", title: "Notchy could not", subtitle: String(why.prefix(110)), tint: .orange, seconds: 8)
+            PopupCenter.shared.show(icon: "exclamationmark.bubble", title: "Notchy could not", subtitle: String(why.prefix(110)), tint: .orange, seconds: 8, opensNotchy: true)
         default: break
         }
     }

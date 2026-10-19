@@ -94,6 +94,11 @@ struct NotchySettingsView: View {
                     }
                     .pickerStyle(.segmented)
                     Toggle("Show its page in the notch", isOn: $settings.pageVisible)
+                    Picker("Answer in", selection: $settings.replyLanguage) {
+                        Text("The language of the text").tag("")
+                        Divider()
+                        ForEach(["Italiano", "English", "Español", "Français", "Deutsch", "Português", "Nederlands", "Polski", "Română", "Українська", "Русский", "Türkçe", "العربية", "हिन्दी", "日本語", "한국어", "中文"], id: \.self) { Text($0).tag($0) }
+                    }
                 } footer: {
                     Text(settings.level.detail)
                 }

@@ -9,6 +9,8 @@ struct NotchPopup: Identifiable, Equatable {
     var subtitle: String?
     var tint: Color
     var seconds: Double
+    /// Notchy's own notes: moving the pointer to the notch opens Notchy's page, where the full note is
+    var opensNotchy = false
 }
 
 /// Where popups come from: the app itself (devices, power) and plugins. One shows at a time; a new one replaces it.
@@ -18,8 +20,8 @@ final class PopupCenter: ObservableObject {
     @Published private(set) var current: NotchPopup?
     private var hideTask: Task<Void, Never>?
 
-    func show(icon: String? = nil, title: String, subtitle: String? = nil, tint: Color = .white, seconds: Double = 3) {
-        let popup = NotchPopup(icon: icon, title: title, subtitle: subtitle, tint: tint, seconds: max(1, min(seconds, 15)))
+    func show(icon: String? = nil, title: String, subtitle: String? = nil, tint: Color = .white, seconds: Double = 3, opensNotchy: Bool = false) {
+        let popup = NotchPopup(icon: icon, title: title, subtitle: subtitle, tint: tint, seconds: max(1, min(seconds, 15)), opensNotchy: opensNotchy)
         DispatchQueue.main.async {
             self.hideTask?.cancel()
             self.current = popup

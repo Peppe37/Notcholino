@@ -711,6 +711,12 @@ struct NotchContentView: View {
             PermissionsManager.shared.refresh()
             calMgr.refreshAccess()
             closing = false
+            // Notchy just said something under the notch: moving to it opens Notchy's page, where the whole note is
+            if popups.current?.opensNotchy == true, notchy.enabled, notchy.pageVisible, !isExpanded {
+                goingForward = false
+                activeTab = .notchy
+                popups.dismiss()
+            }
             withAnimation { isHovering = true }
         } else {
             collapseTask = Task {

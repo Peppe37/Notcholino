@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0-alpha] - 2026-10-19
+
+### Added
+- When Notchy says something under the notch (what it saw in an image, a summary, an error), moving the pointer to the notch now opens Notchy's page with the whole note, instead of the page you had open.
+- **Answer in**: pick the language Notchy replies in (Settings → Notchy), or leave it on the language of the text it was sent.
+
 ## [0.17.3-alpha] - 2026-10-19
 
 ### Fixed
