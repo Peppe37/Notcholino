@@ -120,11 +120,12 @@ final class SnapEngine {
             var hit: AXUIElement?
             let r1 = AXUIElementCopyElementAtPosition(system, Float(mouse.x), Float(primaryHeight - mouse.y), &hit)
             guard r1 == .success, let hit else { return }
-            var pid: pid_t = 0
-            AXUIElementGetPid(hit, &pid)
-            guard pid != getpid() else { return }
+            // Any window, Notcholino's own too (its Settings): only real ones, not the notch's own panels or other floating things
             guard let element = Self.window(of: hit) else { return }
             AXUIElementSetMessagingTimeout(element, 0.15)
+            var subrole: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &subrole) == .success,
+                  let sub = subrole as? String, sub == kAXStandardWindowSubrole as String || sub == kAXDialogSubrole as String else { return }
             var full: CFTypeRef?
             if AXUIElementCopyAttributeValue(element, "AXFullScreen" as CFString, &full) == .success, (full as? Bool) == true { return }
             guard let origin = Self.point(element, kAXPositionAttribute), let size = Self.size(element) else { return }

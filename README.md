@@ -254,6 +254,10 @@ No dates, just direction. Vote with 👍 or suggest more in [Discussions](https:
 - **More plugins** and an easier way to write them, and **Raycast** integration.
 - **Signed and notarized builds**, so the first launch needs no extra steps. This depends on the project getting funded, see below.
 
+## Reviews
+
+Used Notcholino? Leave a review: sign in with GitHub, give 1 to 5 stars and a few words, tied to the version you use ([write one](https://github.com/Peppe37/Notcholino/issues/new?template=review.yml)). They show on [the website](https://peppe37.github.io/Notcholino/#reviews), good or bad: only spam and abuse are removed, and the numbers are worked out in the open by [scripts/gen_reviews.py](scripts/gen_reviews.py).
+
 ## Support and contributing
 
 - **Questions and ideas:** [Discussions](https://github.com/Peppe37/Notcholino/discussions).

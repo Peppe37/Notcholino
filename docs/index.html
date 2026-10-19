@@ -157,6 +157,35 @@
   .cc-step button { width:26px; height:26px; padding:0; border:0; border-radius:50%; background:rgba(255,255,255,.12); color:#fff; font:700 14px/1 inherit; font-family:inherit; cursor:pointer; }
   .cc-graph { grid-column:1/-1; height:34px; }
   .cc-graph svg { width:100%; height:100%; display:block; }
+  /* Reviews */
+  .rev-top { display:grid; grid-template-columns: minmax(180px,1fr) minmax(220px,1.6fr) minmax(220px,1.4fr); gap:16px; margin:20px 0 8px; align-items:stretch; }
+  @media (max-width: 820px) { .rev-top { grid-template-columns: 1fr; } }
+  .rev-score { text-align:center; display:flex; flex-direction:column; justify-content:center; gap:4px; }
+  .rev-big { font-size:3.4rem; font-weight:700; letter-spacing:-.03em; line-height:1; }
+  .rev-count { color:var(--muted); font-size:.9rem; }
+  .stars { font-size:1.15rem; letter-spacing:.08em; color:var(--line); white-space:nowrap; }
+  .stars .on { color:#ff9f0a; }
+  .rev-bars { display:flex; flex-direction:column; justify-content:center; gap:7px; }
+  .rev-row { display:grid; grid-template-columns: 18px 1fr 28px; align-items:center; gap:10px; font-size:.85rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .rev-row .bar { height:8px; border-radius:4px; background:var(--line); overflow:hidden; }
+  .rev-row .bar i { display:block; height:100%; background:#ff9f0a; border-radius:4px; }
+  .rev-cta h3 { margin:0 0 6px; }
+  .rev-cta p { margin:0 0 14px; }
+  .rev-filter { display:flex; align-items:center; gap:10px; margin:22px 0 12px; font-size:.95rem; color:var(--muted); }
+  .rev-filter select { font:inherit; padding:6px 10px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--fg); }
+  .rev { background:var(--card); border-radius:16px; padding:18px 20px; margin:12px 0; }
+  .rev-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .rev-head img { width:40px; height:40px; border-radius:50%; background:var(--line); }
+  .rev-who { display:flex; flex-direction:column; line-height:1.25; }
+  .rev-who a { font-weight:600; color:var(--fg); text-decoration:none; }
+  .rev-who a:hover { text-decoration:underline; }
+  .rev-who small { color:var(--muted); }
+  .rev-meta { margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .rev-tag { font-size:.78rem; padding:2px 9px; border-radius:99px; background:var(--bg); border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+  .rev p { margin:12px 0 0; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .rev-empty { background:var(--card); border-radius:16px; padding:28px 20px; text-align:center; color:var(--muted); }
+  .rating-link { color:inherit; text-decoration:none; }
+  .rating-link .stars { font-size:1rem; }
   .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px; margin: 20px 0 12px; }
   .stat { background:var(--card); border-radius:16px; padding:18px 16px; text-align:center; }
   .stat b { display:block; font-size:1.9rem; letter-spacing:-.02em; }
@@ -205,6 +234,7 @@
     <a class="btn" id="download" href="https://github.com/Peppe37/Notcholino/releases" data-i18n="download">Download</a>
     <a class="btn sec" href="https://github.com/Peppe37/Notcholino" data-i18n="github">View on GitHub</a>
     <p class="meta" id="release-meta"></p>
+    <p class="meta" id="rating-meta" hidden></p>
     <p class="meta"><a href="#first-launch" data-i18n="helpLink">Can't open the app? See how to allow it.</a></p>
   </div>
 
@@ -308,6 +338,31 @@
       <div class="card"><h3 data-i18n="f10h">Join meetings</h3><p data-i18n="f10p">Calendar events with a Zoom, Meet or Teams link get a Join button.</p></div>
       <div class="card"><h3 data-i18n="f7h">Raycast</h3><p data-i18n="f7p">Raycast integration is in the works.</p></div>
     </div>
+  </section>
+
+  <section id="reviews">
+    <h2 data-i18n="revH">Reviews</h2>
+    <p data-i18n="revIntro">What people who use Notcholino say, in their own words. Every review is written with a GitHub account and is tied to the version it is about.</p>
+    <div class="rev-top">
+      <div class="card rev-score">
+        <div class="rev-big" id="rev-avg">–</div>
+        <div class="stars" id="rev-stars" role="img" aria-label=""></div>
+        <div class="rev-count" id="rev-count"></div>
+      </div>
+      <div class="card rev-bars" id="rev-bars"></div>
+      <div class="card rev-cta">
+        <h3 data-i18n="revCtaH">Used it? Tell others.</h3>
+        <p data-i18n="revCtaP">Sign in with GitHub, give 1 to 5 stars and a few words. It takes a minute.</p>
+        <a class="btn" id="rev-write" href="https://github.com/Peppe37/Notcholino/issues/new?template=review.yml" rel="noopener" data-i18n="revWrite">Write a review</a>
+      </div>
+    </div>
+    <div class="rev-filter" id="rev-filter" hidden>
+      <label for="rev-version" data-i18n="revVersion">Version</label>
+      <select id="rev-version"></select>
+    </div>
+    <div id="rev-list"></div>
+    <p style="text-align:center"><button type="button" class="btn sec" id="rev-more" hidden data-i18n="revMore">Show more</button></p>
+    <p class="small" data-i18n="revTrust">Every review is a public GitHub issue from a real account (at least two weeks old), one per person per version. Negative reviews stay: only spam and abuse are removed. The maintainer's own reviews are not counted.</p>
   </section>
 
   <section id="performance">
@@ -471,6 +526,13 @@
       instP2: 'Prefer building it yourself? Install <code>xcodegen</code>, run <code>xcodegen generate</code> and open <code>Notcholino.xcodeproj</code>. See the <a href="' + REPO + '#building-from-source">README</a>.',
       license: 'Licensed under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0</a>',
       discussions: 'Discussions', contributing: 'Contributing', security: 'Security',
+      revH: 'Reviews',
+      revIntro: 'What people who use Notcholino say, in their own words. Every review is written with a GitHub account and is tied to the version it is about.',
+      revCtaH: 'Used it? Tell others.', revCtaP: 'Sign in with GitHub, give 1 to 5 stars and a few words. It takes a minute.', revWrite: 'Write a review',
+      revVersion: 'Version', revAll: 'All versions', revMore: 'Show more',
+      revCount1: 'based on 1 review', revCountN: 'based on {n} reviews', revNone: 'No reviews yet. Be the first to tell what you think.', revNoneV: 'No reviews for this version yet.',
+      revOut: '{n} out of 5 stars', revAbout: 'about', revBadge: '{n} reviews',
+      revTrust: "Every review is a public GitHub issue from a real account (at least two weeks old), one per person per version. Negative reviews stay: only spam and abuse are removed. The maintainer's own reviews are not counted. The numbers are worked out in the open, <a href=\"https://github.com/Peppe37/Notcholino/blob/main/scripts/gen_reviews.py\">here</a>.",
       faqH: 'Questions',
       faqQ1: "macOS says it can't verify the app", faqA1: 'That is normal for the alpha: follow the <a href="#first-launch">first launch guide</a>. It takes four clicks, once.',
       faqQ2: 'It asks for permissions again after an update', faqA2: "Before 0.6.1 each update was signed with a different one-off signature, and macOS ties permissions to the signature. From 0.6.1 on, releases use one fixed certificate: you will be asked one last time when you update to it, and not again after that.",
@@ -554,6 +616,13 @@
       instP2: 'Preferisci compilarla tu? Installa <code>xcodegen</code>, esegui <code>xcodegen generate</code> e apri <code>Notcholino.xcodeproj</code>. Vedi il <a href="' + REPO + '#building-from-source">README</a>.',
       license: 'Licenza <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0</a>',
       discussions: 'Discussioni', contributing: 'Contribuire', security: 'Sicurezza',
+      revH: 'Recensioni',
+      revIntro: 'Cosa dicono, con parole loro, le persone che usano Notcholino. Ogni recensione è scritta con un account GitHub ed è legata alla versione di cui parla.',
+      revCtaH: 'Lo usi? Raccontalo agli altri.', revCtaP: 'Accedi con GitHub, dai da 1 a 5 stelle e poche parole. Ci vuole un minuto.', revWrite: 'Scrivi una recensione',
+      revVersion: 'Versione', revAll: 'Tutte le versioni', revMore: 'Mostra altre',
+      revCount1: 'basato su 1 recensione', revCountN: 'basato su {n} recensioni', revNone: 'Ancora nessuna recensione. Sii il primo a dire cosa ne pensi.', revNoneV: 'Ancora nessuna recensione per questa versione.',
+      revOut: '{n} stelle su 5', revAbout: 'su', revBadge: '{n} recensioni',
+      revTrust: "Ogni recensione è una issue pubblica di GitHub di un account reale (aperto da almeno due settimane), una per persona e per versione. Le recensioni negative restano: si tolgono solo spam e abusi. Le recensioni del maintainer non contano. I numeri si calcolano alla luce del sole, <a href=\"https://github.com/Peppe37/Notcholino/blob/main/scripts/gen_reviews.py\">qui</a>.",
       faqH: 'Domande',
       faqQ1: "macOS dice che non può verificare l'app", faqA1: 'È normale nell\'alpha: segui la <a href="#first-launch">guida al primo avvio</a>. Bastano quattro clic, una volta sola.',
       faqQ2: 'Dopo un aggiornamento richiede di nuovo i permessi', faqA2: "Prima della 0.6.1 ogni aggiornamento era firmato con una firma diversa, e macOS lega i permessi alla firma. Dalla 0.6.1 le release usano un solo certificato fisso: te lo chiede un'ultima volta quando aggiorni a quella versione, e poi non più.",
@@ -613,6 +682,8 @@
     document.querySelectorAll('[data-i18n]').forEach(function (el) { el.innerHTML = t(el.getAttribute('data-i18n')); });
     document.querySelectorAll('.lang button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
     renderRelease();
+    updateWriteLink();
+    renderReviews();
     renderCalendar();
     renderClock();
     if (window.__renderEspresso) window.__renderEspresso();
@@ -642,7 +713,101 @@
       var asset = (release.assets || [])[0];
       if (asset) setDownload(asset.browser_download_url);
       renderRelease();
+      updateWriteLink();
     }).catch(function () {});
+
+  /* ---------- Reviews (from reviews.json, built from GitHub issues) ---------- */
+  var reviewData = null, revVersion = '', revShown = 6;
+  var NF = function (n) { return String(Math.round(n * 10) / 10); };
+  function starString(n) {
+    var s = '';
+    for (var i = 1; i <= 5; i++) s += '<span class="' + (i <= Math.round(n) ? 'on' : '') + '">★</span>';
+    return s;
+  }
+  function updateWriteLink() {
+    var a = document.getElementById('rev-write');
+    if (!a) return;
+    // The version is filled in for the reviewer: the latest one is what a visitor has just downloaded
+    var v = release && release.tag_name ? release.tag_name.replace(/^v/, '') : '';
+    a.href = REPO + '/issues/new?template=review.yml' + (v ? '&version=' + encodeURIComponent(v) : '');
+  }
+  function cmpVersion(a, b) {
+    var pa = a.split('-')[0].split('.').map(Number), pb = b.split('-')[0].split('.').map(Number);
+    for (var i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pb[i] - pa[i];
+    return 0;
+  }
+  function renderReviews() {
+    if (!reviewData) return;
+    var all = reviewData.reviews || [];
+    var list = revVersion ? all.filter(function (r) { return r.version === revVersion; }) : all;
+    var n = list.length, sum = list.reduce(function (s, r) { return s + r.rating; }, 0), avg = n ? sum / n : 0;
+    document.getElementById('rev-avg').textContent = n ? NF(avg) : '–';
+    var st = document.getElementById('rev-stars');
+    st.innerHTML = starString(avg);
+    st.setAttribute('aria-label', n ? t('revOut').replace('{n}', NF(avg)) : '');
+    document.getElementById('rev-count').textContent = n === 0 ? '' : (n === 1 ? t('revCount1') : t('revCountN').replace('{n}', n));
+    var bars = '';
+    for (var s = 5; s >= 1; s--) {
+      var c = list.filter(function (r) { return r.rating === s; }).length;
+      bars += '<div class="rev-row"><span>' + s + '</span><div class="bar"><i style="width:' + (n ? Math.round(c / n * 100) : 0) + '%"></i></div><span>' + c + '</span></div>';
+    }
+    document.getElementById('rev-bars').innerHTML = bars;
+
+    // The version filter, with the versions that have reviews, newest first
+    var sel = document.getElementById('rev-version'), versions = Object.keys(reviewData.byVersion || {}).sort(cmpVersion);
+    document.getElementById('rev-filter').hidden = versions.length < 2;
+    if (sel.options.length !== versions.length + 1 || sel.dataset.lang !== lang) {
+      sel.innerHTML = '';
+      var o = document.createElement('option'); o.value = ''; o.textContent = t('revAll'); sel.appendChild(o);
+      versions.forEach(function (v) {
+        var op = document.createElement('option'); op.value = v;
+        op.textContent = v + ' (' + reviewData.byVersion[v].count + ')'; sel.appendChild(op);
+      });
+      sel.dataset.lang = lang;
+    }
+    sel.value = revVersion;
+
+    var box = document.getElementById('rev-list');
+    box.textContent = '';
+    if (!n) {
+      var empty = document.createElement('div'); empty.className = 'rev-empty';
+      empty.textContent = all.length ? t('revNoneV') : t('revNone');
+      box.appendChild(empty);
+    }
+    list.slice(0, revShown).forEach(function (r) {
+      // Everything from a review goes in as text, never as HTML
+      var card = document.createElement('article'); card.className = 'rev';
+      var head = document.createElement('div'); head.className = 'rev-head';
+      var img = document.createElement('img'); img.src = 'https://github.com/' + encodeURIComponent(r.user) + '.png?size=80'; img.alt = ''; img.width = 40; img.height = 40; img.loading = 'lazy';
+      var who = document.createElement('div'); who.className = 'rev-who';
+      var a = document.createElement('a'); a.href = 'https://github.com/' + encodeURIComponent(r.user); a.textContent = r.user; a.rel = 'noopener';
+      var small = document.createElement('small');
+      try { small.textContent = new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(r.date)); } catch (e) { small.textContent = r.date.slice(0, 10); }
+      who.appendChild(a); who.appendChild(small);
+      var meta = document.createElement('div'); meta.className = 'rev-meta';
+      var stars = document.createElement('span'); stars.className = 'stars'; stars.innerHTML = starString(r.rating); stars.setAttribute('role', 'img'); stars.setAttribute('aria-label', t('revOut').replace('{n}', r.rating));
+      var ver = document.createElement('a'); ver.className = 'rev-tag'; ver.textContent = 'v' + r.version; ver.href = r.url; ver.rel = 'noopener';
+      meta.appendChild(stars); meta.appendChild(ver);
+      if (r.item) { var it = document.createElement('span'); it.className = 'rev-tag'; it.textContent = t('revAbout') + ' ' + r.item; meta.appendChild(it); }
+      head.appendChild(img); head.appendChild(who); head.appendChild(meta);
+      var p = document.createElement('p'); p.textContent = r.text;
+      card.appendChild(head); card.appendChild(p); box.appendChild(card);
+    });
+    document.getElementById('rev-more').hidden = list.length <= revShown;
+
+    // A small rating under the download button, only once there are reviews
+    var badge = document.getElementById('rating-meta');
+    if (reviewData.count) {
+      badge.hidden = false;
+      badge.innerHTML = '<a class="rating-link" href="#reviews"><span class="stars">' + starString(reviewData.average) + '</span> ' + NF(reviewData.average) + ' · ' + t('revBadge').replace('{n}', reviewData.count) + '</a>';
+    }
+  }
+  fetch('reviews.json', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+    .then(function (d) { reviewData = d; renderReviews(); })
+    .catch(function () { reviewData = { count: 0, average: 0, reviews: [], byVersion: {} }; renderReviews(); });
+  document.getElementById('rev-version').addEventListener('change', function (e) { revVersion = e.target.value; revShown = 6; renderReviews(); });
+  document.getElementById('rev-more').addEventListener('click', function () { revShown += 6; renderReviews(); });
 
   /* ---------- Calendar (viewer's current day) ---------- */
   function renderCalendar() {

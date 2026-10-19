@@ -327,6 +327,9 @@ struct NotchContentView: View {
     @State private var closing      = false
     @State private var activeTab: NotchTab = .music
     @State private var savedTab: NotchTab?
+    /// After an extension closes the notch (Snap, once the window is placed) the pointer is still over it: for a moment it must not
+    /// open again on its own just because of that
+    @State private var hoverBlockedUntil = Date.distantPast
     @State private var goingForward = true
     @State private var hoveredDot: NotchTab?
     @State private var scrollAcc: CGFloat = 0
@@ -591,7 +594,14 @@ struct NotchContentView: View {
             .onChange(of: forcedOpen) { open in
                 // Open on the extension's page, and go back to the page that was showing when it closes
                 if open { savedTab = activeTab; goingForward = false; activeTab = .extensions }
-                else if activeTab == .extensions, let back = savedTab { activeTab = back }
+                else {
+                    if activeTab == .extensions, let back = savedTab { activeTab = back }
+                    // Done: close, and stay closed even though the pointer is still on the notch
+                    hoverBlockedUntil = Date().addingTimeInterval(1.0)
+                    collapseTask?.cancel()
+                    closing = false
+                    withAnimation { isHovering = false }
+                }
                 publishLayout()
             }
             .onChange(of: shelf.dragActive) { dragging in
@@ -733,6 +743,7 @@ struct NotchContentView: View {
     }
 
     private func setHovering(_ hovering: Bool) {
+        if hovering, Date() < hoverBlockedUntil { return }
         collapseTask?.cancel()
         if hovering {
             // Permissions may have been granted in System Settings meanwhile

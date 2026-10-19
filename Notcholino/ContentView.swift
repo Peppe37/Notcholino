@@ -672,6 +672,9 @@ struct AboutView: View {
             Section {
                 Link("GitHub Repository",
                      destination: URL(string: "https://github.com/Peppe37/Notcholino")!)
+                // Opens the review form on GitHub with the version of this app already filled in
+                Link("Write a review of this version",
+                     destination: URL(string: "https://github.com/Peppe37/Notcholino/issues/new?template=review.yml&version=\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")")!)
             }
         }
         .formStyle(.grouped)

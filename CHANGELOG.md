@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.2-alpha] - 2026-10-19
+
+### Added
+- **Reviews on the website**: a Reviews section with the average, how the stars are spread, a filter by version and each review with its author, version and date. Reviews are written with a GitHub account through a form (1 to 5 stars, the version you use, a few words), so they are real people and tied to a version; **Settings → About → Write a review of this version** opens the form with your version filled in. One review per person per version; accounts must be two weeks old; nothing is removed for being negative, only spam and abuse; the maintainer's own reviews do not count. The site is rebuilt whenever a review is written, edited or hidden.
+
+### Fixed
+- After Snap places a window the notch closes and stays closed, instead of opening on its own because the pointer is still over it.
+- Settings is one window: asking for it again brings the existing one to the front instead of making another, and Notcholino becomes an ordinary app (Dock, Cmd-Tab) before it is activated, so it comes first in the switcher.
+- Snap can place Notcholino's own Settings window like any other window (Snap 0.1.1).
+
 ## [0.27.1-alpha] - 2026-10-19
 
 ### Fixed

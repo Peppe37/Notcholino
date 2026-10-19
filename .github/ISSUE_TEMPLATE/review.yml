@@ -1,0 +1,52 @@
+name: Write a review
+description: Rate Notcholino from 1 to 5 stars. It is public, with your GitHub name, and shows on the website.
+title: "Review: "
+labels: ["review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking a minute. Your review is **public**: it shows on [the website](https://peppe37.github.io/Notcholino/#reviews) with your GitHub name and picture, next to the version you used.
+
+        Honest is best, good or bad: nothing is removed for being negative, only spam and abuse. For a bug, please use [Bug report](https://github.com/Peppe37/Notcholino/issues/new?template=bug_report.yml) instead, so it gets fixed.
+  - type: dropdown
+    id: rating
+    attributes:
+      label: Rating
+      options:
+        - "★★★★★ 5 – Love it"
+        - "★★★★☆ 4 – Good"
+        - "★★★☆☆ 3 – OK"
+        - "★★☆☆☆ 2 – Poor"
+        - "★☆☆☆☆ 1 – Bad"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version you use
+      description: Settings → About shows it. It is filled in when you come from the app or from the website.
+      placeholder: "0.27.1-alpha"
+    validations:
+      required: true
+  - type: input
+    id: item
+    attributes:
+      label: A plugin or an extension? (optional)
+      description: If your review is about one in particular, say which (Notchy, Snap, Tomato…).
+  - type: textarea
+    id: review
+    attributes:
+      label: Your review
+      description: What do you use it for, what do you like, what is missing? A few sentences are plenty.
+    validations:
+      required: true
+  - type: checkboxes
+    id: honest
+    attributes:
+      label: Before you send
+      options:
+        - label: I use Notcholino and this is my own honest opinion.
+          required: true
+        - label: I understand the review is public and shows my GitHub name.
+          required: true

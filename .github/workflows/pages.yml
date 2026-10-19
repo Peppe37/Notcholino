@@ -3,7 +3,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main]
-    paths: [docs/**, plugins/**/plugin.json, plugins/**/media/**, plugins/**/CHANGELOG.md, scripts/gen_plugins_manifest.py, .github/workflows/pages.yml]
+    paths: [docs/**, plugins/**/plugin.json, plugins/**/media/**, plugins/**/CHANGELOG.md, scripts/gen_plugins_manifest.py, scripts/gen_reviews.py, scripts/store_items.py, .github/ISSUE_TEMPLATE/review.yml, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
@@ -27,6 +27,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/gen_plugins_manifest.py
+      - name: Generate the reviews
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/gen_reviews.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -41,12 +41,36 @@ struct MenuBarContent: View {
     }
 }
 
+/// Notcholino lives in the menu bar, but while a normal window is open it is an ordinary app: in the Dock and in Cmd-Tab, where it
+/// must come first as the app you just opened. For that it has to become an ordinary app BEFORE it is activated (activated as an
+/// accessory app and then promoted, it lands last in the switcher).
+enum DockPresence {
+    static func becomeOrdinary() {
+        if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
+        NSApp.activate(ignoringOtherApps: true)
+        // Once more on the next turn of the run loop, when the system has put the app in the switcher
+        DispatchQueue.main.async { NSApp.activate(ignoringOtherApps: true) }
+    }
+}
+
+extension DockPresence {
+    /// Settings is one window: asking again brings the one that exists to the front (a WindowGroup would make a new one each time,
+    /// and the stack of windows behaves oddly in Cmd-Tab and to the window tools)
+    static func showSettings(_ openWindow: OpenWindowAction) {
+        becomeOrdinary()
+        if let existing = NSApp.windows.first(where: { $0.styleMask.contains(.titled) && !($0 is NSPanel) && $0.level == .normal }) {
+            existing.makeKeyAndOrderFront(nil)
+        } else {
+            openWindow(id: "settings")
+        }
+    }
+}
+
 struct OpenSettingsButton: View {
     @Environment(\.openWindow) var openWindow
     var body: some View {
         Button("Preferences...") {
-            openWindow(id: "settings")
-            NSApp.activate(ignoringOtherApps: true)
+            DockPresence.showSettings(openWindow)
         }
         .keyboardShortcut(",", modifiers: .command)
     }
@@ -62,8 +86,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let center = NotificationCenter.default
         center.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
             guard let w = note.object as? NSWindow, isRealWindow(w), NSApp.activationPolicy() != .regular else { return }
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
+            DockPresence.becomeOrdinary()
         }
         center.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { note in
             guard let closing = note.object as? NSWindow, isRealWindow(closing) else { return }

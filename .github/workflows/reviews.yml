@@ -1,0 +1,25 @@
+name: Reviews
+
+# The reviews on the website come from issues made with the "Write a review" form. When one is opened, edited, closed or hidden,
+# and once a day (an account becomes old enough to count after two weeks), the site is rebuilt so the reviews are up to date.
+on:
+  issues:
+    types: [opened, edited, closed, reopened, labeled, unlabeled, deleted]
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    # Only for review issues. The title is used in this condition only, never in a command.
+    if: github.event_name != 'issues' || startsWith(github.event.issue.title, 'Review:') || contains(join(github.event.issue.labels.*.name, ','), 'review')
+    steps:
+      - name: Rebuild the site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main

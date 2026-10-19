@@ -68,8 +68,9 @@ final class ExtensionManager: ObservableObject {
         developerMode = d.bool(forKey: "extensionsDeveloperMode")
         enabledIDs = Set(d.stringArray(forKey: "extensionsEnabled") ?? [])
         aiAllowedIDs = Set(d.stringArray(forKey: "extensionsAIAllowed") ?? [])
-        directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("Notcholino/Extensions")
+        // NOTCHOLINO_EXTENSIONS_DIR points developer mode at another folder, to try an extension without touching the ones installed
+        directory = ProcessInfo.processInfo.environment["NOTCHOLINO_EXTENSIONS_DIR"].map { URL(fileURLWithPath: $0) }
+            ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("Notcholino/Extensions")
         storeDirectory = directory.appendingPathComponent("Store")
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: storeDirectory, withIntermediateDirectories: true)
