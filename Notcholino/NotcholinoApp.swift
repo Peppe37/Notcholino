@@ -22,7 +22,8 @@ struct MenuBarContent: View {
 
     var body: some View {
         if let release = updates.available {
-            Button("Update available: \(release.version)…") { NSWorkspace.shared.open(release.url) }
+            Button("Update to \(release.version) and restart…") { AppUpdater.shared.install(release) }
+            Button("What's new in \(release.version)") { NSWorkspace.shared.open(release.url) }
             Divider()
         }
         if !pluginStore.updates.isEmpty {

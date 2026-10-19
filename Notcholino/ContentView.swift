@@ -630,6 +630,7 @@ struct LicenseView: View {
 
 struct AboutView: View {
     @ObservedObject private var updates = UpdateChecker.shared
+    @ObservedObject private var installer = AppUpdater.shared
     @AppStorage("updateCheckEnabled") private var checkForUpdates = true
 
     private static var versionString: String {
@@ -649,7 +650,14 @@ struct AboutView: View {
             Section {
                 if let release = updates.available {
                     LabeledContent("Update") {
-                        Link("Version \(release.version) is available", destination: release.url)
+                        HStack {
+                            Link("Version \(release.version) is available", destination: release.url)
+                            Button(installer.status ?? "Update and restart") { installer.install(release) }
+                                .disabled(installer.isWorking)
+                        }
+                    }
+                    if let failure = installer.failure {
+                        Text(failure).font(.caption).foregroundStyle(.orange)
                     }
                 } else if checkForUpdates {
                     LabeledContent("Update", value: updates.lastChecked == nil ? "Not checked yet" : "You have the latest version")
@@ -658,7 +666,7 @@ struct AboutView: View {
                 Button(updates.isChecking ? "Checking…" : "Check now") { Task { await updates.check() } }
                     .disabled(updates.isChecking)
             } footer: {
-                Text("Once a day, Notcholino asks GitHub for the list of releases (a single small request) and tells you when there is a newer one. It never downloads or installs anything by itself.")
+                Text("Once a day, Notcholino asks GitHub for the list of releases (a single small request) and tells you when there is a newer one. It never downloads or installs anything by itself: Update and restart does it when you press it, keeping your permissions.")
             }
             Section {
                 Link("GitHub Repository",

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0-alpha] - 2026-10-19
+
+### Added
+- **Update and restart**: when a new version is out, one click in Settings → About (or in the menu bar) downloads it, checks that it is signed with the same identity as the running app, replaces the app and opens it again. No disk image to open, nothing to drag, no "allow the app" step, and macOS keeps your permissions. If the new version were signed differently, or the app is in a folder you can't write to, it refuses and points you to the release page instead.
+
 ## [0.18.0-alpha] - 2026-10-19
 
 ### Added
