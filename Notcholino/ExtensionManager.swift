@@ -307,6 +307,12 @@ final class ExtensionHost: NSObject, NotcholinoHost {
     }
 }
 
+extension NotcholinoExtension {
+    /// Only an extension that can ask the AI for something (it handed itself the ask handler) has an AI permission to give. Snap never
+    /// does, so it has no such switch; the assistant itself (Notchy) holds the keys and has none either.
+    var asksForAI: Bool { responds(to: Selector(("setAskHandler:"))) && !(isAssistant ?? false) }
+}
+
 /// A container that has no size of its own: whatever an extension's view would like to measure, the container takes the room SwiftUI
 /// gives it. (An extension's settings page can be taller than the window; letting its size through made the whole Settings window
 /// lay out taller than the screen and scroll its sidebar out of place.)
@@ -416,10 +422,12 @@ struct DeveloperExtensionsView: View {
                                 Text("v\(ext.extensionVersion) · \(ext.extensionAuthor)").font(.caption).foregroundStyle(.secondary)
                             }
                             Text(ext.extensionDescription).font(.callout).foregroundStyle(.secondary)
+                            if ext.asksForAI {
                             Toggle("Allow it to use Notchy's AI (never sees your keys)", isOn: Binding(
                                 get: { manager.isAIAllowed(ext.extensionIdentifier) },
                                 set: { manager.setAIAllowed($0, ext.extensionIdentifier) }))
                                 .font(.caption)
+                            }
                             if ext.responds(to: Selector(("makeSettingsView"))) {
                                 Button("Settings") { settingsFor = ext }.controlSize(.small)
                             }
@@ -463,7 +471,7 @@ struct ExtensionManageView: View {
         if let ext = manager.loaded.first(where: { $0.extensionIdentifier == id }) {
             VStack(alignment: .leading, spacing: 8) {
                 Toggle("On (its page and what it does on its own)", isOn: Binding(get: { manager.isEnabled(id) }, set: { manager.setEnabled($0, id) }))
-                if !(ext.isAssistant ?? false) {
+                if ext.asksForAI {
                     Toggle("Allow it to use the AI Notchy is set up with (it never sees your keys)", isOn: Binding(get: { manager.isAIAllowed(id) }, set: { manager.setAIAllowed($0, id) }))
                 }
                 HStack {
@@ -562,7 +570,7 @@ private struct ExtensionDetail: View {
             .padding(20)
 
             HStack(spacing: 16) {
-                if !(ext.isAssistant ?? false) {
+                if ext.asksForAI {
                     Toggle("Allow it to use Notchy's AI (it never sees your keys)", isOn: Binding(get: { manager.isAIAllowed(id) }, set: { manager.setAIAllowed($0, id) }))
                         .font(.callout)
                 }

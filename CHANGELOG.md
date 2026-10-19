@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.5-alpha] - 2026-10-19
+
+### Changed
+- The switch "Allow it to use Notchy's AI" now only appears for an extension that can actually ask the AI for something. Snap never does, so it no longer shows a switch that did nothing.
+
 ## [0.27.4-alpha] - 2026-10-19
 
 ### Fixed
