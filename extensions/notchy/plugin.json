@@ -7,7 +7,7 @@
   "description": "A small glass cube in the notch: summaries, your day, the weather, the screen, email alerts and voice. You bring your own AI key.",
   "author": "Giuseppe",
   "icon": "face.smiling.inverse",
-  "version": "0.1.0-alpha",
+  "version": "0.1.1-alpha",
   "apiVersion": 1,
   "minAppVersion": "0.26.0",
   "category": "AI",

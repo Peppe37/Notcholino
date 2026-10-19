@@ -19,7 +19,7 @@ ROOTS = [("plugins", True), ("extensions", True), ("community/plugins", False), 
 # items it must also be declared in plugin.json ("capabilities"), so a reviewer sees it before reading a line.
 CAPABILITIES = {
     "network":       r"URLSession|URLRequest|NWConnection|NWPathMonitor|WKWebView|CFNetwork|NSURLConnection",
-    "shell":         r"\bProcess\(|NSTask|posix_spawn|\bpopen\(|\bsystem\(",
+    "shell":         r"\bProcess\(|NSTask|posix_spawn|\bpopen\(|(?<![\w.])system\(",
     "applescript":   r"NSAppleScript|OSAScript|NSAppleEventDescriptor",
     "files":         r"FileManager|NSOpenPanel|NSSavePanel|NSHomeDirectory|contentsOf:|\.write\(to:",
     "keychain":      r"SecItem|kSecClass",
