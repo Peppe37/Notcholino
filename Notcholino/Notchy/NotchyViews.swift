@@ -125,6 +125,8 @@ struct NotchySettingsView: View {
                 taskSection(task)
             }
 
+            if settings.enabled { MailSection() }
+
             Section {
                 ForEach(NotchyProvider.all.filter(\.needsKey)) { provider in
                     KeyRow(provider: provider, saved: savedKeys.contains(provider.id)) { await refreshKeys() }
@@ -303,6 +305,35 @@ private struct TestRow: View {
             if let result {
                 Text(result).font(.caption).foregroundStyle(good ? Color.green : Color.orange).lineLimit(3)
             }
+        }
+    }
+}
+
+/// Important senders: Notchy tells you when Mail receives something from them
+private struct MailSection: View {
+    @ObservedObject private var mail = NotchyMail.shared
+
+    var body: some View {
+        Section {
+            Toggle("Tell me about important emails", isOn: $mail.enabled)
+            if mail.enabled {
+                TextEditor(text: $mail.senders)
+                    .font(.body)
+                    .frame(height: 70)
+                    .overlay(alignment: .topLeading) {
+                        if mail.senders.isEmpty {
+                            Text("One sender per line: an address, or part of a name").foregroundStyle(.tertiary).padding(.top, 8).padding(.leading, 5).allowsHitTesting(false)
+                        }
+                    }
+                HStack {
+                    Button("Check now") { mail.test() }
+                    if let result = mail.testResult { Text(result).font(.caption).foregroundStyle(.secondary).lineLimit(3) }
+                }
+            }
+        } header: {
+            Text("Email")
+        } footer: {
+            Text("Works with the accounts in Mail (Gmail, iCloud, Microsoft). Notchy looks every few minutes, only while Mail is open and Notchy is not Silent, and only compares the sender with your list: no email is sent anywhere.")
         }
     }
 }

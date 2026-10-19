@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0-alpha] - 2026-10-19
+
+### Added
+- **Important emails**: in Settings → Notchy → Email, list the senders that matter (an address or part of a name). Notchy looks in Mail.app, which already holds your Gmail, iCloud and Microsoft accounts, every few minutes, only while Mail is open and Notchy is not Silent, and tells you when something unread arrives from one of them. It only compares the sender with your list on the Mac: no email is sent anywhere, and no AI is used. A **Check now** button shows what it can see. macOS asks once to let Notcholino control Mail.
+- Notchy now glances over when a plugin shows something (a Tomato timer ending, a device connecting), unless it is Silent.
+
 ## [0.20.0-alpha] - 2026-10-19
 
 ### Added

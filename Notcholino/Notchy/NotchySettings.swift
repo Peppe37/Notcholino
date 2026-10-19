@@ -21,11 +21,11 @@ enum NotchyLevel: Int, CaseIterable, Identifiable {
 final class NotchySettings: ObservableObject {
     static let shared = NotchySettings()
 
-    @Published var enabled: Bool { didSet { UserDefaults.standard.set(enabled, forKey: "notchyEnabled"); NotchyPresence.shared.settingsChanged() } }
+    @Published var enabled: Bool { didSet { UserDefaults.standard.set(enabled, forKey: "notchyEnabled"); NotchyPresence.shared.settingsChanged(); NotchyMail.shared.settingsChanged() } }
     @Published var pageVisible: Bool { didSet { UserDefaults.standard.set(pageVisible, forKey: "notchyPageVisible") } }
     /// The language Notchy answers in; empty means "the language of what it was sent"
     @Published var replyLanguage: String { didSet { UserDefaults.standard.set(replyLanguage, forKey: "notchyReplyLanguage") } }
-    @Published var level: NotchyLevel { didSet { UserDefaults.standard.set(level.rawValue, forKey: "notchyLevel"); NotchyPresence.shared.settingsChanged() } }
+    @Published var level: NotchyLevel { didSet { UserDefaults.standard.set(level.rawValue, forKey: "notchyLevel"); NotchyPresence.shared.settingsChanged(); NotchyMail.shared.settingsChanged() } }
     @Published private(set) var choices: [String: String]      // task -> provider id
     @Published private(set) var models: [String: String]       // "provider/task" -> model
     @Published private(set) var urls: [String: String]         // provider -> base URL
@@ -140,6 +140,15 @@ final class NotchyPresence: ObservableObject {
         } else if Date() >= nextPeek {
             scheduleNextPeek()
             peek(mood: [.curious, .calm, .happy].randomElement() ?? .calm, seconds: 4)
+        }
+    }
+
+    /// A plugin showed something (a timer ended, a device connected): Notchy glances over, if it is allowed to be around
+    func reactToPlugin() {
+        DispatchQueue.main.async {
+            let s = NotchySettings.shared
+            guard s.enabled, s.level != .silent, !self.peeking else { return }
+            self.peek(mood: .happy, seconds: 4)
         }
     }
 

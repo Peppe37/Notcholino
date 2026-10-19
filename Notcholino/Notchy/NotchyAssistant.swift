@@ -119,6 +119,14 @@ final class NotchyAssistant: ObservableObject {
         }
     }
 
+    /// Something Notchy noticed by itself (an email from someone on your list): shown like an answer, without asking any AI
+    func note(_ text: String, title: String) {
+        guard NotchySettings.shared.enabled else { return }
+        state = .reply(text)
+        NotchyPresence.shared.peek(mood: .curious, seconds: 8)
+        PopupCenter.shared.show(icon: "envelope.fill", title: title, subtitle: String(text.prefix(110)), seconds: 10, opensNotchy: true)
+    }
+
     func clear() { task?.cancel(); state = .idle; NotchyPresence.shared.peek(mood: .calm, seconds: 0.1) }
 
     // MARK: Reading files

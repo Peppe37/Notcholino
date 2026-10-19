@@ -36,6 +36,7 @@ final class PopupCenter: ObservableObject {
     /// From a plugin: the dictionary documented in NotcholinoPluginAPI.swift
     func show(from dictionary: [String: Any]) {
         guard let title = dictionary["title"] as? String, !title.isEmpty else { return }
+        NotchyPresence.shared.reactToPlugin()
         show(icon: dictionary["icon"] as? String,
              title: title,
              subtitle: dictionary["subtitle"] as? String,
