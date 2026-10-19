@@ -54,6 +54,26 @@ struct OpenSettingsButton: View {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var notchControllers: [NotchWindowController] = []
 
+    /// The app lives in the menu bar and the notch, but while a normal window (Settings) is open it also appears in the Dock and
+    /// in Cmd-Tab, so you can switch back to it. It goes back to being invisible when the last window closes.
+    private func watchWindowsForDock() {
+        func isRealWindow(_ w: NSWindow) -> Bool { w.styleMask.contains(.titled) && !(w is NSPanel) }
+        let center = NotificationCenter.default
+        center.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
+            guard let w = note.object as? NSWindow, isRealWindow(w), NSApp.activationPolicy() != .regular else { return }
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+        center.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { note in
+            guard let closing = note.object as? NSWindow, isRealWindow(closing) else { return }
+            DispatchQueue.main.async {
+                if !NSApp.windows.contains(where: { $0 !== closing && $0.isVisible && isRealWindow($0) }) {
+                    NSApp.setActivationPolicy(.accessory)
+                }
+            }
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupNotches()
         catchTerminationSignals()
@@ -62,6 +82,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         FocusMonitor.shared.start()
         NotchyPresence.shared.settingsChanged()
         NotchyServices.shared.register()
+        watchWindowsForDock()
         DeviceMonitor.shared.start()
 
         NotificationCenter.default.addObserver(self, selector: #selector(setupNotches), name: NSApplication.didChangeScreenParametersNotification, object: nil)

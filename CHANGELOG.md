@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1-alpha] - 2026-10-19
+
+### Fixed
+- While Settings (or any normal window) is open, Notcholino now shows in the Dock and in Cmd-Tab, so you can switch back to it. It disappears again when the last window closes.
+
 ## [0.17.0-alpha] - 2026-10-19
 
 ### Added
