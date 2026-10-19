@@ -14,7 +14,8 @@ final class NotchyAssistant: ObservableObject {
 
     private static let system = """
         You are Notchy, a small, friendly assistant that lives in the Mac's notch. Be concise: at most three short sentences, \
-        or a few very short bullets for an outline. No greeting, no preamble, no sign-off. \
+        or a few very short bullets for an outline. No greeting, no preamble, no sign-off. When the message carries facts you were \
+        given (the time, the weather, the agenda), use them and never say you cannot access them. \
         Plain text only, no Markdown headings.
         """
 
@@ -30,7 +31,7 @@ final class NotchyAssistant: ObservableObject {
         guard !trimmed.isEmpty else { return }
         let isQuestion = trimmed.count < 400 && trimmed.hasSuffix("?")
         let prompt = isQuestion ? trimmed : "Summarize this in a few short lines. If it is a list or a plan, give the outline.\n\n\(trimmed.prefix(14_000))"
-        run(label: name ?? "text", prompt: prompt, image: nil)
+        run(label: name ?? "text", prompt: prompt, image: nil, tools: isQuestion ? trimmed : nil)
     }
 
     /// Files sent from the right-click menu in Finder
@@ -98,7 +99,7 @@ final class NotchyAssistant: ObservableObject {
             let lines = Self.agendaLines()
             prompt += lines.isEmpty ? "\n\nNothing is left on my calendar today." : "\n\nWhat is left of my day:\n\(lines.joined(separator: "\n"))"
         }
-        run(label: "“\(spoken.prefix(40))”", prompt: prompt, image: nil)
+        run(label: "“\(spoken.prefix(40))”", prompt: prompt, image: nil, tools: spoken)
     }
 
     /// "Look at the screen": the text on the screen is read on the Mac; a picture is sent only if there is almost no text
@@ -148,7 +149,7 @@ final class NotchyAssistant: ObservableObject {
         run(label: "your day", prompt: prompt, image: nil)
     }
 
-    private func run(label: String, prompt: String, image: Data?, task kind: NotchyTask = .text) {
+    private func run(label: String, prompt: String, image: Data?, task kind: NotchyTask = .text, tools: String? = nil) {
         guard NotchySettings.shared.enabled else {
             PopupCenter.shared.show(icon: "face.smiling", title: "Notchy is off", subtitle: "Turn it on in Settings → Notchy", seconds: 4)
             return
@@ -159,7 +160,10 @@ final class NotchyAssistant: ObservableObject {
         PopupCenter.shared.show(icon: "ellipsis.bubble", title: "Notchy is reading…", subtitle: label, seconds: 4, opensNotchy: true)
         task = Task { @MainActor [weak self] in
             do {
-                let answer = try await NotchyClient.complete(prompt: prompt, system: Self.systemPrompt(), task: kind, image: image)
+                var full = prompt
+                // Before answering a question, find out what it needs: the time, and the weather if that is the subject
+                if let tools { full += "\n\n" + (await NotchyTools.context(for: tools)) }
+                let answer = try await NotchyClient.complete(prompt: full, system: Self.systemPrompt(), task: kind, image: image)
                 guard !Task.isCancelled else { return }
                 let clean = answer.trimmingCharacters(in: .whitespacesAndNewlines)
                 self?.finish(clean.isEmpty ? .failed("It had nothing to say.") : .reply(clean))

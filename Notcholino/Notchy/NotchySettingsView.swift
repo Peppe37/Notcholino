@@ -187,6 +187,7 @@ private struct VoiceTab: View {
 
 private struct DayTab: View {
     @ObservedObject private var mail = NotchyMail.shared
+    @ObservedObject private var settings = NotchySettings.shared
     @State private var draft = ""
 
     var body: some View {
@@ -194,7 +195,10 @@ private struct DayTab: View {
             Section {
                 Text("Plan my day and your spoken questions about the day use only the calendars ticked in Settings → Calendar (not the ones shown in Calendar.app), plus the reminders the notch shows. Only titles and times are sent: never places, notes or people.")
                     .font(.callout).foregroundStyle(.secondary)
-            } header: { Text("Your day") }
+                TextField("My city", text: $settings.homeCity, prompt: Text("For the weather when you do not say where"))
+            } header: { Text("Your day") } footer: {
+                Text("Ask Notchy about the weather (“che tempo fa a Roma domani?”) and it looks it up on Open-Meteo, a free service with no account. Only the name of the place is sent.")
+            }
 
             Section {
                 Toggle("Tell me about important emails", isOn: $mail.enabled)

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0-alpha] - 2026-10-19
+
+### Added
+- **Notchy knows the time and the weather.** Before it answers a question it now finds out what it needs: the date and time, and, if you ask about the weather ("che tempo fa a Palo del Colle domani?", "will it rain in London tonight?"), the forecast for that place from Open-Meteo, a free service with no account and no key. The place is picked out of your question by plain rules, no AI call is spent on it, and only the name of the place leaves the Mac. If you do not say where, it uses **My city** (Settings → Notchy → Day & email).
+
 ## [0.24.0-alpha] - 2026-10-19
 
 ### Added

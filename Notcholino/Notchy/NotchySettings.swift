@@ -23,6 +23,8 @@ final class NotchySettings: ObservableObject {
 
     @Published var enabled: Bool { didSet { UserDefaults.standard.set(enabled, forKey: "notchyEnabled"); NotchyPresence.shared.settingsChanged(); NotchyMail.shared.settingsChanged(); NotchyVoice.shared.apply() } }
     @Published var pageVisible: Bool { didSet { UserDefaults.standard.set(pageVisible, forKey: "notchyPageVisible") } }
+    /// The city used for the weather when a question does not name one
+    @Published var homeCity: String { didSet { UserDefaults.standard.set(homeCity, forKey: "notchyHomeCity") } }
     /// The language Notchy answers in; empty means "the language of what it was sent"
     @Published var replyLanguage: String { didSet { UserDefaults.standard.set(replyLanguage, forKey: "notchyReplyLanguage") } }
     @Published var level: NotchyLevel { didSet { UserDefaults.standard.set(level.rawValue, forKey: "notchyLevel"); NotchyPresence.shared.settingsChanged(); NotchyMail.shared.settingsChanged() } }
@@ -34,6 +36,7 @@ final class NotchySettings: ObservableObject {
         let d = UserDefaults.standard
         enabled = d.bool(forKey: "notchyEnabled")
         pageVisible = d.object(forKey: "notchyPageVisible") as? Bool ?? true
+        homeCity = d.string(forKey: "notchyHomeCity") ?? ""
         replyLanguage = d.string(forKey: "notchyReplyLanguage") ?? ""
         level = NotchyLevel(rawValue: d.object(forKey: "notchyLevel") as? Int ?? 1) ?? .normal
         choices = d.dictionary(forKey: "notchyChoices") as? [String: String] ?? [:]
