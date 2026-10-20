@@ -9,8 +9,23 @@
 //   end: show | hide        the end card
 //   quit
 //
+// The stage covers the whole screen, Terminal included, so it always has two ways out that need no window to click on:
+//   - press ⌃⌥⌘Q: it quits, stops the demo app and the demo windows, and starts your own Notcholino again;
+//   - it does the same by itself after STAGE_MAX_SECONDS (600 by default).
+//
 // Build and run:  swiftc -o /tmp/stage scripts/demo/stage/main.swift && /tmp/stage <image-for-the-thumbnail>
 import AppKit
+import Carbon.HIToolbox
+
+/// Everything the demo started goes away and the user's own Notcholino comes back
+func leaveTheStage() {
+    for (tool, args) in [("/usr/bin/pkill", ["-x", "demowin"]), ("/usr/bin/pkill", ["-f", "/tmp/demo/Notcholino.app"]),
+                         ("/usr/bin/pkill", ["-f", "mediaremote-adapter.pl"]), ("/usr/bin/open", ["/Applications/Notcholino.app"])] {
+        let p = Process(); p.executableURL = URL(fileURLWithPath: tool); p.arguments = args
+        try? p.run(); p.waitUntilExit()
+    }
+    exit(0)
+}
 
 let screen = NSScreen.screens[0]
 let sw = screen.frame.width, sh = screen.frame.height
@@ -217,6 +232,15 @@ func poll() {
     }
     offset = lines.count
 }
+
+// The way out: ⌃⌥⌘Q, registered as a system hot key (it needs no permission), and a timer in case nothing else works
+var hotKey: EventHotKeyRef?
+var handler: EventHandlerRef?
+var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in leaveTheStage(); return noErr }, 1, &spec, nil, &handler)
+RegisterEventHotKey(UInt32(kVK_ANSI_Q), UInt32(controlKey | optionKey | cmdKey), EventHotKeyID(signature: OSType(0x53544147), id: 1), GetApplicationEventTarget(), 0, &hotKey)
+let limit = Double(ProcessInfo.processInfo.environment["STAGE_MAX_SECONDS"] ?? "") ?? 600
+Timer.scheduledTimer(withTimeInterval: limit, repeats: false) { _ in leaveTheStage() }
 
 try? "".write(toFile: "/tmp/stage-cmd.txt", atomically: true, encoding: .utf8)
 let app = NSApplication.shared

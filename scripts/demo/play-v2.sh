@@ -2,9 +2,16 @@
 # The preview video, second version: Espresso, Notchy answering about the weather in Milan, and Snap. Everything on screen is
 # made up (the answer, the song, the windows) so no one's data, key or voice is in it. Start your screen recorder, then run this.
 #
-#   scripts/demo/play-v2.sh up       quits your Notcholino and starts the stage and a throwaway demo copy of the app
-#   scripts/demo/play-v2.sh play     plays the whole scene (about 55 seconds). Don't touch the Mac while it runs.
-#   scripts/demo/play-v2.sh down     stops the demo and starts your own Notcholino again
+#   scripts/demo/play-v2.sh run [N]  THE ONE TO USE: start your screen recorder, run this, and after a countdown of N seconds (10 by
+#                                    default) it does everything: the stage and the demo app come up, the scene plays (about a
+#                                    minute), and it all goes away and your own Notcholino comes back. Don't touch the Mac.
+#
+# The stage covers the whole screen, Terminal included. So never run `up` by hand from a Terminal that the cover will hide; if
+# anything goes wrong, press ⌃⌥⌘Q (or wait ten minutes) and it all stops by itself and your Notcholino comes back.
+#
+#   scripts/demo/play-v2.sh up       the first part of `run`: quits your Notcholino and starts the stage and the demo copy of the app
+#   scripts/demo/play-v2.sh play     the middle part: plays the scene
+#   scripts/demo/play-v2.sh down     the last part: stops the demo and starts your own Notcholino again
 #
 # It needs the helpers in /tmp (stage, mouse, demowin: build them with `scripts/demo/build.sh`) and a demo copy of the app in
 # /tmp/demo (see build.sh). The demo Notchy is a debug build that listens for the answer the stage sends it.
@@ -15,6 +22,15 @@ caption() { say "caption: $1"; }
 m() { /tmp/mouse "$@"; }
 
 case "${1:-}" in
+  run)
+    n="${2:-10}"
+    echo "Start the screen recording now. The scene begins in $n seconds and covers the screen: don't touch the Mac."
+    echo "If something goes wrong, press Control-Option-Command-Q: everything stops and your Notcholino comes back."
+    for i in $(seq "$n" -1 1); do printf '%s ' "$i"; sleep 1; done; echo
+    "$0" up
+    "$0" play
+    sleep 1
+    "$0" down ;;
   up)
     pkill -x Notcholino 2>/dev/null; pkill -f mediaremote-adapter.pl 2>/dev/null; sleep 1
     ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
