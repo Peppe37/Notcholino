@@ -97,6 +97,7 @@ struct SnapSettingsView: View {
     @AppStorage("snapCenterAction") private var center = "fill"
     @AppStorage("snapGap") private var gap = 0.0
     @AppStorage("snapOpenMode") private var openMode = "shake"
+    @AppStorage("snapHint") private var hint = true
 
     var body: some View {
         Form {
@@ -110,6 +111,10 @@ struct SnapSettingsView: View {
                     Text("Every time I drag a window").tag("always")
                 }
                 .onChange(of: openMode) { SnapEngine.shared.shakeToOpen = $0 == "shake" }
+                if openMode == "shake" {
+                    Toggle("Show “Shake it!” when I pick up a window", isOn: $hint)
+                        .onChange(of: hint) { SnapEngine.shared.showHint = $0 }
+                }
                 Picker("The dot in the middle", selection: $center) {
                     Text("Fills the screen").tag("fill")
                     Text("Centres the window").tag("center")

@@ -1,5 +1,10 @@
 # Snap
 
+## [0.2.2-alpha] - 2026-10-20
+
+- A small **Shake it!** under the notch when you pick up a window (it can be turned off in the settings), so it is clear what opens it.
+- More sensitive again, between the two before: three strokes of at least 60 points within 0.9 seconds.
+
 ## [0.2.1-alpha] - 2026-10-20
 
 - Shaking is much harder to trigger by accident: four strokes of at least 90 points within 0.8 seconds. Moving a window normally, even quickly, no longer opens the notch.

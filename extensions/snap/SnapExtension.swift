@@ -25,6 +25,7 @@ final class SnapExtension: NSObject, NotcholinoExtension {
         let d = UserDefaults.standard
         SnapEngine.shared.centerAction = SnapCenterAction(rawValue: d.string(forKey: "snapCenterAction") ?? "fill") ?? .fill
         SnapEngine.shared.gap = CGFloat(d.double(forKey: "snapGap"))
+        SnapEngine.shared.showHint = d.object(forKey: "snapHint") as? Bool ?? true
         SnapEngine.shared.shakeToOpen = (d.string(forKey: "snapOpenMode") ?? "shake") == "shake"
         SnapEngine.shared.start()
     }

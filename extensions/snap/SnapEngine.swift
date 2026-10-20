@@ -81,6 +81,8 @@ final class SnapEngine {
     var gap: CGFloat = 0
     /// Open the notch only when the window is shaken (the default), or every time a window is dragged
     var shakeToOpen = true
+    /// The small "Shake it!" under the notch when a window is picked up
+    var showHint = true
 
     private var monitors: [Any] = []
     private let queue = DispatchQueue(label: "com.giuseppe.Notcholino.snap", qos: .userInteractive)
@@ -167,6 +169,10 @@ final class SnapEngine {
             DispatchQueue.main.async {
                 self.windowMoving = true
                 if !self.shakeToOpen { self.activate() }
+                else if self.showHint {
+                    // A small hint under the notch while a window is in hand
+                    self.host?.showPopup(["title": "Shake it!", "icon": "hand.draw", "seconds": 3.0])
+                }
             }
         }
     }
@@ -174,32 +180,34 @@ final class SnapEngine {
     private func activate() {
         guard !SnapState.shared.dragging else { return }
         samples = []
+        host?.dismissPopup()
         SnapState.shared.dragging = true
         host?.setNotchOpen(true)
     }
 
-    /// A shake: the pointer goes back and forth sideways at least four times, each stroke at least 90 points, all within 0.8 seconds,
+    /// A shake: the pointer goes back and forth sideways at least three times, each stroke at least 60 points, all within 0.9 seconds,
     /// and without drifting up or down. A normal drag, even a quick one that changes direction once, never gets there.
     private func shaking(_ x: CGFloat, at t: TimeInterval) -> Bool {
         samples.append((t, x))
-        samples.removeAll { t - $0.t > 0.8 }
+        samples.removeAll { t - $0.t > 0.9 }
         var turns = 0, direction = 0
         var anchor = samples[0].x
         for s in samples.dropFirst() {
-            if direction <= 0, s.x - anchor >= 90 {
+            if direction <= 0, s.x - anchor >= 60 {
                 if direction == -1 { turns += 1 }
                 direction = 1; anchor = s.x
-            } else if direction >= 0, anchor - s.x >= 90 {
+            } else if direction >= 0, anchor - s.x >= 60 {
                 if direction == 1 { turns += 1 }
                 direction = -1; anchor = s.x
             } else if direction == 1, s.x > anchor { anchor = s.x }
             else if direction == -1, s.x < anchor { anchor = s.x }
         }
-        return turns >= 4
+        return turns >= 3
     }
 
     private func mouseUp() {
         let mouse = NSEvent.mouseLocation
+        if windowMoving, !SnapState.shared.dragging { host?.dismissPopup() }
         windowMoving = false
         samples = []
         guard SnapState.shared.dragging else { window = nil; return }
