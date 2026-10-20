@@ -79,6 +79,8 @@ final class SnapEngine {
 
     var centerAction: SnapCenterAction = .fill
     var gap: CGFloat = 0
+    /// Open the notch only when the window is shaken (the default), or every time a window is dragged
+    var shakeToOpen = true
 
     private var monitors: [Any] = []
     private let queue = DispatchQueue(label: "com.giuseppe.Notcholino.snap", qos: .userInteractive)
@@ -86,6 +88,10 @@ final class SnapEngine {
     private var startOrigin = CGPoint.zero
     private var startSize = CGSize.zero
     private var moving = false
+    /// Main thread: the window under the pointer is really being dragged (set from the Accessibility queue)
+    private var windowMoving = false
+    /// The pointer's recent horizontal positions, to tell a shake from a drag
+    private var samples: [(t: TimeInterval, x: CGFloat)] = []
     private var lastCheck = Date.distantPast
     private var host: NotcholinoHost? { SnapBridge.shared.host }
 
@@ -109,6 +115,8 @@ final class SnapEngine {
     // MARK: Following the pointer
 
     private func mouseDown() {
+        windowMoving = false
+        samples = []
         let mouse = NSEvent.mouseLocation
         let primaryHeight = NSScreen.screens.first?.frame.maxY ?? 0
         queue.async { [weak self] in
@@ -143,6 +151,10 @@ final class SnapEngine {
             if zone != SnapState.shared.zone { SnapState.shared.zone = zone }
             return
         }
+        // The pointer's path is kept from the moment the button goes down, so a shake that starts right away still counts. The
+        // notch opens when a window that is really being dragged is shaken (or at once, if that is how the user wants it).
+        let shaken = shaking(NSEvent.mouseLocation.x, at: now.timeIntervalSinceReferenceDate)
+        if windowMoving, shakeToOpen, shaken { activate() }
         guard now.timeIntervalSince(lastCheck) > 0.08 else { return }
         lastCheck = now
         queue.async { [weak self] in
@@ -153,14 +165,42 @@ final class SnapEngine {
             guard moved > 8, abs(size.width - self.startSize.width) < 2, abs(size.height - self.startSize.height) < 2 else { return }
             self.moving = true
             DispatchQueue.main.async {
-                SnapState.shared.dragging = true
-                self.host?.setNotchOpen(true)
+                self.windowMoving = true
+                if !self.shakeToOpen { self.activate() }
             }
         }
     }
 
+    private func activate() {
+        guard !SnapState.shared.dragging else { return }
+        samples = []
+        SnapState.shared.dragging = true
+        host?.setNotchOpen(true)
+    }
+
+    /// A shake: the pointer goes back and forth sideways at least three times (each stroke at least 30 points) within under a second
+    private func shaking(_ x: CGFloat, at t: TimeInterval) -> Bool {
+        samples.append((t, x))
+        samples.removeAll { t - $0.t > 0.9 }
+        var turns = 0, direction = 0
+        var anchor = samples[0].x
+        for s in samples.dropFirst() {
+            if direction <= 0, s.x - anchor >= 30 {
+                if direction == -1 { turns += 1 }
+                direction = 1; anchor = s.x
+            } else if direction >= 0, anchor - s.x >= 30 {
+                if direction == 1 { turns += 1 }
+                direction = -1; anchor = s.x
+            } else if direction == 1, s.x > anchor { anchor = s.x }
+            else if direction == -1, s.x < anchor { anchor = s.x }
+        }
+        return turns >= 3
+    }
+
     private func mouseUp() {
         let mouse = NSEvent.mouseLocation
+        windowMoving = false
+        samples = []
         guard SnapState.shared.dragging else { window = nil; return }
         let zone = SnapState.shared.zone(at: mouse)
         let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main

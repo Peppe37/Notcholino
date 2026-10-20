@@ -96,14 +96,20 @@ final class SnapHostingView: NSHostingView<SnapPage> {
 struct SnapSettingsView: View {
     @AppStorage("snapCenterAction") private var center = "fill"
     @AppStorage("snapGap") private var gap = 0.0
+    @AppStorage("snapOpenMode") private var openMode = "shake"
 
     var body: some View {
         Form {
             Section {
-                Text("Grab a window by its title bar and the notch opens. Bring the pointer to the rectangle: an arrow at the left or right puts the window on that half of the screen, up or down on the top or bottom half, a corner on that quarter, and the dot in the middle makes it fill the screen. Let go to place it.")
+                Text("Grab a window by its title bar and shake it from side to side: the notch opens. Bring the pointer to the rectangle: an arrow at the left or right puts the window on that half of the screen, up or down on the top or bottom half, a corner on that quarter, and the dot in the middle makes it fill the screen. Let go to place it.")
                     .font(.callout).foregroundStyle(.secondary)
             } header: { Text("How it works") }
             Section {
+                Picker("The notch opens", selection: $openMode) {
+                    Text("When I shake the window").tag("shake")
+                    Text("Every time I drag a window").tag("always")
+                }
+                .onChange(of: openMode) { SnapEngine.shared.shakeToOpen = $0 == "shake" }
                 Picker("The dot in the middle", selection: $center) {
                     Text("Fills the screen").tag("fill")
                     Text("Centres the window").tag("center")

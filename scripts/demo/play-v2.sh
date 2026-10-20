@@ -82,9 +82,9 @@ case "${1:-}" in
     sleep 1.5
     caption "Snap: drop a window on the notch"
     sleep 1.8
-    m drag 330 454 663 146 1.3 1.0
+    m dragshake 330 454 663 146 1.0 1.0
     sleep 1.8
-    m drag 900 484 849 146 1.3 1.0
+    m dragshake 900 484 849 146 1.0 1.0
     sleep 2.5
     caption ""
     # The end: the windows go, the card comes

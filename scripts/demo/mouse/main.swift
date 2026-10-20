@@ -4,6 +4,7 @@
 //   mouse move X Y [seconds]              glide to a point (screen points, origin top left)
 //   mouse click                           click where the pointer is
 //   mouse drag X1 Y1 X2 Y2 [seconds] [hold]   press at the first point, drag to the second, wait `hold` seconds, release
+//   mouse dragshake X1 Y1 X2 Y2 [seconds] [hold]   like drag, but shakes the thing from side to side first (what Snap waits for)
 //   mouse scroll DY                       scroll wheel by DY lines
 import CoreGraphics
 import Foundation
@@ -34,6 +35,19 @@ case "drag":
     post(.leftMouseDown, here()); usleep(150_000)
     glide(to: CGPoint(x: num(4, 0), y: num(5, 0)), seconds: num(6, 1.2), type: .leftMouseDragged)
     // a little jitter while holding, like a real hand: the system picks the window under a drag at each movement
+    let hold = num(7, 1.0), end = here(); var t = 0.0, k = 0.0
+    while t < hold { post(.leftMouseDragged, CGPoint(x: end.x + sin(k) * 2, y: end.y + cos(k) * 1.5)); k += 0.7; usleep(50_000); t += 0.05 }
+    post(.leftMouseUp, here())
+case "dragshake":
+    glide(to: CGPoint(x: num(2, 0), y: num(3, 0)), seconds: 0.5, type: .mouseMoved)
+    usleep(250_000)
+    post(.leftMouseDown, here()); usleep(150_000)
+    // Take hold and start moving, then shake: four strokes of 80 points within about half a second
+    let origin = here()
+    glide(to: CGPoint(x: origin.x + 40, y: origin.y + 10), seconds: 0.25, type: .leftMouseDragged)
+    let center = here()
+    for i in 0..<5 { glide(to: CGPoint(x: center.x + (i % 2 == 0 ? -60 : 60), y: center.y), seconds: 0.1, type: .leftMouseDragged) }
+    glide(to: CGPoint(x: num(4, 0), y: num(5, 0)), seconds: num(6, 1.2), type: .leftMouseDragged)
     let hold = num(7, 1.0), end = here(); var t = 0.0, k = 0.0
     while t < hold { post(.leftMouseDragged, CGPoint(x: end.x + sin(k) * 2, y: end.y + cos(k) * 1.5)); k += 0.7; usleep(50_000); t += 0.05 }
     post(.leftMouseUp, here())

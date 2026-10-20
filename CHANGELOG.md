@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.2-alpha] - 2026-10-20
+
+### Fixed
+- Ghosting when an extension's page (Snap's) opens or closes: the page is a separate view that the notch's fade and clipping do not reach, so it now stays out while the notch grows and goes first when it folds, instead of showing outside the shape.
+
 ## [0.28.1-alpha] - 2026-10-20
 
 ### Fixed

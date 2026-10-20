@@ -609,11 +609,17 @@ struct NotchContentView: View {
                             if activeTab == .extensions { activeTab = back }
                         }
                     }
-                    // Done: close, and stay closed even though the pointer is still on the notch
+                    // Done: close, and stay closed even though the pointer is still on the notch. The extension's page goes first (one
+                    // frame before the notch starts to fold), as when the pointer leaves, so it does not show outside the shrinking shape.
                     hoverBlockedUntil = Date().addingTimeInterval(1.0)
                     collapseTask?.cancel()
-                    closing = false
-                    withAnimation { isHovering = false }
+                    closing = true
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 20_000_000)
+                        withAnimation { isHovering = false }
+                        try? await Task.sleep(nanoseconds: 700_000_000)
+                        closing = false
+                    }
                 }
                 publishLayout()
             }
@@ -674,7 +680,7 @@ struct NotchContentView: View {
         case .shelf:         ShelfNotchView(dropTargeted: dropTargeted)
         case .music:         NowPlayingNotchView(music: music)
         case .calendar:      CalendarNotchView()
-        case .extensions:    ExtensionNotchView(forcedID: forcedOpen ? extensionManager.forcedOpen?.id : lingerForcedID)
+        case .extensions:    ExtensionNotchView(forcedID: forcedOpen ? extensionManager.forcedOpen?.id : lingerForcedID, closing: closing)
         }
     }
 

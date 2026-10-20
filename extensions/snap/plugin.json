@@ -4,10 +4,10 @@
   "kind": "extension",
   "principalClass": "SnapExtension",
   "name": "Snap",
-  "description": "Grab a window and the notch opens: drop it on a half, a corner or the whole screen.",
+  "description": "Shake a window you are dragging and the notch opens: drop it on a half, a corner or the whole screen.",
   "author": "Giuseppe",
   "icon": "rectangle.split.2x2",
-  "version": "0.1.1-alpha",
+  "version": "0.2.0-alpha",
   "apiVersion": 1,
   "minAppVersion": "0.27.0",
   "category": "Utilities",
@@ -20,10 +20,10 @@
     "screen",
     "productivity"
   ],
-  "details": "Snap puts a window where you want it without a keyboard shortcut. Grab a window by its title bar and the notch opens with a small screen drawn in it: an arrow at the middle of each side, a dot in the centre. Bring the pointer to an arrow and the window will go to that half of the screen, to a corner and it takes that quarter, to the dot and it fills the screen. The cells are not drawn: the one under the pointer simply grows a little, with a soft preview of where the window will land. Let go to place it.",
+  "details": "Snap puts a window where you want it without a keyboard shortcut. Grab a window by its title bar and shake it from side to side: the notch opens with a small screen drawn in it (or, if you prefer, it opens every time you drag a window): an arrow at the middle of each side, a dot in the centre. Bring the pointer to an arrow and the window will go to that half of the screen, to a corner and it takes that quarter, to the dot and it fills the screen. The cells are not drawn: the one under the pointer simply grows a little, with a soft preview of where the window will land. Let go to place it.",
   "features": [
     "Left and right halves, top and bottom halves, four quarters and the whole screen",
-    "The notch opens by itself while you drag a window",
+    "The notch opens when you shake the window, so you can still move windows freely",
     "A preview of where the window will go",
     "Works on every display, with an optional space between windows"
   ],

@@ -353,16 +353,30 @@ struct ExtensionViewHost: NSViewRepresentable {
 struct ExtensionNotchView: View {
     /// The extension that opened the notch, if one did
     var forcedID: String?
+    /// The notch is about to fold away
+    var closing = false
     @ObservedObject private var manager = ExtensionManager.shared
+    /// An extension's page is a real AppKit view: SwiftUI's clipping and fades do not reach it, so it is not simply faded with the
+    /// rest. It stays out while the notch grows (or it would show outside the still small black shape) and goes first when it folds.
+    @State private var appeared = false
 
     var body: some View {
-        if let id = forcedID, let ext = manager.loaded.first(where: { $0.extensionIdentifier == id }) {
-            ExtensionViewHost { ext.makePageView() }
-                .id(id)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.top, 6)
-        } else {
-            chooser
+        Group {
+            if closing {
+                Color.clear
+            } else if let id = forcedID, let ext = manager.loaded.first(where: { $0.extensionIdentifier == id }) {
+                ExtensionViewHost { ext.makePageView() }
+                    .id(id)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.top, 6)
+            } else {
+                chooser
+            }
+        }
+        .opacity(appeared ? 1 : 0)
+        .onAppear {
+            appeared = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { withAnimation(.easeOut(duration: 0.14)) { appeared = true } }
         }
     }
 

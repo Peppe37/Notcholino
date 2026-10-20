@@ -10,7 +10,7 @@ final class SnapExtension: NSObject, NotcholinoExtension {
     var extensionName: String { "Snap" }
     var extensionVersion: String { Bundle(for: SnapExtension.self).infoDictionary?["CFBundleShortVersionString"] as? String ?? "0" }
     var extensionAuthor: String { "Giuseppe" }
-    var extensionDescription: String { "Grab a window and the notch opens: drop it on a half, a corner or the whole screen." }
+    var extensionDescription: String { "Shake a window you are dragging and the notch opens: drop it on a half, a corner or the whole screen." }
     var extensionSymbol: String { "rectangle.split.2x2" }
 
     /// Its page in the notch only opens by itself while a window is grabbed, so it does not take a place among the pages
@@ -25,6 +25,7 @@ final class SnapExtension: NSObject, NotcholinoExtension {
         let d = UserDefaults.standard
         SnapEngine.shared.centerAction = SnapCenterAction(rawValue: d.string(forKey: "snapCenterAction") ?? "fill") ?? .fill
         SnapEngine.shared.gap = CGFloat(d.double(forKey: "snapGap"))
+        SnapEngine.shared.shakeToOpen = (d.string(forKey: "snapOpenMode") ?? "shake") == "shake"
         SnapEngine.shared.start()
     }
 
