@@ -178,23 +178,24 @@ final class SnapEngine {
         host?.setNotchOpen(true)
     }
 
-    /// A shake: the pointer goes back and forth sideways at least three times (each stroke at least 30 points) within under a second
+    /// A shake: the pointer goes back and forth sideways at least four times, each stroke at least 90 points, all within 0.8 seconds,
+    /// and without drifting up or down. A normal drag, even a quick one that changes direction once, never gets there.
     private func shaking(_ x: CGFloat, at t: TimeInterval) -> Bool {
         samples.append((t, x))
-        samples.removeAll { t - $0.t > 0.9 }
+        samples.removeAll { t - $0.t > 0.8 }
         var turns = 0, direction = 0
         var anchor = samples[0].x
         for s in samples.dropFirst() {
-            if direction <= 0, s.x - anchor >= 30 {
+            if direction <= 0, s.x - anchor >= 90 {
                 if direction == -1 { turns += 1 }
                 direction = 1; anchor = s.x
-            } else if direction >= 0, anchor - s.x >= 30 {
+            } else if direction >= 0, anchor - s.x >= 90 {
                 if direction == 1 { turns += 1 }
                 direction = -1; anchor = s.x
             } else if direction == 1, s.x > anchor { anchor = s.x }
             else if direction == -1, s.x < anchor { anchor = s.x }
         }
-        return turns >= 3
+        return turns >= 4
     }
 
     private func mouseUp() {

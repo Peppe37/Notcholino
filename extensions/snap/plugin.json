@@ -7,7 +7,7 @@
   "description": "Shake a window you are dragging and the notch opens: drop it on a half, a corner or the whole screen.",
   "author": "Giuseppe",
   "icon": "rectangle.split.2x2",
-  "version": "0.2.0-alpha",
+  "version": "0.2.1-alpha",
   "apiVersion": 1,
   "minAppVersion": "0.27.0",
   "category": "Utilities",

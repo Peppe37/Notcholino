@@ -46,7 +46,7 @@ case "dragshake":
     let origin = here()
     glide(to: CGPoint(x: origin.x + 40, y: origin.y + 10), seconds: 0.25, type: .leftMouseDragged)
     let center = here()
-    for i in 0..<5 { glide(to: CGPoint(x: center.x + (i % 2 == 0 ? -60 : 60), y: center.y), seconds: 0.1, type: .leftMouseDragged) }
+    for i in 0..<6 { glide(to: CGPoint(x: center.x + (i % 2 == 0 ? -80 : 80), y: center.y), seconds: 0.09, type: .leftMouseDragged) }
     glide(to: CGPoint(x: num(4, 0), y: num(5, 0)), seconds: num(6, 1.2), type: .leftMouseDragged)
     let hold = num(7, 1.0), end = here(); var t = 0.0, k = 0.0
     while t < hold { post(.leftMouseDragged, CGPoint(x: end.x + sin(k) * 2, y: end.y + cos(k) * 1.5)); k += 0.7; usleep(50_000); t += 0.05 }
