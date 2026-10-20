@@ -3,6 +3,8 @@
 // captions, a screenshot thumbnail you can drag, and an end card. Controlled by writing lines to /tmp/stage-cmd.txt:
 //
 //   caption: Some text      shows a caption (empty text hides it)
+//   voice: Some text        a pill with a microphone that types the text out, like what you say to Notchy (voice: hide hides it)
+//   notchy: 1.6|The answer  makes Notchy (a debug build with the demo hook) think for 1.6 s and answer with that text
 //   thumb: show | hide      the screenshot thumbnail, which the video drags to the notch
 //   end: show | hide        the end card
 //   quit
@@ -46,27 +48,84 @@ cover.canHide = false
 cover.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
 cover.contentView = Backdrop(frame: NSRect(origin: .zero, size: screen.frame.size))
 
+// MARK: Overlay: captions, the voice pill and the end card live in their own window, above the demo windows (470) and below the notch
+
+let overlay = NSWindow(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false)
+overlay.level = NSWindow.Level(rawValue: 480)
+overlay.isOpaque = false
+overlay.backgroundColor = .clear
+overlay.hasShadow = false
+overlay.ignoresMouseEvents = true
+overlay.hidesOnDeactivate = false
+overlay.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+overlay.contentView = NSView(frame: NSRect(origin: .zero, size: screen.frame.size))
+
 // MARK: Caption
 
+// A dark pill, so it reads over the wallpaper and over a white window alike
+let captionBox = NSView(frame: NSRect(x: sw / 2 - 300, y: sh - 400, width: 600, height: 52))
+captionBox.wantsLayer = true
+captionBox.layer?.cornerRadius = 26
+captionBox.layer?.backgroundColor = NSColor(white: 0.06, alpha: 0.72).cgColor
+captionBox.alphaValue = 0
 let caption = NSTextField(labelWithString: "")
-caption.font = .systemFont(ofSize: 30, weight: .semibold)
-caption.textColor = NSColor.white.withAlphaComponent(0.95)
+caption.font = .systemFont(ofSize: 28, weight: .semibold)
+caption.textColor = NSColor.white.withAlphaComponent(0.96)
 caption.alignment = .center
-caption.alphaValue = 0
-caption.frame = NSRect(x: sw / 2 - 440, y: sh - 392, width: 880, height: 44)
-let shadow = NSShadow(); shadow.shadowColor = NSColor.black.withAlphaComponent(0.35); shadow.shadowBlurRadius = 12; shadow.shadowOffset = .zero
-caption.shadow = shadow
-cover.contentView!.addSubview(caption)
+captionBox.addSubview(caption)
+overlay.contentView!.addSubview(captionBox)
 
 func setCaption(_ text: String) {
     NSAnimationContext.runAnimationGroup({ ctx in
         ctx.duration = 0.25
-        caption.animator().alphaValue = 0
+        captionBox.animator().alphaValue = 0
     }, completionHandler: {
         guard !text.isEmpty else { return }
         caption.stringValue = text
-        NSAnimationContext.runAnimationGroup { ctx in ctx.duration = 0.35; caption.animator().alphaValue = 1 }
+        caption.sizeToFit()
+        let width = caption.frame.width + 64
+        captionBox.frame = NSRect(x: sw / 2 - width / 2, y: sh - 400, width: width, height: 52)
+        caption.frame = NSRect(x: 32, y: (52 - caption.frame.height) / 2, width: caption.frame.width, height: caption.frame.height)
+        NSAnimationContext.runAnimationGroup { ctx in ctx.duration = 0.35; captionBox.animator().alphaValue = 1 }
     })
+}
+
+// MARK: What you say to Notchy: a pill with a microphone that types out the sentence
+
+let pill = NSView(frame: NSRect(x: sw / 2 - 420, y: sh * 0.22, width: 840, height: 84))
+pill.wantsLayer = true
+pill.layer?.cornerRadius = 42
+pill.layer?.backgroundColor = NSColor(white: 0.08, alpha: 0.78).cgColor
+pill.layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
+pill.layer?.borderWidth = 1
+pill.alphaValue = 0
+let mic = NSImageView(frame: NSRect(x: 28, y: 22, width: 40, height: 40))
+mic.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: nil)?.withSymbolConfiguration(.init(pointSize: 28, weight: .semibold))
+mic.contentTintColor = NSColor(red: 1, green: 0.42, blue: 0.38, alpha: 1)
+pill.addSubview(mic)
+let said = NSTextField(labelWithString: "")
+said.font = .systemFont(ofSize: 30, weight: .medium)
+said.textColor = .white
+said.frame = NSRect(x: 84, y: 22, width: 730, height: 40)
+pill.addSubview(said)
+overlay.contentView!.addSubview(pill)
+var typing: Timer?
+
+func say(_ text: String) {
+    typing?.invalidate()
+    if text == "hide" {
+        NSAnimationContext.runAnimationGroup { ctx in ctx.duration = 0.4; pill.animator().alphaValue = 0 }
+        return
+    }
+    said.stringValue = ""
+    NSAnimationContext.runAnimationGroup { ctx in ctx.duration = 0.3; pill.animator().alphaValue = 1 }
+    var i = 0
+    let chars = Array(text)
+    typing = Timer.scheduledTimer(withTimeInterval: 0.045, repeats: true) { t in
+        i += 1
+        said.stringValue = String(chars.prefix(i))
+        if i >= chars.count { t.invalidate() }
+    }
 }
 
 // MARK: End card
@@ -82,7 +141,7 @@ end.addSubview(label("Notcholino", size: 64, weight: .heavy, y: 190, color: .whi
 end.addSubview(label("Free and open source", size: 26, weight: .medium, y: 134, color: NSColor.white.withAlphaComponent(0.85)))
 end.addSubview(label("brew install --cask Peppe37/tap/notcholino", size: 21, weight: .regular, y: 82, color: NSColor.white.withAlphaComponent(0.75)))
 end.addSubview(label("github.com/Peppe37/Notcholino", size: 21, weight: .semibold, y: 46, color: NSColor(red: 0.55, green: 0.78, blue: 1, alpha: 1)))
-cover.contentView!.addSubview(end)
+overlay.contentView!.addSubview(end)
 
 // MARK: The screenshot thumbnail (what macOS shows after a screenshot), draggable like the real one
 
@@ -134,7 +193,13 @@ func poll() {
     let lines = data.split(separator: "\n").map(String.init)   // whole lines only, in order
     guard lines.count > offset else { return }
     for line in lines[offset...] {
-        if line.hasPrefix("caption:") { setCaption(String(line.dropFirst(8)).trimmingCharacters(in: .whitespaces)) }
+        if line.hasPrefix("voice:") { say(String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)) }
+        else if line.hasPrefix("notchy:") {
+            let parts = String(line.dropFirst(7)).trimmingCharacters(in: .whitespaces).split(separator: "|", maxSplits: 1).map(String.init)
+            DistributedNotificationCenter.default().postNotificationName(Notification.Name("com.giuseppe.Notcholino.demo"), object: nil,
+                userInfo: ["think": Double(parts.first ?? "1.6") ?? 1.6, "reply": parts.count > 1 ? parts[1] : ""], deliverImmediately: true)
+        }
+        else if line.hasPrefix("caption:") { setCaption(String(line.dropFirst(8)).trimmingCharacters(in: .whitespaces)) }
         else if line == "thumb: show" {
             thumbWindow?.ignoresMouseEvents = false
             NSApp.activate(ignoringOtherApps: true)
@@ -157,5 +222,6 @@ try? "".write(toFile: "/tmp/stage-cmd.txt", atomically: true, encoding: .utf8)
 let app = NSApplication.shared
 app.setActivationPolicy(.regular)   // a dragging session needs a regular, active app
 cover.orderFrontRegardless()
+overlay.orderFrontRegardless()
 Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { _ in poll() }
 app.run()

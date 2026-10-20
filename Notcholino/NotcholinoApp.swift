@@ -180,7 +180,9 @@ final class PluginManager: ObservableObject {
     init() {
         // Plugins live in Application Support
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        pluginsDirectory = appSupport.appendingPathComponent("Notcholino/Plugins")
+        // NOTCHOLINO_PLUGINS_DIR points the app at another folder of plugins (to try a few without touching the installed ones)
+        pluginsDirectory = ProcessInfo.processInfo.environment["NOTCHOLINO_PLUGINS_DIR"].map { URL(fileURLWithPath: $0) }
+            ?? appSupport.appendingPathComponent("Notcholino/Plugins")
 
         try? FileManager.default.createDirectory(at: pluginsDirectory, withIntermediateDirectories: true)
         loadPlugins()

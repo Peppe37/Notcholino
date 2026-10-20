@@ -152,6 +152,20 @@ final class NotchyAssistant: ObservableObject {
         undoLabel = nil
     }
 
+    #if DEBUG
+    /// The demo video's made-up answer: Notchy looks thoughtful for a moment, then answers with the text it was given
+    func demoReply(thinking seconds: Double, text: String) {
+        task?.cancel()
+        state = .thinking("what you said")
+        NotchyPresence.shared.peek(mood: .thinking, seconds: seconds + 1)
+        NotchyBridge.shared.popup(icon: "ellipsis.bubble", title: "Notchy is reading…", subtitle: "what you said", seconds: seconds, opensPage: true)
+        task = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            if !Task.isCancelled { self?.finish(.reply(text)) }
+        }
+    }
+    #endif
+
     /// Takes back what was just added
     func undo() {
         guard let action = undoAction else { return }

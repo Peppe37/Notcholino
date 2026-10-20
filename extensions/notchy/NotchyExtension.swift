@@ -31,7 +31,12 @@ final class NotchyExtension: NSObject, NotcholinoExtension {
     }
 
     /// Switched on (after loading, or from the store): start the things Notchy does by itself
-    func extensionDidEnable() { NotchySettings.shared.enabled = true }
+    func extensionDidEnable() {
+        NotchySettings.shared.enabled = true
+        #if DEBUG
+        NotchyDemo.listen()
+        #endif
+    }
 
     /// Switched off, removed, or the app is quitting: stop the timers, the shortcut and the Mail watcher
     func extensionWillUnload() { NotchySettings.shared.enabled = false }
