@@ -30,7 +30,7 @@ python3 - /tmp/demo/plugins <<'PY'
 import json, sys, urllib.request, zipfile, io, os, shutil
 dest = sys.argv[1]
 want = ["espresso", "tomato", "hotter", "pinger", "clippy", "picker", "devices", "quicky"]
-manifest = json.load(urllib.request.urlopen("https://peppe37.github.io/Notcholino/plugins.json"))
+manifest = json.load(urllib.request.urlopen("https://notcholino.giulapi.dev/plugins.json"))
 for p in manifest["plugins"]:
     if p["id"] not in want: continue
     data = urllib.request.urlopen(p["url"]).read()

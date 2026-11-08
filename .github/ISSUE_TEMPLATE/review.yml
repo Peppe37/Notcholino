@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for taking a minute. Your review is **public**: it shows on [the website](https://peppe37.github.io/Notcholino/#reviews) with your GitHub name and picture, next to the version you used.
+        Thank you for taking a minute. Your review is **public**: it shows on [the website](https://notcholino.giulapi.dev/#reviews) with your GitHub name and picture, next to the version you used.
 
         Honest is best, good or bad: nothing is removed for being negative, only spam and abuse. For a bug, please use [Bug report](https://github.com/Peppe37/Notcholino/issues/new?template=bug_report.yml) instead, so it gets fixed.
   - type: dropdown
