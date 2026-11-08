@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <a href="https://peppe37.github.io/Notcholino/">Website</a> ·
+  <a href="https://notcholino.giulapi.dev/">Website</a> ·
   <a href="https://github.com/Peppe37/Notcholino/releases/latest">Download</a> ·
   <a href="#faq">FAQ</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
@@ -33,7 +33,7 @@
 </p>
 
 <p align="center">
-  <a href="https://peppe37.github.io/Notcholino/assets/notcholino-demo.mp4"><img src="docs/assets/notcholino-demo.gif" alt="Notcholino demo: music, plugins, a timer that grows out of the notch, and the Shelf" width="640"></a><br>
+  <a href="https://notcholino.giulapi.dev/assets/notcholino-demo.mp4"><img src="docs/assets/notcholino-demo.gif" alt="Notcholino demo: music, plugins, a timer that grows out of the notch, and the Shelf" width="640"></a><br>
   <sub>Click for the full 50-second video</sub>
 </p>
 
@@ -75,7 +75,7 @@ Notcholino is a free and open-source app that extends the hardware notch of your
 
 ## Screenshots
 
-*From the interactive preview on [the website](https://peppe37.github.io/Notcholino/), with made-up data.*
+*From the interactive preview on [the website](https://notcholino.giulapi.dev/), with made-up data.*
 
 <p align="center">
   <img src="docs/assets/shots/hotter.png" alt="Hotter: temperature graph" width="420">
@@ -256,7 +256,7 @@ No dates, just direction. Vote with 👍 or suggest more in [Discussions](https:
 
 ## Reviews
 
-Used Notcholino? Leave a review: sign in with GitHub, give 1 to 5 stars and a few words, tied to the version you use ([write one](https://github.com/Peppe37/Notcholino/issues/new?template=review.yml)). They show on [the website](https://peppe37.github.io/Notcholino/#reviews), good or bad: only spam and abuse are removed, and the numbers are worked out in the open by [scripts/gen_reviews.py](scripts/gen_reviews.py).
+Used Notcholino? Leave a review: sign in with GitHub, give 1 to 5 stars and a few words, tied to the version you use ([write one](https://github.com/Peppe37/Notcholino/issues/new?template=review.yml)). They show on [the website](https://notcholino.giulapi.dev/#reviews), good or bad: only spam and abuse are removed, and the numbers are worked out in the open by [scripts/gen_reviews.py](scripts/gen_reviews.py).
 
 ## Support and contributing
 

@@ -36,7 +36,7 @@ def sha256_of(asset):
         return hashlib.sha256(resp.read()).hexdigest()
 
 
-SITE = "https://peppe37.github.io/Notcholino"
+SITE = "https://notcholino.giulapi.dev"
 
 
 def latest_changes(path, version):

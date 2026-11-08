@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://peppe37.github.io/Notcholino/sitemap.xml
+Sitemap: https://notcholino.giulapi.dev/sitemap.xml

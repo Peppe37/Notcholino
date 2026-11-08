@@ -38,7 +38,7 @@ prepare() {
   python3 - "$PLUGINS" <<'PY'
 import json, sys, urllib.request, zipfile, io, os, shutil
 dest = sys.argv[1]
-manifest = json.load(urllib.request.urlopen("https://peppe37.github.io/Notcholino/plugins.json"))
+manifest = json.load(urllib.request.urlopen("https://notcholino.giulapi.dev/plugins.json"))
 for p in manifest["plugins"]:
     data = urllib.request.urlopen(p["url"]).read()
     tmp = os.path.join(dest, "_x"); shutil.rmtree(tmp, ignore_errors=True); os.makedirs(tmp)
