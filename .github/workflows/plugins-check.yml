@@ -2,8 +2,7 @@ name: Plugins check
 
 # Every plugin has what the store needs (fields of plugin.json, changelog section, pictures, a target in project.yml)
 on:
-  pull_request:
-    paths: [plugins/**, extensions/**, community/**, project.yml, scripts/**]
+  pull_request: # Required on main: always report the check, including for docs and app PRs.
   push:
     branches: [main]
     paths: [plugins/**, extensions/**, community/**, project.yml, scripts/**]
