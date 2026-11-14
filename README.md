@@ -39,7 +39,7 @@
 
 ---
 
-> **Status: alpha.** Notcholino is in early development. Expect rough edges and breaking changes between versions. Feedback is very welcome.
+> **Status: beta.** Notcholino is in early development. Expect rough edges and breaking changes between versions. Feedback is very welcome.
 
 **Contents:** [Why Notcholino](#why-notcholino) · [What is it?](#what-is-it) · [Features](#features) · [Install](#install) · [Usage](#usage) · [Plugins](#plugins) · [FAQ](#faq) · [Privacy](#privacy) · [Performance](#performance) · [Roadmap](#roadmap) · [Support and contributing](#support-and-contributing) · [Building from source](#building-from-source) · [Releases](#releases-and-versioning) · [License](#license)
 
@@ -178,7 +178,7 @@ Want to write your own? See [plugins/README.md](plugins/README.md).
 ## FAQ
 
 **macOS says it can't verify the app, or the app doesn't open.**
-That is normal for the alpha: see [First launch](#first-launch-allowing-the-app). It takes four clicks, once.
+That is normal for the beta: see [First launch](#first-launch-allowing-the-app). It takes four clicks, once.
 
 **It asks me for the same permissions again after an update.**
 Before 0.6.1 each update was signed with a different one-off signature, and macOS ties permissions to the signature. From 0.6.1 on, releases use one fixed certificate, so after one last time when you update to it, permissions are kept. See [Releases](#releases-and-versioning).
@@ -291,11 +291,11 @@ The Xcode project is generated from `project.yml` and is not committed. Build an
 
 ## Releases and versioning
 
-Notcholino follows [Semantic Versioning](https://semver.org/) and keeps a [Keep a Changelog](https://keepachangelog.com/) style [CHANGELOG](CHANGELOG.md). While it is in alpha, versions are `0.x.y-alpha`: `x` goes up for features, `y` for fixes.
+Notcholino follows [Semantic Versioning](https://semver.org/) and keeps a [Keep a Changelog](https://keepachangelog.com/) style [CHANGELOG](CHANGELOG.md). Beta versions are `0.x.y-beta`: `x` goes up for features, `y` for fixes.
 
 Since 0.6.1 releases are signed with a fixed, self-signed certificate (stored as the `SIGNING_P12` and `SIGNING_P12_PASSWORD` secrets, created once with `scripts/setup-signing.sh`), so macOS recognises every update as the same app and keeps its permissions and Keychain access. This is not Apple's notarization: the first-launch warning remains. Without the secrets, for example in a fork, the build is signed ad-hoc.
 
-Pushing a tag like `v0.1.0-alpha` triggers the release workflow: it checks the tag against the version in `project.yml`, builds the app, packages a DMG and publishes a GitHub release (marked as pre-release when the tag has a suffix) using the changelog entry as notes. The website is deployed to GitHub Pages from the `docs/` folder.
+Pushing a tag like `v0.1.0-beta` triggers the release workflow: it checks the tag against the version in `project.yml`, builds the app, packages a DMG and publishes a GitHub release (marked as pre-release when the tag has a suffix) using the changelog entry as notes. The website is deployed to GitHub Pages from the `docs/` folder.
 
 Plugins are versioned and released on their own, from tags named `<plugin>-v<version>` (for example `espresso-v0.1.0-alpha`). The plugin release workflow publishes the release and refreshes the plugin store manifest. See [plugins](plugins) for details.
 

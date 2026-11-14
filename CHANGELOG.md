@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-beta] - 2026-11-14
+
+### Changed
+- First public beta. Beta numbering starts at 0.1.0; the 0.28.x alpha releases remain available.
+
 ## [0.28.2-alpha] - 2026-10-20
 
 ### Fixed

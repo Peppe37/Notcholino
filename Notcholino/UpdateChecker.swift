@@ -99,18 +99,26 @@ final class UpdateChecker: ObservableObject {
             guard let tag = entry["tag_name"] as? String, tag.hasPrefix("v"),
                   let page = (entry["html_url"] as? String).flatMap(URL.init(string:)) else { continue }
             let version = String(tag.dropFirst())
-            if best == nil || RemotePlugin.compare(version, best!.version) == .orderedDescending {
+            if best == nil || Self.compareAppVersions(version, best!.version) == .orderedDescending {
                 best = Release(version: version, url: page)
             }
         }
         return best
     }
 
+    // Beta numbering restarted at 0.1.0. Older alphas must never replace a beta.
+    static func compareAppVersions(_ lhs: String, _ rhs: String) -> ComparisonResult {
+        let leftAlpha = lhs.hasSuffix("-alpha")
+        let rightAlpha = rhs.hasSuffix("-alpha")
+        if leftAlpha != rightAlpha { return leftAlpha ? .orderedAscending : .orderedDescending }
+        return RemotePlugin.compare(lhs, rhs)
+    }
+
     private func applyCached() {
         let d = UserDefaults.standard
         guard let version = d.string(forKey: Key.latestVersion),
               let url = d.string(forKey: Key.latestURL).flatMap(URL.init(string:)),
-              RemotePlugin.compare(version, currentVersion) == .orderedDescending else {
+              Self.compareAppVersions(version, currentVersion) == .orderedDescending else {
             available = nil
             return
         }
