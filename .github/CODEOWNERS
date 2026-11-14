@@ -1,4 +1,4 @@
-# Every change is reviewed by the maintainer. GitHub asks for this review when "Require review from Code Owners" is on for main.
+# The maintainer reviews contributions; Peppe37 can bypass the review requirement via a PR.
 *                    @Peppe37
 /community/          @Peppe37
 /.github/            @Peppe37
