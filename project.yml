@@ -85,6 +85,24 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
+  Vikunja:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: extensions/vikunja
+        excludes: [media/**, README.md, plugin.json, CHANGELOG.md]
+      - ExtensionAPI
+    settings:
+      base:
+        PRODUCT_NAME: Vikunja
+        PRODUCT_BUNDLE_IDENTIFIER: com.giuseppe.Notcholino.extension.vikunja
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: VikunjaExtension
+        MARKETING_VERSION: "0.1.0-beta"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
   # --- Plugins (compiled as .bundle and loaded by the app at runtime) ---
   Espresso:
     type: bundle

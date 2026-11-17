@@ -1,0 +1,24 @@
+{
+  "id": "vikunja",
+  "target": "Vikunja",
+  "kind": "extension",
+  "principalClass": "VikunjaExtension",
+  "name": "Vikunja",
+  "description": "See your Vikunja Kanban boards and move or add tasks from the notch.",
+  "author": "Giuseppe",
+  "icon": "rectangle.split.3x1",
+  "version": "0.1.0-beta",
+  "apiVersion": 1,
+  "minAppVersion": "0.1.0",
+  "category": "Productivity",
+  "tags": ["kanban", "tasks", "projects", "vikunja", "self-hosted"],
+  "details": "Connect Vikunja Cloud or your own HTTPS server in Settings → Extensions → Vikunja. Choose a Kanban board from the notch, use a card's menu to move it on boards with manual columns, or add a task to the project without opening your browser.",
+  "features": [
+    "Select a project Kanban board and browse its columns",
+    "Move tasks between manual columns and add tasks to the project",
+    "Open any task or the board in Vikunja",
+    "Test the connection and keep the API token in the macOS Keychain"
+  ],
+  "permissions": "Network access only to the Vikunja instance you configure. The API token is stored in the macOS Keychain.",
+  "capabilities": ["network"]
+}
