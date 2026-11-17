@@ -6,8 +6,14 @@ import Security
 struct VikunjaConnection: Codable, Equatable {
     let site: URL
     let token: String
+    let access: CloudflareAccess?
 
-    static func make(address: String, token: String) throws -> Self {
+    struct CloudflareAccess: Codable, Equatable {
+        let clientID: String
+        let clientSecret: String
+    }
+
+    static func make(address: String, token: String, access: CloudflareAccess? = nil) throws -> Self {
         guard var parts = URLComponents(string: address.trimmingCharacters(in: .whitespacesAndNewlines)),
               let host = parts.host?.lowercased(), !host.isEmpty,
               parts.user == nil, parts.password == nil, parts.query == nil, parts.fragment == nil else {
@@ -22,13 +28,26 @@ struct VikunjaConnection: Codable, Equatable {
         if parts.percentEncodedPath.hasSuffix("/api/v1") { parts.percentEncodedPath.removeLast("/api/v1".count) }
         guard let site = parts.url else { throw VikunjaError.address }
         let token = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !token.isEmpty, token.utf8.allSatisfy({ (33...126).contains($0) }) else { throw VikunjaError.token }
-        return Self(site: site, token: token)
+        guard validHeader(token) else { throw VikunjaError.token }
+        let access = access.map {
+            CloudflareAccess(clientID: $0.clientID.trimmingCharacters(in: .whitespacesAndNewlines),
+                             clientSecret: $0.clientSecret.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        if let access {
+            guard scheme == "https" else { throw VikunjaError.accessHTTPS }
+            guard validHeader(access.clientID), validHeader(access.clientSecret) else { throw VikunjaError.accessCredentials }
+        }
+        return Self(site: site, token: token, access: access)
+    }
+
+    private static func validHeader(_ value: String) -> Bool {
+        !value.isEmpty && value.utf8.allSatisfy { (33...126).contains($0) }
     }
 }
 
 enum VikunjaError: LocalizedError {
     case address, token, rejected, forbidden, redirect, response, keychain(OSStatus), http(Int)
+    case accessHTTPS, accessCredentials, accessRequired, accessDenied
     var errorDescription: String? {
         switch self {
         case .address: return "Enter the HTTPS URL of your Vikunja instance. HTTP is allowed only on localhost."
@@ -36,6 +55,10 @@ enum VikunjaError: LocalizedError {
         case .rejected: return "Vikunja rejected the API token. Check that it has not expired."
         case .forbidden: return "Access denied. Check your token permissions and your access to this project or action."
         case .redirect: return "The server redirected the request. Use the final Vikunja URL and make sure its API is reachable directly."
+        case .accessHTTPS: return "Cloudflare Access credentials require an HTTPS URL."
+        case .accessCredentials: return "Enter both the Cloudflare Access Client ID and Client Secret."
+        case .accessRequired: return "Cloudflare Access requires a service token. Enable Cloudflare Access in the Vikunja settings."
+        case .accessDenied: return "Cloudflare Access rejected the request. Check the service token and its Service Auth policy."
         case .response: return "The server did not return a Vikunja API response. Check the instance URL."
         case .keychain(let status): return "Could not access the Vikunja connection in Keychain (\(status))."
         case .http(let status): return "Vikunja returned HTTP \(status)."
@@ -117,14 +140,19 @@ struct VikunjaBucket: Decodable, Identifiable {
 struct VikunjaClient {
     let connection: VikunjaConnection
 
-    // Reject redirects, including authentication pages: never forward the bearer token to another URL.
+    // Reject redirects so neither the Vikunja token nor Access credentials are forwarded.
     private final class RedirectBlocker: NSObject, URLSessionTaskDelegate {
         func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                         newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
             completionHandler(nil)
         }
     }
-    private static let session = URLSession(configuration: .ephemeral, delegate: RedirectBlocker(), delegateQueue: nil)
+    private static let session: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.httpShouldSetCookies = false
+        configuration.httpCookieStorage = nil
+        return URLSession(configuration: configuration, delegate: RedirectBlocker(), delegateQueue: nil)
+    }()
 
     func boards() async throws -> [VikunjaBoard] {
         let projects: [VikunjaProject] = try await pages("projects")
@@ -189,6 +217,10 @@ struct VikunjaClient {
         request.httpMethod = method
         request.httpBody = body
         request.setValue("Bearer \(connection.token)", forHTTPHeaderField: "Authorization")
+        if let access = connection.access {
+            request.setValue(access.clientID, forHTTPHeaderField: "CF-Access-Client-Id")
+            request.setValue(access.clientSecret, forHTTPHeaderField: "CF-Access-Client-Secret")
+        }
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
         let (data, response) = try await Self.session.data(for: request)
@@ -198,9 +230,16 @@ struct VikunjaClient {
         case 200..<300:
             guard http.mimeType == "application/json" else { throw VikunjaError.response }
             return (data, http)
-        case 300..<400: throw VikunjaError.redirect
+        case 300..<400:
+            if http.value(forHTTPHeaderField: "Location").flatMap(URLComponents.init(string:))?.path
+                .hasPrefix("/cdn-cgi/access/login") == true {
+                throw connection.access == nil ? VikunjaError.accessRequired : VikunjaError.accessDenied
+            }
+            throw VikunjaError.redirect
         case 401: throw VikunjaError.rejected
-        case 403: throw VikunjaError.forbidden
+        case 403:
+            if connection.access != nil && http.mimeType == "text/html" { throw VikunjaError.accessDenied }
+            throw VikunjaError.forbidden
         default: throw VikunjaError.http(http.statusCode)
         }
     }

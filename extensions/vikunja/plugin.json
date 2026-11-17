@@ -7,7 +7,7 @@
   "description": "See your Vikunja Kanban boards and move or add tasks from the notch.",
   "author": "Giuseppe",
   "icon": "rectangle.split.3x1",
-  "version": "0.1.0-beta",
+  "version": "0.1.1",
   "apiVersion": 1,
   "minAppVersion": "0.1.0",
   "category": "Productivity",
@@ -17,8 +17,9 @@
     "Select a project Kanban board and browse its columns",
     "Move tasks between manual columns and add tasks to the project",
     "Open any task or the board in Vikunja",
-    "Test the connection and keep the API token in the macOS Keychain"
+    "Test the connection and keep credentials in the macOS Keychain",
+    "Connect through Cloudflare Access with a service token"
   ],
-  "permissions": "Network access only to the Vikunja instance you configure. The API token is stored in the macOS Keychain.",
+  "permissions": "Network access only to the Vikunja instance you configure. Credentials are stored in the macOS Keychain.",
   "capabilities": ["network"]
 }
