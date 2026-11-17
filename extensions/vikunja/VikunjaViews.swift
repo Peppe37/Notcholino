@@ -6,6 +6,9 @@ struct VikunjaSettings: View {
     @ObservedObject var model: VikunjaModel
     @State private var address = ""
     @State private var token = ""
+    @State private var useAccess = false
+    @State private var clientID = ""
+    @State private var clientSecret = ""
 
     var body: some View {
         Form {
@@ -16,11 +19,19 @@ struct VikunjaSettings: View {
                 Link("Create a token in Vikunja", destination: URL(string: "https://vikunja.io/help/settings/#api-tokens")!)
                 Text("Use your hosted or self-hosted HTTPS URL. Allow listing projects and project view tasks. To edit the board, also allow creating tasks and moving tasks between buckets.")
                     .font(.callout).foregroundStyle(.secondary)
+                Toggle("Connect through Cloudflare Access", isOn: $useAccess)
+                if useAccess {
+                    TextField("Access Client ID", text: $clientID)
+                    SecureField("Access Client Secret", text: $clientSecret)
+                    Link("Configure a Cloudflare service token", destination: URL(string:
+                        "https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/")!)
+                }
                 HStack {
                     Button("Test and save") {
-                        model.connect(address: address, token: token)
+                        let access = useAccess ? VikunjaConnection.CloudflareAccess(clientID: clientID, clientSecret: clientSecret) : nil
+                        model.connect(address: address, token: token, access: access)
                     }
-                    .disabled(address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || token.isEmpty)
+                    .disabled(address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || token.isEmpty || (useAccess && (clientID.isEmpty || clientSecret.isEmpty)))
                     if model.connection != nil {
                         Button("Disconnect") { model.disconnect() }
                     }
@@ -31,20 +42,26 @@ struct VikunjaSettings: View {
                     Label(problem, systemImage: "exclamationmark.circle")
                         .foregroundStyle(.red).font(.callout)
                 } else if let saved = model.connection {
-                    Label("Connected to \(saved.site.absoluteString). Token saved in Keychain.", systemImage: "checkmark.shield")
+                    Label("Connected to \(saved.site.absoluteString). Credentials saved in Keychain.", systemImage: "checkmark.shield")
                         .font(.callout).textSelection(.enabled)
                 }
             }
         }
         .formStyle(.grouped)
-        .onAppear { address = model.connection?.site.absoluteString ?? "" }
-        .onChange(of: model.connection) { _, saved in
-            address = saved?.site.absoluteString ?? ""
-            token = ""
-        }
+        .onAppear { showSavedConnection() }
+        .onChange(of: model.connection) { _, _ in showSavedConnection() }
         .onChange(of: model.notice) { _, notice in
-            if notice == "Connection saved." { token = "" }
+            if notice == "Connection saved." { showSavedConnection() }
         }
+    }
+
+    private func showSavedConnection() {
+        let saved = model.connection
+        address = saved?.site.absoluteString ?? ""
+        useAccess = saved?.access != nil
+        clientID = saved?.access?.clientID ?? ""
+        clientSecret = ""
+        token = ""
     }
 }
 

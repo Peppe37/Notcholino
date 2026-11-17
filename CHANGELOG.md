@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-17
+
+- First stable release of Notcholino, with the notch, media controls, Calendar, Reminders, Shelf, and Plugin Store.
+- The separately installed Vikunja extension connects to hosted and self-hosted Kanban boards, including instances behind Cloudflare Access.
+
 ## [0.1.0-beta] - 2026-11-14
 
 ### Changed

@@ -61,9 +61,9 @@ final class VikunjaModel: ObservableObject {
         clear()
     }
 
-    func connect(address: String, token: String) {
+    func connect(address: String, token: String, access: VikunjaConnection.CloudflareAccess?) {
         run {
-            let next = try VikunjaConnection.make(address: address, token: token)
+            let next = try VikunjaConnection.make(address: address, token: token, access: access)
             let client = VikunjaClient(connection: next)
             let boards = try await client.boards()
             let first = if let board = boards.first { try await client.buckets(board) } else { [VikunjaBucket]() }

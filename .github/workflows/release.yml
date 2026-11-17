@@ -39,8 +39,8 @@ jobs:
       - name: Build
         run: |
           xcodebuild -project Notcholino.xcodeproj -scheme Notcholino \
-            -configuration Release -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO build
+            -configuration Release -destination 'generic/platform=macOS' -derivedDataPath build \
+            ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
 
       - name: Sign
         env:
@@ -130,7 +130,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.v.outputs.version }}
         run: |
-          FLAGS=""
+          FLAGS="--latest"
           case "$GITHUB_REF_NAME" in *-*) FLAGS="--prerelease" ;; esac
           gh release create "$GITHUB_REF_NAME" "Notcholino-$VERSION.dmg" \
             --title "Notcholino $VERSION" --notes-file notes.md $FLAGS
