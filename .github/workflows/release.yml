@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    tags: ["v[0-9]*"]
   # Manual run: builds the DMG and uploads it as an artifact, without publishing a release
   workflow_dispatch:
 
