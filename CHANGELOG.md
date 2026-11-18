@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-18
+
+- Installed plugins now have individual pages with usage instructions, settings, and an optional global keyboard shortcut. A shortcut can open the plugin in the notch or run one of its available commands.
+- Clippy can open clipboard history or copy the most recent item with a shortcut; Tomato can start or stop its timer. Shortcuts are unassigned by default.
+- Installed plugins can be shown, hidden, or reordered in the notch's Control Center from their settings pages.
+
 ## [1.0.0] - 2026-11-17
 
 - First stable release of Notcholino, with the notch, media controls, Calendar, Reminders, Shelf, and Plugin Store.

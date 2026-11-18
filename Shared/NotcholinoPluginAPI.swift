@@ -77,4 +77,14 @@ public protocol NotcholinoPlugin: NSObjectProtocol {
     @objc optional var notchExtensionText: String { get }
     /// Its color as "#RRGGBB". Defaults to white.
     @objc optional var notchExtensionColor: String { get }
+
+    // MARK: Optional: installed details and stable keyboard actions
+
+    /// Instructions for using the plugin, shown in its installed settings page.
+    @objc optional var pluginUsage: String { get }
+    /// Persistent options for the installed settings page. Uses the menu item contract (buttons, checked choices and steppers).
+    @objc optional func settingsItems() -> [[String: Any]]
+    /// Stable menu actions to offer for a user-assigned shortcut: one dictionary with "id" and "title" per action.
+    /// The ID must also be present in menuItems() when the action can run. Do not advertise entries tied to live data.
+    @objc optional func shortcutActions() -> [[String: String]]
 }

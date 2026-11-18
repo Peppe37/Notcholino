@@ -83,6 +83,8 @@ extension Notification.Name {
     static let notchMouseMoved = Notification.Name("notchMouseMoved")
     static let notchDropTargeted = Notification.Name("notchDropTargeted")
     static let notchDropped = Notification.Name("notchDropped")
+    static let notchOpenPlugin = Notification.Name("notchOpenPlugin")
+    static let notchClickedOutside = Notification.Name("notchClickedOutside")
 }
 
 // MARK: - Window Controller
@@ -165,9 +167,18 @@ class NotchWindowController: NSWindowController {
             self?.updateMouseTransparency()
         }
         // Dragging a file toward the notch opens the shelf. Events of other apps' drags come to the global monitors.
-        if let g = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown, handler: { [weak self] _ in
-            self?.pasteboardCountAtMouseDown = NSPasteboard(name: .drag).changeCount
-        }) { monitors.append(g) }
+        let click: (NSEvent) -> Void = { [weak self] event in
+            guard let self else { return }
+            if event.type == .leftMouseDown {
+                self.pasteboardCountAtMouseDown = NSPasteboard(name: .drag).changeCount
+            }
+            if self.isOpen, let window = self.window,
+               !self.hoverRect(in: window.frame).contains(NSEvent.mouseLocation) {
+                NotificationCenter.default.post(name: .notchClickedOutside, object: self.notchID)
+            }
+        }
+        if let g = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown], handler: click) { monitors.append(g) }
+        if let l = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown], handler: { e in click(e); return e }) { monitors.append(l) }
         if let g = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged, handler: { [weak self] _ in self?.handleDrag() }) { monitors.append(g) }
         if let g = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp, handler: { [weak self] _ in
             ShelfManager.shared.dragActive = false
@@ -176,6 +187,10 @@ class NotchWindowController: NSWindowController {
         }) { monitors.append(g) }
         if let g = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: handler) { monitors.append(g) }
         if let l = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved, handler: { e in handler(e); return e }) { monitors.append(l) }
+    }
+
+    func openPlugin(_ id: String) {
+        NotificationCenter.default.post(name: .notchOpenPlugin, object: notchID, userInfo: ["id": id])
     }
 
     deinit { monitors.forEach { NSEvent.removeMonitor($0) } }
@@ -317,6 +332,11 @@ enum NotchTab: Int, CaseIterable {
     case controlCenter = -2, shelf = -1, music = 0, calendar = 1, extensions = 3
 }
 
+struct NotchPluginRequest: Equatable {
+    let pluginID: String
+    private let invocation = UUID()
+}
+
 struct NotchContentView: View {
     let notchID: UUID
     /// The display this notch is on, so an extension that asks the notch to open (Snap) opens the one the pointer is on
@@ -327,6 +347,7 @@ struct NotchContentView: View {
     @State private var closing      = false
     @State private var activeTab: NotchTab = .music
     @State private var savedTab: NotchTab?
+    @State private var pluginRequest: NotchPluginRequest?
     /// The extension whose page is still on screen while the notch closes after it opened it (so the page does not change under the animation)
     @State private var lingerForcedID: String?
     /// After an extension closes the notch (Snap, once the window is placed) the pointer is still over it: for a moment it must not
@@ -374,7 +395,7 @@ struct NotchContentView: View {
     private var enabledTabs: [NotchTab] {
         NotchTab.allCases.filter {
             switch $0 {
-            case .controlCenter: return controlCenterEnabled
+            case .controlCenter: return controlCenterEnabled || pluginRequest != nil
             // The shelf has a page only while it holds something (or something is being dragged to it)
             case .shelf:         return shelfEnabled && (!shelf.items.isEmpty || shelf.pending > 0 || shelf.dragActive)
             case .music:         return nowPlayingEnabled
@@ -478,6 +499,25 @@ struct NotchContentView: View {
     private var curH: CGFloat { isExpanded ? expandH : pillH + (notchExtension?.height ?? 0) }
 
     var body: some View {
+        notchBody
+            .onChange(of: activeTab) { _, tab in
+                if tab != .controlCenter { pluginRequest = nil }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .notchOpenPlugin)) { note in
+                guard (note.object as? UUID) == notchID, let id = note.userInfo?["id"] as? String,
+                      !forcedOpen, !shelf.dragActive else { return }
+                pluginRequest = NotchPluginRequest(pluginID: id)
+                goingForward = false
+                activeTab = .controlCenter
+                setHovering(true, fromShortcut: true)
+                publishLayout()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .notchClickedOutside)) { note in
+                if (note.object as? UUID) == notchID, pluginRequest != nil { setHovering(false) }
+            }
+    }
+
+    private var notchBody: some View {
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
                 // Invisible footprint to maintain size and catch hover
@@ -580,7 +620,10 @@ struct NotchContentView: View {
             .animation(.spring(response: 0.3,  dampingFraction: 0.8),  value: sysEvt.currentMode)
             .animation(.spring(response: 0.3,  dampingFraction: 0.8),  value: isPlayingCompact)
             .onAppear { publishLayout() }
-            .onChange(of: isHovering) { _ in publishLayout() }
+            .onChange(of: isHovering) { _, hovering in
+                if !hovering { pluginRequest = nil }
+                publishLayout()
+            }
             .onChange(of: sysEvt.currentMode) { _ in publishLayout() }
             .onChange(of: music.isPlaying) { playing in extensionManager.musicPlaying = playing; publishLayout() }
             .onChange(of: shownTab) { _ in publishLayout() }
@@ -676,7 +719,7 @@ struct NotchContentView: View {
     @ViewBuilder
     private func tabContent(_ tab: NotchTab) -> some View {
         switch tab {
-        case .controlCenter: ControlCenterNotchView()
+        case .controlCenter: ControlCenterNotchView(shortcut: pluginRequest)
         case .shelf:         ShelfNotchView(dropTargeted: dropTargeted)
         case .music:         NowPlayingNotchView(music: music)
         case .calendar:      CalendarNotchView()
@@ -766,8 +809,8 @@ struct NotchContentView: View {
         }
     }
 
-    private func setHovering(_ hovering: Bool) {
-        if hovering, Date() < hoverBlockedUntil { return }
+    private func setHovering(_ hovering: Bool, fromShortcut: Bool = false) {
+        if hovering, !fromShortcut, Date() < hoverBlockedUntil { return }
         collapseTask?.cancel()
         if hovering {
             // Permissions may have been granted in System Settings meanwhile
@@ -775,7 +818,7 @@ struct NotchContentView: View {
             calMgr.refreshAccess()
             closing = false
             // An extension just said something under the notch: moving to it opens that extension's page, where the whole note is
-            if let id = popups.current?.opensExtension, extensionManager.pages.contains(where: { $0.extensionIdentifier == id }), !isExpanded {
+            if !fromShortcut, let id = popups.current?.opensExtension, extensionManager.pages.contains(where: { $0.extensionIdentifier == id }), !isExpanded {
                 extensionManager.selectedID = id
                 goingForward = false
                 activeTab = .extensions
@@ -1703,6 +1746,7 @@ struct CalendarNotchView: View {
 
 /// Plugin buttons. Tapping one opens its options (the plugin's declarative menu) right inside the notch.
 struct ControlCenterNotchView: View {
+    var shortcut: NotchPluginRequest? = nil
     @ObservedObject private var pluginManager = PluginManager.shared
     @State private var selectedID: String?
     /// Bumped after every tap so the plugin's new state shows at once, not at the next one-second refresh
@@ -1725,6 +1769,9 @@ struct ControlCenterNotchView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onChange(of: shortcut, initial: true) { _, request in
+            if let request { selectedID = request.pluginID }
+        }
     }
 
     // MARK: Overview
@@ -1866,7 +1913,18 @@ struct ControlCenterNotchView: View {
 
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(Array(groups(of: plugin.menuItems()).enumerated()), id: \.offset) { _, group in
+                    let menu = plugin.menuItems()
+                    if menu.isEmpty {
+                        Text(PluginPreferences.guide(for: plugin))
+                            .font(.system(size: 12)).foregroundStyle(.white.opacity(0.7))
+                        if plugin.responds(to: #selector(NotcholinoPlugin.controlCenterButtonTapped)) {
+                            optionChip(Option(id: "primary", title: "Run primary action", checked: false, destructive: false)) {
+                                plugin.controlCenterButtonTapped?()
+                                refreshSoon()
+                            }
+                        }
+                    }
+                    ForEach(Array(groups(of: menu).enumerated()), id: \.offset) { _, group in
                         if let header = group.header {
                             Text(header)
                                 .font(.system(size: 11, weight: .bold))
@@ -1953,7 +2011,7 @@ struct ControlCenterNotchView: View {
                     wide: entry["wide"] as? Bool ?? false))
             }
         }
-        return result.filter { !$0.items.isEmpty || $0.graph != nil || !$0.infos.isEmpty || !$0.steppers.isEmpty }
+        return result.filter { $0.header != nil || !$0.items.isEmpty || $0.graph != nil || !$0.infos.isEmpty || !$0.steppers.isEmpty }
     }
 
     private func optionChip(_ item: Option, action: @escaping () -> Void) -> some View {
