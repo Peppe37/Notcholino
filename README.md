@@ -39,7 +39,7 @@
 
 ---
 
-> **Notcholino 1.0** is available on the [Releases page](https://github.com/Peppe37/Notcholino/releases/latest).
+> **The latest stable Notcholino release** is available on the [Releases page](https://github.com/Peppe37/Notcholino/releases/latest).
 
 **Contents:** [Why Notcholino](#why-notcholino) · [What is it?](#what-is-it) · [Features](#features) · [Install](#install) · [Usage](#usage) · [Plugins](#plugins) · [FAQ](#faq) · [Privacy](#privacy) · [Performance](#performance) · [Roadmap](#roadmap) · [Support and contributing](#support-and-contributing) · [Building from source](#building-from-source) · [Releases](#releases-and-versioning) · [License](#license)
 
@@ -147,6 +147,8 @@ Spotify Like uses your Spotify account through the official Web API, and only if
 ## Plugins
 
 The Control Center panel holds plugin buttons. Tap one to open its options right inside the notch. Install, update and remove plugins from **Settings → Control Center → Plugin Store**: they are downloaded from this repository's releases, always at their latest version, after you confirm and a SHA-256 check.
+
+Open **Settings → Control Center** and select an installed plugin for its instructions and settings. Every plugin starts without a keyboard shortcut. To assign one, select an action and choose **Record**. For example, Clippy can open clipboard history in the notch or copy the newest item directly. The shortcut works from other apps while Notcholino is running. Use **Clear shortcut** to remove it.
 
 | Plugin | What it does |
 | --- | --- |

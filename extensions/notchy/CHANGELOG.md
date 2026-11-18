@@ -1,5 +1,9 @@
 # Notchy
 
+## [0.3.1-alpha] - 2026-11-18
+
+- Notchy handles only its own voice shortcut, so plugin shortcuts can work alongside it.
+
 ## [0.3.0-alpha] - 2026-10-19
 
 - **Ask about any day**, not only today: “che ho in agenda domani?”, “what is on my calendar on Friday?”, “cosa devo fare questa settimana?”. Notchy reads the calendars you ticked in Notcholino and the reminders it shows, for the days you asked, and answers in a few words, with the times. If there is nothing, it says so in your language. (Needs Notcholino 0.28.0.)

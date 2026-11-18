@@ -106,6 +106,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         FocusMonitor.shared.start()
         ExtensionServices.shared.register()
         _ = ExtensionManager.shared
+        PluginShortcuts.shared.start(manager: .shared) { [weak self] id in
+            guard let controllers = self?.notchControllers else { return }
+            let pointer = NSEvent.mouseLocation
+            let target = controllers.first { $0.targetScreen.frame.contains(pointer) } ?? controllers.first
+            target?.openPlugin(id)
+        }
         watchWindowsForDock()
         DeviceMonitor.shared.start()
 
@@ -121,6 +127,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Whatever way the app ends (⌘Q, logout, an update, `kill`), every plugin gets to put the Mac back as it found it
     func applicationWillTerminate(_ notification: Notification) {
+        PluginShortcuts.shared.stop()
         PluginManager.shared.loadedPlugins.forEach { $0.pluginWillUnload?() }
         ExtensionManager.shared.willQuit()
     }
@@ -173,6 +180,7 @@ final class PluginManager: ObservableObject {
 
     @Published var loadedPlugins: [NotcholinoPlugin] = []
     @Published var loadErrors: [String] = []
+    @Published private(set) var hiddenButtons = Set(UserDefaults.standard.stringArray(forKey: "hiddenPluginButtons") ?? [])
 
     let pluginsDirectory: URL
     private var pluginsByPath: [String: NotcholinoPlugin] = [:]
@@ -229,7 +237,14 @@ final class PluginManager: ObservableObject {
     private var sideTimer: Timer?
 
     /// The plugins that have a Control Center button (a plugin can be only popups and side icons)
-    var buttonPlugins: [NotcholinoPlugin] { loadedPlugins.filter { !($0.controlCenterHidden ?? false) } }
+    var buttonPlugins: [NotcholinoPlugin] {
+        loadedPlugins.filter { $0.controlCenterHidden != true && !hiddenButtons.contains($0.pluginIdentifier) }
+    }
+
+    func setButtonVisible(_ visible: Bool, for id: String) {
+        if visible { hiddenButtons.remove(id) } else { hiddenButtons.insert(id) }
+        UserDefaults.standard.set(hiddenButtons.sorted(), forKey: "hiddenPluginButtons")
+    }
 
     /// Plugins change their side icon on their own, so it is read once a second, but only if some plugin offers one
     private func startSideIconWatch() {
@@ -271,9 +286,13 @@ final class PluginManager: ObservableObject {
 
     /// Moves a button one place up (-1) or down (1) in the Control Center
     func move(identifier: String, by offset: Int) {
-        guard let i = loadedPlugins.firstIndex(where: { $0.pluginIdentifier == identifier }),
-              loadedPlugins.indices.contains(i + offset) else { return }
-        loadedPlugins.swapAt(i, i + offset)
+        let visible = buttonPlugins
+        guard let position = visible.firstIndex(where: { $0.pluginIdentifier == identifier }),
+              visible.indices.contains(position + offset),
+              let i = loadedPlugins.firstIndex(where: { $0.pluginIdentifier == identifier }),
+              let j = loadedPlugins.firstIndex(where: { $0.pluginIdentifier == visible[position + offset].pluginIdentifier })
+        else { return }
+        loadedPlugins.swapAt(i, j)
         UserDefaults.standard.set(loadedPlugins.map(\.pluginIdentifier), forKey: Self.orderKey)
     }
 
@@ -283,6 +302,8 @@ final class PluginManager: ObservableObject {
         entry.value.pluginWillUnload?()
         pluginsByPath[entry.key] = nil
         loadedPlugins.removeAll { $0.pluginIdentifier == identifier }
+        PluginShortcuts.shared.remove(identifier)
+        setButtonVisible(true, for: identifier)
         try? FileManager.default.removeItem(atPath: entry.key)
     }
 

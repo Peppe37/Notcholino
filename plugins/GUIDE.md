@@ -100,3 +100,16 @@ The Plugin Store shows each plugin as a card in a grid and, when you open it, a 
 Plugins live in the same repository as the app, so they are under the same license, the [GPL-3.0](../LICENSE). By sending one you agree to that.
 
 Looking for something to build? See [IDEAS.md](IDEAS.md).
+
+## Installed settings and keyboard shortcuts
+
+Every plugin can be opened with a user-assigned keyboard shortcut. No shortcut is assigned by default.
+A plugin with `controlCenterButtonTapped()` can also offer that primary action.
+
+For a richer installed settings page, implement the optional Foundation-only API:
+
+- `pluginUsage`: concise instructions for using the plugin.
+- `settingsItems()`: persistent options such as checked choices or steppers, using the same dictionaries as `menuItems()`. Changes go through `performMenuAction(_:)`.
+- `shortcutActions()`: static dictionaries with an `id` and `title`. A shortcut calls `performMenuAction(_:)` only when the ID is currently available in `menuItems()`. Use stable IDs for commands; omit rows for transient data such as individual clipboard history entries.
+
+Older plugins keep working and can be assigned a shortcut to open their panel.

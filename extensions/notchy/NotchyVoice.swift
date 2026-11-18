@@ -103,6 +103,11 @@ final class NotchyVoice: ObservableObject {
                 var spec = [EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed)),
                             EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyReleased))]
                 InstallEventHandler(GetApplicationEventTarget(), { _, event, _ in
+                    guard let event else { return OSStatus(eventNotHandledErr) }
+                    var id = EventHotKeyID()
+                    let status = GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
+                                                   nil, MemoryLayout<EventHotKeyID>.size, nil, &id)
+                    guard status == noErr, id.signature == OSType(0x4E54_4348), id.id == 1 else { return OSStatus(eventNotHandledErr) }
                     let kind = GetEventKind(event)
                     DispatchQueue.main.async {
                         if kind == UInt32(kEventHotKeyPressed) { NotchyVoice.shared.begin() } else { NotchyVoice.shared.finish() }
